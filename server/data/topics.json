@@ -1,0 +1,131 @@
+[
+  {
+    "id": "t-1762285180637",
+    "name": "吃優葛，要不要舔蓋子？",
+    "description": "耐人尋味的生活小難題。\n正方立場：豈能暴殄天物，當然要爆舔一波！\n反方立場：當有一天我財富自由，我不會暗示的太明顯。\n\n到底是正方還是反方，真的好令人猶豫！\n快來寫下你的觀點！",
+    "slug": "吃優葛-要不要舔蓋子",
+    "count": 1,
+    "score": 0,
+    "createdAt": "2025-11-04T19:39:40.638Z",
+    "mode": "duel"
+  },
+  {
+    "id": "t-1762284137275",
+    "name": "自由/安全",
+    "description": "自由 & 安全，誰更重要？",
+    "slug": "自由-安全",
+    "count": 0,
+    "score": 0,
+    "createdAt": "2025-11-04T19:22:17.275Z",
+    "mode": "duel"
+  },
+  {
+    "id": "t-1762274062479",
+    "name": "2025年觀點排行榜",
+    "description": "你2025年聽到過最牛逼的觀點是什麼？",
+    "slug": "2025年觀點排行榜",
+    "count": 1,
+    "score": 15,
+    "createdAt": "2025-11-04T16:34:22.479Z"
+  },
+  {
+    "id": "t-1762269067390",
+    "name": "11.04 23:11",
+    "slug": "11-04-23-11",
+    "count": 0,
+    "score": 4,
+    "createdAt": "2025-11-04T15:11:07.390Z"
+  },
+  {
+    "id": "t-1762261221590",
+    "name": "問題",
+    "slug": "問題",
+    "count": 0,
+    "score": 3,
+    "createdAt": "2025-11-04T13:00:21.590Z"
+  },
+  {
+    "id": "t-1762260218808",
+    "name": "自由",
+    "slug": "自由",
+    "count": 0,
+    "score": 0,
+    "createdAt": "2025-11-04T12:43:38.808Z"
+  },
+  {
+    "id": "t-1762259696407",
+    "name": "效率",
+    "slug": "效率",
+    "count": 0,
+    "score": 2,
+    "createdAt": "2025-11-04T12:34:56.407Z"
+  },
+  {
+    "id": "t-1762259426727",
+    "name": "AA",
+    "slug": "aa",
+    "count": 0,
+    "score": 2,
+    "createdAt": "2025-11-04T12:30:26.727Z"
+  },
+  {
+    "id": "t-deep-work",
+    "name": "深度工作",
+    "slug": "deep-work",
+    "description": "專注、減少干擾與高效產出",
+    "count": 12,
+    "tag": "#深度工作",
+    "score": -1,
+    "createdAt": "2025-11-04T14:55:46.227Z"
+  },
+  {
+    "id": "t-pomodoro",
+    "name": "番茄鐘",
+    "slug": "pomodoro",
+    "description": "以節奏拆分時間與休息",
+    "count": 9,
+    "tag": "#番茄鐘",
+    "score": 2,
+    "createdAt": "2025-11-04T14:55:46.227Z"
+  },
+  {
+    "id": "t-morning",
+    "name": "晨間儀式",
+    "slug": "morning-ritual",
+    "description": "以儀式開局的一天",
+    "count": 7,
+    "tag": "#晨間儀式",
+    "score": 0,
+    "createdAt": "2025-11-04T14:55:46.227Z"
+  },
+  {
+    "id": "t-async",
+    "name": "異步協作",
+    "slug": "async",
+    "description": "降低會議依賴、以文字協作",
+    "count": 8,
+    "tag": "#異步協作",
+    "score": 0,
+    "createdAt": "2025-11-04T14:55:46.227Z"
+  },
+  {
+    "id": "t-energy",
+    "name": "能量管理",
+    "slug": "energy",
+    "description": "依能量安排工作節奏",
+    "count": 11,
+    "tag": "#能量管理",
+    "score": 0,
+    "createdAt": "2025-11-04T14:55:46.227Z"
+  },
+  {
+    "id": "t-habit",
+    "name": "習慣養成",
+    "slug": "habit",
+    "description": "小步快跑、可持續堆疊",
+    "count": 10,
+    "tag": "#習慣養成",
+    "score": 0,
+    "createdAt": "2025-11-04T14:55:46.227Z"
+  }
+]
