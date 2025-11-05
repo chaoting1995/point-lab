@@ -8,14 +8,17 @@ import { ThumbsUp, ThumbsDown, ShareNetwork } from 'phosphor-react'
 import type { Hack } from '../data/hacks'
 import useLanguage from '../i18n/useLanguage'
 import { formatRelativeAgo } from '../utils/text'
+import useConfirmDialog from '../hooks/useConfirmDialog'
 
-export default function PointCard({ point }: { point: Hack }) {
+export default function PointCard({ point, onDeleted }: { point: Hack; onDeleted?: (id: string) => void }) {
   const { t } = useLanguage()
   const [score, setScore] = useState<number>(point.upvotes ?? 0)
   const [busy, setBusy] = useState(false)
   const [expanded, setExpanded] = useState(false)
   const [showToggle, setShowToggle] = useState(false)
   const descRef = useRef<HTMLParagraphElement | null>(null)
+  const [deleting, setDeleting] = useState(false)
+  const { confirm, ConfirmDialogEl } = useConfirmDialog()
   const bgColor = point.position === 'agree'
     ? 'rgba(16, 185, 129, 0.08)'
     : point.position === 'others'
@@ -34,6 +37,20 @@ export default function PointCard({ point }: { point: Hack }) {
 
   const createdLabel = useMemo(() => formatRelativeAgo(point.createdAt), [point.createdAt])
   const authorName = point.author?.name || '匿名'
+
+  async function remove() {
+    if (deleting) return
+    try {
+      setDeleting(true)
+      const res = await fetch(`/api/points/${point.id}`, { method: 'DELETE' })
+      if (!res.ok && res.status !== 204) throw new Error('DELETE_FAILED')
+      onDeleted?.(point.id)
+    } catch {
+      // ignore
+    } finally {
+      setDeleting(false)
+    }
+  }
 
   useEffect(() => {
     const el = descRef.current
@@ -117,9 +134,26 @@ export default function PointCard({ point }: { point: Hack }) {
                 </button>
               </Box>
             )}
-            <Typography variant="caption" sx={{ color: 'text.secondary', fontSize: 12, mt: 'auto' }}>
+            <Typography component="div" variant="caption" sx={{ color: 'text.secondary', fontSize: 12, mt: 'auto' }}>
               {authorName} | {createdLabel} | {point.comments ?? 0} 則評論 | 報告 | {t('actions.share')}
+              {' '}|{' '}
+              <button
+                type="button"
+                onClick={async (e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  const ok = await confirm({ title: '確定刪除？' })
+                  if (ok) remove()
+                }}
+                onMouseDown={(e) => { e.preventDefault(); e.stopPropagation() }}
+                onMouseUp={(e) => { e.preventDefault(); e.stopPropagation() }}
+                disabled={deleting}
+                style={{ border: 'none', background: 'transparent', color: '#ef4444', cursor: 'pointer', padding: 0 }}
+              >
+                刪除
+              </button>
             </Typography>
+            {ConfirmDialogEl}
           </Box>
 
           {/* 右欄：投票垂直區 */}

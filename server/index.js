@@ -105,7 +105,7 @@ app.get('/api/topics', (req, res) => {
 app.get('/api/topics/id/:id', (req, res) => {
   try {
     const topics = readJson('topics.json')
-    const topic = topics.find((t) => t.id === req.params.id)
+    const topic = topics.find((t) => t.id === req.params.id || t.slug === req.params.id)
     if (!topic) return res.status(404).json({ error: 'NOT_FOUND' })
     res.json({ data: topic })
   } catch (e) {
@@ -155,6 +155,20 @@ app.post('/api/topics', (req, res) => {
     res.status(201).json({ data: record })
   } catch (e) {
     res.status(500).json({ error: 'CREATE_TOPIC_FAILED' })
+  }
+})
+
+// 刪除主題（不做級聯刪除 points，列表會因為找不到 topic 而不顯示孤兒點）
+app.delete('/api/topics/:id', (req, res) => {
+  try {
+    const topics = readJson('topics.json')
+    const idx = topics.findIndex((t) => t.id === req.params.id)
+    if (idx === -1) return res.status(404).json({ error: 'NOT_FOUND' })
+    topics.splice(idx, 1)
+    writeJson('topics.json', topics)
+    res.status(204).end()
+  } catch (e) {
+    res.status(500).json({ error: 'DELETE_TOPIC_FAILED' })
   }
 })
 
@@ -293,6 +307,38 @@ app.get('/api/points/:id', (req, res) => {
   const item = hacks.find((h) => h.id === req.params.id)
   if (!item) return res.status(404).json({ error: 'NOT_FOUND' })
   res.json({ data: item })
+})
+
+// 刪除觀點（同步調整對應 topic 的 count）
+app.delete('/api/points/:id', (req, res) => {
+  try {
+    const hacks = readJson('hacks.json')
+    const idx = hacks.findIndex((h) => h.id === req.params.id)
+    if (idx === -1) return res.status(404).json({ error: 'NOT_FOUND' })
+    const target = hacks[idx]
+    hacks.splice(idx, 1)
+    writeJson('hacks.json', hacks)
+    try {
+      if (target && target.topicId) {
+        const topics = readJson('topics.json')
+        const tIdx = topics.findIndex((t) => t.id === target.topicId)
+        if (tIdx !== -1) {
+          const cur = topics[tIdx]
+          const next = Math.max(0, (typeof cur.count === 'number' ? cur.count : 0) - 1)
+          topics[tIdx] = { ...cur, count: next }
+          writeJson('topics.json', topics)
+        }
+      }
+    } catch {}
+    res.status(204).end()
+  } catch (e) {
+    res.status(500).json({ error: 'DELETE_POINT_FAILED' })
+  }
+})
+// 兼容舊路由
+app.delete('/api/hacks/:id', (req, res) => {
+  req.url = `/api/points/${req.params.id}`
+  return app._router.handle(req, res)
 })
 
 const PORT = process.env.PORT || 8787

@@ -78,6 +78,11 @@ export type AppTranslations = {
       namePlaceholder?: string
       descLabel?: string
       descPlaceholder?: string
+      modeLabel?: string
+      modeOpen?: string
+      modeDuel?: string
+      success?: string
+      firstPrompt?: string
     }
     list?: {
       title: string
@@ -85,6 +90,8 @@ export type AppTranslations = {
       subtitleA?: string
       subtitleB?: string
       subtitleC?: string
+      ctaHighlight?: string
+      ctaTail?: string
       add: string
       empty?: string
     }
@@ -150,7 +157,7 @@ const baseZhHant: AppTranslations = {
   },
   hero: {
     eyebrow: '',
-    title: '網路最推的 50 個效率習慣',
+    title: '觀點實驗室',
     subtitle:
       'PointLab 收整社群最愛的生活與工作觀點（Point），讓你幾分鐘內找到下一個能放進日常的靈感。',
     primaryAction: '開始探索',

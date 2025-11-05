@@ -36,7 +36,7 @@ export default function TopicDetailPage() {
           const topicResp = await getJson<ItemResponse<Topic>>(`/api/topics/id/${id}`)
           topicData = topicResp.data
         } catch {
-          const list = await getJson<ListResponse<Topic>>('/api/topics')
+          const list = await getJson<ListResponse<Topic>>('/api/topics?page=1&size=1000')
           topicData = (list.items || []).find((t) => t.id === id || t.slug === id) || null
         }
         if (!aborted && topicData) setTopic(topicData)
@@ -96,14 +96,14 @@ export default function TopicDetailPage() {
                   <Box>
                     {list.filter((p) => p.position === 'agree').map((p) => (
                       <Box key={p.id} sx={{ mb: 2 }}>
-                        <PointCard point={p} />
+                        <PointCard point={p} onDeleted={(id) => setList((prev) => prev.filter((x) => x.id !== id))} />
                       </Box>
                     ))}
                   </Box>
                   <Box>
                     {list.filter((p) => p.position === 'others').map((p) => (
                       <Box key={p.id} sx={{ mb: 2 }}>
-                        <PointCard point={p} />
+                        <PointCard point={p} onDeleted={(id) => setList((prev) => prev.filter((x) => x.id !== id))} />
                       </Box>
                     ))}
                   </Box>
@@ -111,7 +111,7 @@ export default function TopicDetailPage() {
               ) : (
                 <div className="hack-grid" role="tabpanel">
                   {list.map((hack) => (
-                    <PointCard key={hack.id} point={hack} />
+                    <PointCard key={hack.id} point={hack} onDeleted={(id) => setList((prev) => prev.filter((x) => x.id !== id))} />
                   ))}
                 </div>
               )}

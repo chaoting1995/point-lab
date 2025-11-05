@@ -29,28 +29,12 @@
     "createdAt": "2025-11-04T16:34:22.479Z"
   },
   {
-    "id": "t-1762269067390",
-    "name": "11.04 23:11",
-    "slug": "11-04-23-11",
-    "count": 0,
-    "score": 4,
-    "createdAt": "2025-11-04T15:11:07.390Z"
-  },
-  {
     "id": "t-1762261221590",
     "name": "問題",
     "slug": "問題",
     "count": 0,
     "score": 3,
     "createdAt": "2025-11-04T13:00:21.590Z"
-  },
-  {
-    "id": "t-1762260218808",
-    "name": "自由",
-    "slug": "自由",
-    "count": 0,
-    "score": 0,
-    "createdAt": "2025-11-04T12:43:38.808Z"
   },
   {
     "id": "t-1762259696407",
@@ -61,70 +45,12 @@
     "createdAt": "2025-11-04T12:34:56.407Z"
   },
   {
-    "id": "t-1762259426727",
-    "name": "AA",
-    "slug": "aa",
-    "count": 0,
-    "score": 2,
-    "createdAt": "2025-11-04T12:30:26.727Z"
-  },
-  {
-    "id": "t-deep-work",
-    "name": "深度工作",
-    "slug": "deep-work",
-    "description": "專注、減少干擾與高效產出",
-    "count": 12,
-    "tag": "#深度工作",
-    "score": -1,
-    "createdAt": "2025-11-04T14:55:46.227Z"
-  },
-  {
-    "id": "t-pomodoro",
-    "name": "番茄鐘",
-    "slug": "pomodoro",
-    "description": "以節奏拆分時間與休息",
-    "count": 9,
-    "tag": "#番茄鐘",
-    "score": 2,
-    "createdAt": "2025-11-04T14:55:46.227Z"
-  },
-  {
-    "id": "t-morning",
-    "name": "晨間儀式",
-    "slug": "morning-ritual",
-    "description": "以儀式開局的一天",
-    "count": 7,
-    "tag": "#晨間儀式",
-    "score": 0,
-    "createdAt": "2025-11-04T14:55:46.227Z"
-  },
-  {
-    "id": "t-async",
-    "name": "異步協作",
-    "slug": "async",
-    "description": "降低會議依賴、以文字協作",
-    "count": 8,
-    "tag": "#異步協作",
-    "score": 0,
-    "createdAt": "2025-11-04T14:55:46.227Z"
-  },
-  {
     "id": "t-energy",
     "name": "能量管理",
     "slug": "energy",
     "description": "依能量安排工作節奏",
     "count": 11,
     "tag": "#能量管理",
-    "score": 0,
-    "createdAt": "2025-11-04T14:55:46.227Z"
-  },
-  {
-    "id": "t-habit",
-    "name": "習慣養成",
-    "slug": "habit",
-    "description": "小步快跑、可持續堆疊",
-    "count": 10,
-    "tag": "#習慣養成",
     "score": 0,
     "createdAt": "2025-11-04T14:55:46.227Z"
   }

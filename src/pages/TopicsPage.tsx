@@ -25,25 +25,28 @@ export default function TopicsPage() {
   const [total, setTotal] = useState<number | undefined>(undefined)
   const sentinelRef = useRef<HTMLDivElement | null>(null)
 
+  async function fetchFirstPage(currentSort: SortKey) {
+    setLoading(true)
+    setError(null)
+    try {
+      const resp = await getJson<ListResponse<Topic>>(`/api/topics?page=1&size=30&sort=${currentSort}`)
+      setItems(resp.items || [])
+      setTotal((resp as any).total)
+      setHasMore(((resp.items || []).length || 0) === 30)
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Load failed')
+    } finally {
+      setLoading(false)
+    }
+  }
+
   // simple first-page fetch to ensure visible content
   useEffect(() => {
     let aborted = false
-    async function run() {
-      try {
-        setLoading(true)
-        setError(null)
-        const resp = await getJson<ListResponse<Topic>>(`/api/topics?page=1&size=30&sort=${sort}`)
-        if (aborted) return
-        setItems(resp.items || [])
-        setTotal((resp as any).total)
-        setHasMore(((resp.items || []).length || 0) === 30)
-      } catch (e) {
-        if (!aborted) setError(e instanceof Error ? e.message : 'Load failed')
-      } finally {
-        if (!aborted) setLoading(false)
-      }
-    }
-    run()
+    ;(async () => {
+      if (aborted) return
+      await fetchFirstPage(sort)
+    })()
     return () => { aborted = true }
   }, [sort])
 
@@ -85,7 +88,11 @@ export default function TopicsPage() {
           {!error && (
             <Box sx={{ mt: 1.5, display: 'flex', flexDirection: 'column', gap: 2 }}>
               {items.map((t) => (
-                <TopicCard key={t.id} topic={t} />
+                <TopicCard
+                  key={t.id}
+                  topic={t}
+                  onDeleted={async () => { await fetchFirstPage(sort) }}
+                />
               ))}
               {hasMore && <div ref={sentinelRef} />}
               {loading && <p className="text-center text-slate-500">{t('common.loading')}</p>}
