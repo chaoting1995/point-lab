@@ -36,11 +36,15 @@
   - `POST /api/points`（description, topicId?, authorName?, authorType=guest|user, position?=agree|others）
   - `PATCH /api/points/:id`（description/position）
   - `DELETE /api/points/:id`
-- 備註：舊路由 `/api/hacks` 已移除。僅在匯入腳本中保留對舊檔名 hacks.json 的讀取相容。
+  - Comments（新）：
+    - `GET /api/points/:id/comments?sort=old|new|hot&page&size[&parent=<cid>]`（回傳 childCount 供一級顯示）
+    - `POST /api/points/:id/comments`（content, parentId?, authorName?, authorType?）
+    - `PATCH /api/comments/:id/vote`（Body: { delta: 1|-1|±2 }，允許為負數）
+- 備註：舊路由 `/api/hacks` 已移除。
 
 ## 資料層策略
 - 優先使用 SQLite（`server/pointlab.db`，better-sqlite3）。不存在時自動退回 JSON 檔（`server/data/*.json`）。
-- 一次性匯入：`npm run migrate:json` 將 `topics.json / points.json(相容舊名 hacks.json)` 匯入 SQLite。
+- 一次性匯入：`npm run migrate:json` 將 `topics.json / points.json` 匯入 SQLite。
 
 ## 主要目錄與檔案
 - 後端：
@@ -59,6 +63,8 @@
 - 後端 API：僅在 `server/index.js` 增刪；資料邏輯寫在 `server/db/repo.js`。
 - JSON fallback：統一讀寫 `points.json`/`topics.json`；不得再新增 `hacks.json`。
 - 文件：如變更 API 或資料層，務必同步更新 README 與本文。
+- 投票行為：三態（未投/讚/倒讚），允許為負數；前端以 localStorage 記錄用戶對單項的投票狀態。
+ - Git 提交規範：commit message 僅允許單行摘要（不超過 72 字元）。詳細變更請寫入 `CHANGELOG.md`，必要時在 PR 描述補充。
 
 ## 常見陷阱
 - CORS：記得設定 `ALLOWED_ORIGINS`；本地開發允許全部。
@@ -73,3 +79,31 @@
 
 ---
 本檔為機器導向說明，指令與行為以此為準；如與 README 衝突，請以最新的代碼與本檔規範為優先。
+
+## 部署策略與維運（新增）
+
+- 前端（Cloudflare Pages）
+  - Production 分支：`master`，push 會自動部署。
+  - 環境變數：`VITE_API_BASE=https://pointlab-api.fly.dev`（UI 設定優先生效，否則讀 `.env.production`）。
+  - 注意：所有 fetch 需經 `withBase()`（已統一），避免在 Pages 上誤打相對路徑造成 405。
+
+- 後端（Fly.io）
+  - App：`pointlab-api`，Region：`sin`。
+  - 常駐：`min_machines_running=1`，健康檢查 `/api/health`。
+  - CORS：`ALLOWED_ORIGINS` 應包含 Pages 網域（例：`https://point-lab.pages.dev`）。
+  - DB：SQLite 檔於 Volume `/app/data/pointlab.db`，程式會讀取 `POINTLAB_DB_PATH`，否則預設 `server/pointlab.db`。
+
+- 首次部署/維運指令（package.json 已提供快捷腳本）
+  - 登入：`npm run fly:login`
+  - 建立 Volume：`npm run fly:volume`（region 對齊 `fly.toml`）
+  - 設定 CORS：`PAGES_ORIGIN=https://point-lab.pages.dev npm run fly:set-origins`
+  - 部署：`npm run fly:deploy`；狀態/日誌：`npm run fly:status`、`npm run fly:logs`
+
+- 匯入資料（JSON → SQLite）
+  - 修正後腳本支援 `POINTLAB_DB_PATH`。在 Fly 機器執行：
+    - `flyctl ssh console -C 'sh -lc "cd /app && POINTLAB_DB_PATH=/app/data/pointlab.db node server/scripts/migrate-from-json.js"'`
+  - 驗證：`curl "https://pointlab-api.fly.dev/api/topics?page=1&size=5"`
+
+- 常見問題
+  - 線上新增 405：通常是 fetch 未走 `withBase()`，已在程式統一修正。
+  - 線上無資料：確認 DB 路徑為 `/app/data/pointlab.db`，必要時重跑匯入腳本；或將 `/app/server/pointlab.db` 複製到 `/app/data/pointlab.db` 後重啟。

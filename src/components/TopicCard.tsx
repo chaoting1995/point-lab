@@ -8,7 +8,7 @@ import Typography from '@mui/material/Typography'
 import Box from '@mui/material/Box'
 import IconButton from '@mui/material/IconButton'
 import { ThumbsUp, ThumbsDown } from 'phosphor-react'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import useLanguage from '../i18n/useLanguage'
 import { formatRelativeAgo } from '../utils/text'
 import useConfirmDialog from '../hooks/useConfirmDialog'
@@ -34,25 +34,25 @@ export default function TopicCard({ topic, onDeleted, showMeta = true, showVote 
       setDeleting(false)
     }
   }
-  async function vote(delta: 1 | -1) {
+  const [voteState, setVoteState] = useState<'up'|'down'|undefined>(undefined)
+  useEffect(() => {
+    try { const v = localStorage.getItem(`pl:tv:${topic.id}`) as any; if (v==='up'||v==='down') setVoteState(v) } catch {}
+  }, [topic.id])
+  async function voteDir(dir: 'up'|'down') {
     if (busy) return
+    const current = voteState
+    const delta = current===dir ? (dir==='up'?-1:+1) : (!current ? (dir==='up'?+1:-1) : (dir==='up'?+2:-2))
     try {
       setBusy(true)
-      setScore((s) => s + delta)
-      const res = await fetch(withBase(`/api/topics/${topic.id}/vote`), {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ delta }),
-      })
+      setScore((s)=> s+delta)
+      const res = await fetch(withBase(`/api/topics/${topic.id}/vote`), { method:'PATCH', headers:{ 'Content-Type':'application/json' }, body: JSON.stringify({ delta }) })
       if (!res.ok) throw new Error('VOTE_FAILED')
-      const data = await res.json()
-      setScore(typeof data?.data?.score === 'number' ? data.data.score : 0)
+      const data = await res.json(); setScore(typeof data?.data?.score==='number'? data.data.score : 0)
+      const next = current===dir ? undefined : dir
+      setVoteState(next); try { if (next) localStorage.setItem(`pl:tv:${topic.id}`, next); else localStorage.removeItem(`pl:tv:${topic.id}`) } catch {}
     } catch {
-      // rollback on error
-      setScore((s) => s - delta)
-    } finally {
-      setBusy(false)
-    }
+      setScore((s)=> s-delta)
+    } finally { setBusy(false) }
   }
   return (
     <Card
@@ -137,10 +137,10 @@ export default function TopicCard({ topic, onDeleted, showMeta = true, showVote 
                 disabled={busy}
                 disableRipple
                 onMouseDown={(e) => { e.preventDefault(); e.stopPropagation() }}
-                onClick={(e) => { e.preventDefault(); e.stopPropagation(); vote(1) }}
-                sx={{ borderRadius: '10px' }}
+                onClick={(e) => { e.preventDefault(); e.stopPropagation(); voteDir('up') }}
+                sx={{ borderRadius: '10px', color: voteState==='up' ? 'var(--mui-palette-primary-main, #4f46e5)' : undefined, '&:hover': { color: 'var(--mui-palette-primary-dark, #4338ca)' }, '&:active': { color: 'var(--mui-palette-primary-dark, #4338ca)' }, '&.Mui-disabled': { color: '#cbd5e1' } }}
               >
-                <ThumbsUp size={16} weight="bold" />
+                <ThumbsUp size={18} weight={voteState==='up' ? 'fill' : 'regular'} />
               </IconButton>
               <Typography variant="subtitle2" sx={{ minWidth: 16, textAlign: 'center', fontWeight: 800 }}>
                 {score}
@@ -151,10 +151,10 @@ export default function TopicCard({ topic, onDeleted, showMeta = true, showVote 
                 disabled={busy}
                 disableRipple
                 onMouseDown={(e) => { e.preventDefault(); e.stopPropagation() }}
-                onClick={(e) => { e.preventDefault(); e.stopPropagation(); vote(-1) }}
-                sx={{ borderRadius: '10px' }}
+                onClick={(e) => { e.preventDefault(); e.stopPropagation(); voteDir('down') }}
+                sx={{ borderRadius: '10px', color: voteState==='down' ? 'var(--mui-palette-primary-main, #4f46e5)' : undefined, '&:hover': { color: 'var(--mui-palette-primary-dark, #4338ca)' }, '&:active': { color: 'var(--mui-palette-primary-dark, #4338ca)' }, '&.Mui-disabled': { color: '#cbd5e1' } }}
               >
-                <ThumbsDown size={16} weight="bold" />
+                <ThumbsDown size={18} weight={voteState==='down' ? 'fill' : 'regular'} />
               </IconButton>
             </Box>
             )}

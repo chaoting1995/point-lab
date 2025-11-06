@@ -10,6 +10,10 @@
 ## 範圍（Scope）
 - 主題箱（/topics）：主題列表 + SortTabs（最新/熱門/最早）、TopicCard（讚/倒讚/數量/時間/刪除）
 - 主題詳頁（/topics/:id）：PageHeader、SortTabs、PointCard 列表；對立模式左右分欄（讚同/其他）
+  - 觀點卡片可開啟「評論彈窗」：桌面 Dialog（max-width 576, r=10），行動 Drawer（自下而上）
+  - 評論：一級/二級、排序（最舊/最新/熱門）、分頁（每頁 10 筆）、二級展開/收合、投票
+  - 留言輸入：預設單行，自動增高（最多 6 行）；送出按鈕固定圓形；訪客名稱首次輸入後寫入 localStorage
+  - 長文截斷：預設顯示 3 行，顯示「查看更多/查看更少」
 - 新增主題（/topics/add）：MUI 表單；發布成功後鎖定表單，顯示「新增觀點」
 - 新增觀點（/points/add?topic=）：MUI 表單；對立模式顯示「選擇立場」（讚同/其他）
 - 側欄選單（Drawer）：首頁、主題箱、指南、登入/登出、語系切換
@@ -35,20 +39,21 @@
 ## 語言（i18n）
 - 支援 zh-Hant / zh-Hans / en；單一按鈕循環切換（繁→簡→英）
 - UI 文案覆蓋 header/menu、tabs、actions、topics/points、guide 等；使用者內容不翻譯
-- 使用 localStorage 記錄選擇
+- 使用 localStorage 記錄選擇；評論/操作文案包含：reply/replying/cancel/viewRepliesCount/hideReplies/commentPlaceholder/share 等
 
 ## 技術棧
 - 前端：React + TypeScript + Vite + MUI + Phosphor Icons
-- 後端：Express（JSON 檔），Vite dev 代理 `/api`
+- 後端：Express（SQLite 優先，JSON fallback），Vite dev 代理 `/api`
 - i18n：opencc-js（繁→簡轉換）+ 自建字典
 
 ## 目前狀態（摘要）
-- 已完成：主題/觀點 CRUD（新增/刪除）、排序 tabs、對立模式（position）、i18n、Header/Drawer、指南頁、刪除確認通用元件與 hook、列表穩定刷新
+- 已完成：主題/觀點 CRUD（新增/刪除）、排序 tabs、對立模式（position）、i18n、Header/Drawer、指南頁、刪除確認通用元件與 hook、列表穩定刷新、評論（列表/分頁/二級回覆/投票/輸入）、Hack→Point 命名統一（移除 hacks.json）
 - 進行中/待辦：全面 Hack→Point 檔名類型清理（已啟動，改用 points.json）、無限捲動 hook 統一、更多驗證與錯誤提示優化
 
 ## 驗收標準（Acceptance Criteria）
 - /topics 可載入並依 tabs 排序；刪除主題會二次確認且刪除後列表自動刷新
 - /topics/:id 可載入主題資訊與觀點列表；對立模式左右分欄、卡片著色；刪除觀點會即時移除
+  - 觀點卡片開啟評論彈窗；排序/分頁正確；回覆模式送出後自動展開該父留言；長文顯示「See more/See less」
 - /topics/add 發布成功 Snackbar 並鎖定表單，顯示「新增觀點」引導；未輸入名稱不可發布
 - /points/add?topic=… 已載入主題標題/描述；對立模式需選擇立場（未選不可發布）
 - 多語系切換即時生效（含新文案）；使用者文字維持原文
@@ -66,7 +71,7 @@
 4. 如需只保留 id 方案：先維持後端 id/slug 相容，前端只產生 id 連結，觀察後再移除相容或加 301 轉址
 
 ## 技術債 / TODO（資料層）
-- 目前資料庫使用 JSON 檔（server/data/*.json）
+- 目前資料庫使用 SQLite（better-sqlite3）或 JSON fallback（server/data/*.json）；已移除 hacks.json，相容匯入改用 points.json
   - 風險：
     - 併發寫入衝突、無交易/回滾、檔案毀損風險
     - 效能差（整檔讀寫、無索引）、多機不同步、缺乏權限與審計
@@ -81,6 +86,7 @@
 更新紀錄：
 - 2025-11-04：初版 PRD
 - 2025-11-05：加入主題/觀點 API、對立模式(position)、刪除流程與通用確認彈窗、同時啟動前後端腳本與說明
+ - 2025-11-07：加入評論（API/前端）、投票行為統一（每項三態：不投/讚/倒讚；允許負數）、移除 hacks.json、部署策略（Pages+Fly）
 
 ## 決策紀錄（Decision Log）
 - 本段將持續更新，作為需求與設計決策的單一事實來源（SSOT）。

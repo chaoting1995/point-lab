@@ -42,11 +42,20 @@ type ActionsTranslation = {
   upvoted: string
   comments: string
   share: string
+  report?: string
   copy: string
   copied: string
   posted: string
   publish?: string
   save?: string
+  reply?: string
+  replying?: string
+  cancel?: string
+  commentPlaceholder?: string
+  viewReplies?: string
+  hideReplies?: string
+  replies?: string
+  viewRepliesCount?: string // use {n}
 }
 
 type FooterTranslation = {
@@ -144,6 +153,9 @@ export type AppTranslations = {
     seeLess?: string
     edit?: string
     delete?: string
+    counts?: {
+      comments?: string // use {n}
+    }
     time?: {
       justNow: string
       hours: string // use {n}
@@ -190,13 +202,22 @@ const baseZhHant: AppTranslations = {
   actions: {
     upvote: '我也要試',
     upvoted: '已收藏',
-    comments: '回饋',
+    comments: '評論',
     share: '分享',
+    report: '報告',
     copy: '複製連結',
     copied: '已複製',
     posted: '發布',
     publish: '發布',
     save: '儲存',
+    reply: '回覆',
+    replying: '正在回覆',
+    cancel: '取消',
+    commentPlaceholder: '寫下你的評論…',
+    viewReplies: '查看',
+    hideReplies: '收合回覆',
+    replies: '則回覆',
+    viewRepliesCount: '查看 {n} 則回覆',
   },
   footer: {
     discover: {
@@ -274,6 +295,9 @@ const baseZhHant: AppTranslations = {
     seeLess: '查看更少',
     edit: '編輯',
     delete: '刪除',
+    counts: {
+      comments: '{n} 則評論',
+    },
     time: {
       justNow: '剛剛',
       hours: '{n} 小時前',
@@ -347,9 +371,19 @@ export const translations: Record<Locale, AppTranslations> = {
     },
     actions: {
       ...baseZhHant.actions,
+      share: 'Share',
       posted: 'Posted',
       publish: 'Publish',
       save: 'Save',
+      report: 'Report',
+      reply: 'Reply',
+      replying: 'Replying to',
+      cancel: 'Cancel',
+      viewReplies: 'View',
+      hideReplies: 'Hide replies',
+      replies: 'replies',
+      commentPlaceholder: 'Write your comment…',
+      viewRepliesCount: 'View {n} replies',
     },
     tabs: {
       hot: 'Hot',
@@ -445,6 +479,9 @@ export const translations: Record<Locale, AppTranslations> = {
       seeLess: 'See less',
       edit: 'Edit',
       delete: 'Delete',
+      counts: {
+        comments: '{n} comments',
+      },
       time: {
         justNow: 'a few seconds ago',
         hours: '{n} hours ago',

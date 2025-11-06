@@ -56,9 +56,7 @@ function main() {
   ensureSchema(db)
 
   const topics = readJson('topics.json', [])
-  // 兼容：優先 points.json，若不存在退回 hacks.json
-  const hasPoints = fs.existsSync(path.join(DATA_DIR, 'points.json'))
-  const points = readJson(hasPoints ? 'points.json' : 'hacks.json', [])
+  const points = readJson('points.json', [])
 
   const insertTopic = db.prepare(`insert into topics (id,name,description,slug,mode,score,count,created_at)
     values (@id,@name,@description,@slug,@mode,@score,@count,@created_at)

@@ -10,6 +10,7 @@ import useLanguage from '../i18n/useLanguage'
 import { formatRelativeAgo } from '../utils/text'
 import useConfirmDialog from '../hooks/useConfirmDialog'
 import { withBase } from '../api/client'
+import CommentsPanel from './CommentsPanel'
 
 export default function PointCard({ point, onDeleted }: { point: Point; onDeleted?: (id: string) => void }) {
   const { t, locale } = useLanguage()
@@ -20,20 +21,25 @@ export default function PointCard({ point, onDeleted }: { point: Point; onDelete
   const descRef = useRef<HTMLParagraphElement | null>(null)
   const [deleting, setDeleting] = useState(false)
   const { confirm, ConfirmDialogEl } = useConfirmDialog()
+  const [commentsOpen, setCommentsOpen] = useState(false)
   const bgColor = point.position === 'agree'
     ? 'rgba(16, 185, 129, 0.08)'
     : point.position === 'others'
     ? 'rgba(239, 68, 68, 0.08)'
     : 'background.paper'
 
-  async function vote(delta: 1 | -1) {
+  const [voteState, setVoteState] = useState<'up'|'down'|undefined>(undefined)
+  useEffect(() => { try { const v = localStorage.getItem(`pl:pv:${point.id}`) as any; if (v==='up'||v==='down') setVoteState(v) } catch {} }, [point.id])
+  function voteDir(dir:'up'|'down') {
     if (busy) return
-    try {
-      setBusy(true)
-      setScore((s) => s + delta)
-    } finally {
-      setBusy(false)
-    }
+    setBusy(true)
+    const current = voteState
+    const delta = current===dir ? (dir==='up'?-1:+1) : (!current ? (dir==='up'?+1:-1) : (dir==='up'?+2:-2))
+    setScore((s)=> (s||0)+delta)
+    const next = current===dir ? undefined : dir
+    setVoteState(next)
+    try { if (next) localStorage.setItem(`pl:pv:${point.id}`, next); else localStorage.removeItem(`pl:pv:${point.id}`) } catch {}
+    setBusy(false)
   }
 
   const createdLabel = useMemo(() => {
@@ -81,6 +87,7 @@ export default function PointCard({ point, onDeleted }: { point: Point; onDelete
   }, [point.description])
 
   return (
+    <>
     <Card
       elevation={0}
       sx={{
@@ -139,7 +146,7 @@ export default function PointCard({ point, onDeleted }: { point: Point; onDelete
               </Box>
             )}
             <Typography component="div" variant="caption" sx={{ color: 'text.secondary', fontSize: 12, mt: 'auto' }}>
-              {authorName} | {createdLabel} | {point.comments ?? 0} 則評論 | 報告 | {t('actions.share')}
+              {authorName} | {createdLabel} | <button type="button" className="card-action" onClick={() => setCommentsOpen(true)}>{(t('common.counts.comments') || '{n} 則評論').replace('{n}', String(point.comments ?? 0))}</button> | {t('actions.report') || '報告'} | {t('actions.share')}
               {' '}|{' '}
               <button
                 type="button"
@@ -172,18 +179,20 @@ export default function PointCard({ point, onDeleted }: { point: Point; onDelete
 
           {/* 右欄：投票垂直區 */}
           <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 0.5 }}>
-            <IconButton size="small" aria-label="讚" onClick={() => vote(1)} disabled={busy} sx={{ borderRadius: '10px' }}>
-              <ThumbsUp size={16} weight="bold" />
+            <IconButton size="small" aria-label="讚" onClick={() => voteDir('up')} disabled={busy} sx={{ borderRadius: '10px', color: voteState==='up' ? 'var(--mui-palette-primary-main, #4f46e5)' : undefined, '&:hover': { color: 'var(--mui-palette-primary-dark, #4338ca)' }, '&:active': { color: 'var(--mui-palette-primary-dark, #4338ca)' }, '&.Mui-disabled': { color: '#cbd5e1' } }}>
+              <ThumbsUp size={18} weight={voteState==='up' ? 'fill' : 'regular'} />
             </IconButton>
             <Typography variant="subtitle2" sx={{ minWidth: 16, textAlign: 'center', fontWeight: 800 }}>
               {score}
             </Typography>
-            <IconButton size="small" aria-label="倒讚" onClick={() => vote(-1)} disabled={busy} sx={{ borderRadius: '10px' }}>
-              <ThumbsDown size={16} weight="bold" />
+            <IconButton size="small" aria-label="倒讚" onClick={() => voteDir('down')} disabled={busy} sx={{ borderRadius: '10px', color: voteState==='down' ? 'var(--mui-palette-primary-main, #4f46e5)' : undefined, '&:hover': { color: 'var(--mui-palette-primary-dark, #4338ca)' }, '&:active': { color: 'var(--mui-palette-primary-dark, #4338ca)' }, '&.Mui-disabled': { color: '#cbd5e1' } }}>
+              <ThumbsDown size={18} weight={voteState==='down' ? 'fill' : 'regular'} />
             </IconButton>
           </Box>
         </Box>
       </CardContent>
     </Card>
+    <CommentsPanel open={commentsOpen} onClose={() => setCommentsOpen(false)} pointId={point.id} />
+    </>
   )
 }

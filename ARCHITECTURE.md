@@ -34,7 +34,7 @@
   - `PATCH /api/points/:id`（description/position）
   - `DELETE /api/points/:id`
 
-備註：舊路由 `/api/hacks` 已移除；僅在匯入腳本保留對舊檔名 `hacks.json` 的兼容。
+備註：舊路由 `/api/hacks` 已移除。
 
 ## 資料庫與 Schema
 - 引擎：better-sqlite3（WAL 模式），檔案 `server/pointlab.db`
@@ -42,7 +42,7 @@
   - `topics(id text pk, name, description, slug, mode 'open'|'duel', score int, count int, created_at text)`
   - `points(id text pk, topic_id fk, description, author_name, author_type, position, upvotes, comments, shares, created_at text)`
 - 索引：topics(created_at/score)、points(topic_id/position/created_at)
-- 匯入：`npm run migrate:json` 將 `server/data/topics.json` 與 `points.json(相容 hacks.json)` 匯入 DB。
+- 匯入：`npm run migrate:json` 將 `server/data/topics.json` 與 `points.json` 匯入 DB。
 
 ## 前端頁面與元件（摘要）
 - TopicsPage：列表/排序/空狀態（`src/pages/TopicsPage.tsx`）
@@ -66,4 +66,3 @@
 - 前端將 `Hack*` 元件與靜態資料逐步重命名為 `Point*`。
 - JSON 模式加原子寫入（tmp+rename）與簡易鎖。
 - 提供 OpenAPI 規格或 endpoints 文件，便於第三方整合與快速檢查。
-

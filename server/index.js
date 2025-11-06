@@ -240,6 +240,53 @@ app.delete('/api/points/:id', (req, res) => {
 })
 // 舊 /api/hacks 路由已移除，請改用 /api/points
 
+// Comments API
+// List comments (top-level) for a point
+app.get('/api/points/:id/comments', (req, res) => {
+  try {
+    const { sort = 'old', page = '1', size = '10', parent } = req.query
+    const p = Math.max(1, parseInt(page, 10) || 1)
+    const s = Math.max(1, Math.min(100, parseInt(size, 10) || 10))
+    const { items, total } = repo.listComments({ pointId: req.params.id, parentId: parent || null, sort, page: p, size: s })
+    const mapped = (items || []).map((it) => ({
+      id: it.id,
+      pointId: it.point_id || it.pointId,
+      parentId: it.parent_id || it.parentId || undefined,
+      content: it.content,
+      upvotes: it.upvotes || 0,
+      createdAt: it.created_at || it.createdAt,
+      author: it.author_name ? { name: it.author_name, role: it.author_type || 'guest' } : (it.author || { name: '匿名', role: 'guest' }),
+      childCount: it.child_count || 0,
+    }))
+    res.json({ items: mapped, page: p, size: s, total })
+  } catch (e) {
+    res.status(500).json({ error: 'READ_COMMENTS_FAILED' })
+  }
+})
+// Create comment
+app.post('/api/points/:id/comments', (req, res) => {
+  try {
+    const { content, parentId, authorName, authorType } = req.body || {}
+    if (!content || !String(content).trim()) return res.status(400).json({ error: 'CONTENT_REQUIRED' })
+    const id = `c-${Date.now()}`
+    const row = repo.createComment({ id, pointId: req.params.id, parentId, content: String(content).trim(), authorName, authorType })
+    res.status(201).json({ data: { ...row, createdAt: row.created_at || row.createdAt } })
+  } catch (e) {
+    res.status(500).json({ error: 'CREATE_COMMENT_FAILED' })
+  }
+})
+// Vote comment
+app.patch('/api/comments/:id/vote', (req, res) => {
+  try {
+    const { delta } = req.body || {}
+    const row = repo.voteComment(req.params.id, delta)
+    if (!row) return res.status(404).json({ error: 'NOT_FOUND' })
+    res.json({ data: { ...row, createdAt: row.created_at || row.createdAt } })
+  } catch (e) {
+    res.status(500).json({ error: 'VOTE_COMMENT_FAILED' })
+  }
+})
+
 const PORT = process.env.PORT || 8787
 app.listen(PORT, () => {
   // eslint-disable-next-line no-console

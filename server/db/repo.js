@@ -34,7 +34,7 @@ export function init() {
   try {
     db = sqlite(DB_PATH)
     db.pragma('journal_mode = WAL')
-    db.exec(`
+  db.exec(`
       create table if not exists topics (
         id text primary key,
         name text not null,
@@ -62,6 +62,19 @@ export function init() {
       create index if not exists idx_topics_score on topics(score desc, created_at asc);
       create index if not exists idx_points_topic on points(topic_id, created_at desc);
       create index if not exists idx_points_topic_pos on points(topic_id, position, created_at desc);
+      create table if not exists comments (
+        id text primary key,
+        point_id text not null,
+        parent_id text,
+        author_name text,
+        author_type text,
+        content text not null,
+        upvotes integer default 0,
+        created_at text not null,
+        foreign key(point_id) references points(id) on delete cascade
+      );
+      create index if not exists idx_comments_point on comments(point_id, created_at asc);
+      create index if not exists idx_comments_parent on comments(parent_id, created_at asc);
     `)
     return true
   } catch {
@@ -233,15 +246,75 @@ export const repo = {
   },
   incrementTopicCount(topicId, delta) {
     if (db) {
-      db.prepare('update topics set count = max(coalesce(count,0)+?,0) where id=?').run(delta, topicId)
+      db.prepare('update topics set count = coalesce(count,0)+? where id=?').run(delta, topicId)
       return
     }
     const topics = readJson('topics.json')
     const idx = topics.findIndex(t => t.id === topicId)
     if (idx !== -1) {
-      topics[idx].count = Math.max(0, (topics[idx].count || 0) + delta)
+      topics[idx].count = (topics[idx].count || 0) + delta
       writeJson('topics.json', topics)
     }
+  },
+  // Comments
+  listComments({ pointId, parentId = null, sort = 'old', page = 1, size = 10 }) {
+    if (db) {
+      const where = parentId ? 'where point_id=? and parent_id=?' : 'where point_id=? and parent_id is null'
+      let order = 'created_at asc'
+      if (sort === 'new') order = 'created_at desc'
+      else if (sort === 'hot') order = 'upvotes desc, created_at asc'
+      const params = parentId ? [pointId, parentId] : [pointId]
+      const total = db.prepare(`select count(*) as c from comments ${where}`).get(...params).c
+      const items = db.prepare(`select * from comments ${where} order by ${order} limit ? offset ?`).all(...params, size, (page - 1) * size)
+      // enrich with child counts for top-level
+      if (!parentId) {
+        const cntStmt = db.prepare('select count(*) as c from comments where parent_id=?')
+        for (const it of items) {
+          it.child_count = cntStmt.get(it.id).c
+        }
+      }
+      return { items, total }
+    }
+    const all = readJson('comments.json')
+    let items = all.filter(c => c.pointId === pointId && (parentId ? c.parentId === parentId : !c.parentId))
+    if (sort === 'new') items = [...items].sort((a,b)=> new Date(b.createdAt)-new Date(a.createdAt))
+    else if (sort === 'hot') items = [...items].sort((a,b)=> (b.upvotes??0)-(a.upvotes??0) || (new Date(a.createdAt)-new Date(b.createdAt)))
+    else items = [...items].sort((a,b)=> new Date(a.createdAt)-new Date(b.createdAt))
+    const pageItems = items.slice((page-1)*size, (page-1)*size+size)
+    if (!parentId) {
+      const byParent = all.reduce((m, c) => { if (c.parentId) m[c.parentId]=(m[c.parentId]||0)+1; return m }, {})
+      for (const it of pageItems) it.child_count = byParent[it.id] || 0
+    }
+    return { items: pageItems, total: items.length }
+  },
+  createComment({ id, pointId, parentId, content, authorName, authorType }) {
+    if (db) {
+      db.prepare('insert into comments (id,point_id,parent_id,author_name,author_type,content,upvotes,created_at) values (?,?,?,?,?,?,0,?)')
+        .run(id, pointId, parentId || null, authorName || null, authorType || 'guest', content, nowIso())
+      // bump point comments count
+      db.prepare('update points set comments = coalesce(comments,0)+1 where id=?').run(pointId)
+      return db.prepare('select * from comments where id=?').get(id)
+    }
+    const all = readJson('comments.json')
+    const rec = { id, pointId, parentId, content, upvotes: 0, author: { name: authorName || '匿名', role: authorType || 'guest' }, createdAt: nowIso() }
+    all.push(rec)
+    writeJson('comments.json', all)
+    return rec
+  },
+  voteComment(id, delta) {
+    if (db) {
+      const row = db.prepare('select * from comments where id=?').get(id)
+      if (!row) return null
+      const next = (row.upvotes ?? 0) + (delta === -1 ? -1 : 1)
+      db.prepare('update comments set upvotes=? where id=?').run(next, id)
+      return db.prepare('select * from comments where id=?').get(id)
+    }
+    const all = readJson('comments.json')
+    const idx = all.findIndex(c => c.id === id)
+    if (idx === -1) return null
+    all[idx].upvotes = (all[idx].upvotes || 0) + (delta === -1 ? -1 : 1)
+    writeJson('comments.json', all)
+    return all[idx]
   },
 }
 

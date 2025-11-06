@@ -60,6 +60,15 @@ Point（觀點）
 - 建立：`POST /api/points` 參數：`description`、`topicId?`、`authorName?`、`authorType=guest|user`、`position?`
 - 刪除：`DELETE /api/points/:id`（會同步將對應 Topic 的 `count - 1`）
 
+Comments（評論）
+- 欄位：`id`、`pointId`、`parentId?`、`content`、`author{name,role}`、`upvotes`、`createdAt`
+- 一級/二級列表：
+  - `GET /api/points/:id/comments?sort=old|new|hot&page=1&size=10`（一級）
+  - `GET /api/points/:id/comments?sort=old|new|hot&page=1&size=10&parent=<commentId>`（二級）
+  - 回傳一級評論含 `childCount` 供展開提示
+- 建立：`POST /api/points/:id/comments` Body：`{ content, parentId?, authorName?, authorType? }`
+- 投票：`PATCH /api/comments/:id/vote` Body：`{ delta: 1 | -1 | ±2 }`（允許負數）
+
 注意事項
 - 前端路由一律使用 `id`；後端仍容許以舊 `slug` 查找（避免舊連結 404）。
 - 對立（duel）模式：新增觀點頁提供「選擇立場」按鈕組（讚同/其他）；詳頁左右分欄顯示兩邊觀點。
@@ -102,7 +111,7 @@ npm run migrate:json
 ```
 
 - 匯入腳本位置：`server/scripts/migrate-from-json.js`
-- 匯入內容：topics.json → topics、points.json（相容舊名 hacks.json）→ points（會保留 createdAt/score/count/position 等欄位）
+- 匯入內容：topics.json → topics、points.json → points（會保留 createdAt/score/count/position 等欄位）
 - 之後即可僅用 SQLite 提供 API；JSON 可保留為備援快照。
 
 ## Google 登入設定（可選，建議開啟）
