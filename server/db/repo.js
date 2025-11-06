@@ -11,7 +11,7 @@ try {
 } catch {}
 
 const DATA_DIR = path.join(path.dirname(new URL(import.meta.url).pathname), '..', 'data')
-const DB_PATH = path.join(path.dirname(new URL(import.meta.url).pathname), '..', 'pointlab.db')
+const DB_PATH = process.env.POINTLAB_DB_PATH || path.join(path.dirname(new URL(import.meta.url).pathname), '..', 'pointlab.db')
 
 function readJson(file, fallback = []) {
   try {

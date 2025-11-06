@@ -1,42 +1,57 @@
-# Fly.io configuration for PointLab API
-app = "pointlab-api"    # TODO: change to your unique app name
-primary_region = "sin"   # TODO: choose closest region (e.g., sin/hkg/nrt/syd)
+# fly.toml app configuration file generated for pointlab-api on 2025-11-07T00:18:53+08:00
+#
+# See https://fly.io/docs/reference/configuration/ for information about how to use this file.
+#
+
+app = 'pointlab-api'
+primary_region = 'sin'
 
 [build]
-  dockerfile = "Dockerfile"
+  dockerfile = 'Dockerfile'
 
 [env]
-  PORT = "8787"
-  # Set your frontend origin(s), comma-separated
-  # Example: https://pointlab.com,https://www.pointlab.com
-  ALLOWED_ORIGINS = "https://pointlab.com"
+  ALLOWED_ORIGINS = 'https://pointlab.com'
+  PORT = '8787'
+  POINTLAB_DB_PATH = '/app/data/pointlab.db'
 
 [[mounts]]
-  source = "data"
-  destination = "/app/server"
+  source = 'data'
+  destination = '/app/data'
+
+[http_service]
+  internal_port = 8787
+  force_https = true
+  auto_stop_machines = 'stop'
+  auto_start_machines = true
+  min_machines_running = 0
+  processes = ['app']
 
 [[services]]
-  protocol = "tcp"
+  protocol = 'tcp'
   internal_port = 8787
 
   [[services.ports]]
-    handlers = ["http"]
     port = 80
+    handlers = ['http']
 
   [[services.ports]]
-    handlers = ["tls", "http"]
     port = 443
+    handlers = ['tls', 'http']
 
   [services.concurrency]
-    type = "requests"
+    type = 'requests'
     hard_limit = 25
     soft_limit = 20
 
   [[services.http_checks]]
-    interval = 10000
-    grace_period = "5s"
-    method = "get"
-    path = "/api/health"
-    protocol = "http"
-    timeout = 2000
+    interval = '10s'
+    timeout = '2s'
+    grace_period = '5s'
+    method = 'get'
+    path = '/api/health'
+    protocol = 'http'
 
+[[vm]]
+  memory = '1gb'
+  cpu_kind = 'shared'
+  cpus = 1
