@@ -13,8 +13,7 @@ ENV PORT=8787
 COPY package*.json ./
 RUN npm ci --omit=dev
 COPY server ./server
-# include dist so server can serve static as fallback if needed
-COPY dist ./dist
+# include built frontend from builder so server可選擇服務靜態檔
+COPY --from=builder /app/dist ./dist
 EXPOSE 8787
 CMD ["node", "server/index.js"]
-
