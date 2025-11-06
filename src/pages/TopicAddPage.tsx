@@ -4,7 +4,6 @@ import { useState } from 'react'
 import useLanguage from '../i18n/useLanguage'
 import Box from '@mui/material/Box'
 import Stack from '@mui/material/Stack'
-import Typography from '@mui/material/Typography'
 import TextField from '@mui/material/TextField'
 import Alert from '@mui/material/Alert'
 import Snackbar from '@mui/material/Snackbar'
@@ -16,7 +15,6 @@ import RadioGroup from '@mui/material/RadioGroup'
 import FormControlLabel from '@mui/material/FormControlLabel'
 import Radio from '@mui/material/Radio'
 import PageHeader from '../components/PageHeader'
-// PageHeader not used on this page header row
 
 export default function TopicAddPage() {
   const navigate = useNavigate()

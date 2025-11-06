@@ -4,7 +4,7 @@ import CardContent from '@mui/material/CardContent'
 import Typography from '@mui/material/Typography'
 import Box from '@mui/material/Box'
 import IconButton from '@mui/material/IconButton'
-import { ThumbsUp, ThumbsDown, ShareNetwork } from 'phosphor-react'
+import { ThumbsUp, ThumbsDown } from 'phosphor-react'
 import type { Point } from '../data/points'
 import useLanguage from '../i18n/useLanguage'
 import { formatRelativeAgo } from '../utils/text'
@@ -35,7 +35,10 @@ export default function PointCard({ point, onDeleted }: { point: Point; onDelete
     }
   }
 
-  const createdLabel = useMemo(() => formatRelativeAgo(point.createdAt, locale), [point.createdAt, locale])
+  const createdLabel = useMemo(() => {
+    const ts = point.createdAt || new Date().toISOString()
+    return formatRelativeAgo(ts, locale)
+  }, [point.createdAt, locale])
   const authorName = point.author?.name || '匿名'
 
   async function remove() {

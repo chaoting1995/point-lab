@@ -20,7 +20,7 @@ export default function PointEditPage() {
   const { id = '' } = useParams()
   const [params] = useSearchParams()
   const topicId = params.get('topic') || ''
-  const [point, setPoint] = useState<Point | null>(null)
+  // 不需整體狀態，直接落入各欄位
   const [topic, setTopic] = useState<Topic | null>(null)
   const [description, setDescription] = useState('')
   const [submitting, setSubmitting] = useState(false)
@@ -34,7 +34,6 @@ export default function PointEditPage() {
       try {
         const resp = await getJson<ItemResponse<Point>>(`/api/points/${id}`)
         if (aborted) return
-        setPoint(resp.data)
         setDescription(resp.data.description || '')
         setPositionSel((resp.data as any).position === 'agree' || (resp.data as any).position === 'others' ? (resp.data as any).position : null)
       } catch (e) {

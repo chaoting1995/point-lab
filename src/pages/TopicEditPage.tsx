@@ -15,7 +15,7 @@ export default function TopicEditPage() {
   const navigate = useNavigate()
   const { t } = useLanguage()
   const { id = '' } = useParams()
-  const [topic, setTopic] = useState<Topic | null>(null)
+  // 僅用於初始化表單，無需保存整個 topic 狀態
   const [name, setName] = useState('')
   const [description, setDescription] = useState('')
   const [submitting, setSubmitting] = useState(false)
@@ -29,7 +29,6 @@ export default function TopicEditPage() {
       try {
         const resp = await getJson<ItemResponse<Topic>>(`/api/topics/id/${id}`)
         if (aborted) return
-        setTopic(resp.data)
         setName(resp.data.name || '')
         setDescription(resp.data.description || '')
       } catch (e) {

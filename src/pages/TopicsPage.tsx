@@ -11,7 +11,6 @@ import PrimaryCtaButton from '../components/PrimaryCtaButton'
 import TopicCard from '../components/TopicCard'
 import SortTabs from '../components/SortTabs'
 import type { SortKey } from '../hooks/useSortTabs'
-import { usePagedList } from '../hooks/usePagedList'
 import PageHeader from '../components/PageHeader'
 
 export default function TopicsPage() {

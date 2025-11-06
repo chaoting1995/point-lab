@@ -12,7 +12,8 @@ import TopicCard from '../components/TopicCard'
 import type { Topic } from '../data/topics'
 import { getJson, type ItemResponse, type ListResponse } from '../api/client'
 import useAuth from '../auth/AuthContext'
-import Button from '@mui/material/Button'
+import FormControlLabel from '@mui/material/FormControlLabel'
+import Switch from '@mui/material/Switch'
 import DuelTabs, { type DuelValue } from '../components/DuelTabs'
 
 export default function PointAddPage() {
@@ -110,7 +111,7 @@ export default function PointAddPage() {
             {user ? (
               <>
                 <FormControlLabel
-                  control={<Switch checked={useGuest} onChange={(e) => setUseGuest(e.target.checked)} />}
+                  control={<Switch checked={useGuest} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setUseGuest(e.target.checked)} />}
                   label={t('points.add.useGuest') || '使用訪客身份'}
                 />
                 {useGuest && (
