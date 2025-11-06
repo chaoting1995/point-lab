@@ -11,7 +11,7 @@ import PageHeader from '../components/PageHeader'
 import type { Point } from '../data/points'
 import type { Topic } from '../data/topics'
 import TopicCard from '../components/TopicCard'
-import { getJson, type ItemResponse, type ListResponse } from '../api/client'
+import { getJson, type ItemResponse, type ListResponse, withBase } from '../api/client'
 import DuelTabs, { type DuelValue } from '../components/DuelTabs'
 
 export default function PointEditPage() {
@@ -98,7 +98,7 @@ export default function PointEditPage() {
                 try {
                   setSubmitting(true)
                   setError(null)
-                  const res = await fetch(`/api/points/${id}`, {
+                  const res = await fetch(withBase(`/api/points/${id}`), {
                     method: 'PATCH',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ description: description.trim(), position: topic?.mode === 'duel' ? positionSel || undefined : undefined }),

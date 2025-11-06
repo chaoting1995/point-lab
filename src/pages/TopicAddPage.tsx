@@ -15,6 +15,7 @@ import RadioGroup from '@mui/material/RadioGroup'
 import FormControlLabel from '@mui/material/FormControlLabel'
 import Radio from '@mui/material/Radio'
 import PageHeader from '../components/PageHeader'
+import { withBase } from '../api/client'
 
 export default function TopicAddPage() {
   const navigate = useNavigate()
@@ -85,7 +86,7 @@ export default function TopicAddPage() {
                   try {
                     setSubmitting(true)
                     setError(null)
-                    const res = await fetch('/api/topics', {
+                    const res = await fetch(withBase('/api/topics'), {
                       method: 'POST',
                       headers: { 'Content-Type': 'application/json' },
                       body: JSON.stringify({ name: name.trim(), description: description.trim() || undefined, mode }),

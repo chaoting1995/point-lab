@@ -9,7 +9,7 @@ import Alert from '@mui/material/Alert'
 import Snackbar from '@mui/material/Snackbar'
 import PageHeader from '../components/PageHeader'
 import type { Topic } from '../data/topics'
-import { getJson, type ItemResponse } from '../api/client'
+import { getJson, type ItemResponse, withBase } from '../api/client'
 
 export default function TopicEditPage() {
   const navigate = useNavigate()
@@ -75,7 +75,7 @@ export default function TopicEditPage() {
                 try {
                   setSubmitting(true)
                   setError(null)
-                  const res = await fetch(`/api/topics/${id}`, {
+                  const res = await fetch(withBase(`/api/topics/${id}`), {
                     method: 'PATCH',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ name: name.trim(), description: description.trim() || undefined }),

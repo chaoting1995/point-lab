@@ -10,7 +10,7 @@ import Snackbar from '@mui/material/Snackbar'
 import PageHeader from '../components/PageHeader'
 import TopicCard from '../components/TopicCard'
 import type { Topic } from '../data/topics'
-import { getJson, type ItemResponse, type ListResponse } from '../api/client'
+import { getJson, type ItemResponse, type ListResponse, withBase } from '../api/client'
 import useAuth from '../auth/AuthContext'
 import FormControlLabel from '@mui/material/FormControlLabel'
 import Switch from '@mui/material/Switch'
@@ -163,7 +163,7 @@ export default function PointAddPage() {
                   try {
                     setSubmitting(true)
                     setError(null)
-                  const res = await fetch('/api/points', {
+                  const res = await fetch(withBase('/api/points'), {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({

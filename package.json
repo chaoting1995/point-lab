@@ -10,7 +10,13 @@
     "preview": "vite preview",
     "server": "node --watch server/index.js",
     "dev:all": "concurrently -n server,web -c cyan,green \"npm:server\" \"npm:dev\"",
-    "migrate:json": "node server/scripts/migrate-from-json.js"
+    "migrate:json": "node server/scripts/migrate-from-json.js",
+    "fly:login": "flyctl auth login",
+    "fly:volume": "flyctl volumes create data --size 1 --region sin",
+    "fly:set-origins": "flyctl secrets set ALLOWED_ORIGINS=$PAGES_ORIGIN",
+    "fly:deploy": "flyctl deploy",
+    "fly:status": "flyctl status",
+    "fly:logs": "flyctl logs --since 1h"
   },
   "dependencies": {
     "@emotion/react": "^11.14.0",

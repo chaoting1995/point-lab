@@ -1,4 +1,5 @@
 import { Link } from 'react-router-dom'
+import { withBase } from '../api/client'
 import type { Topic } from '../data/topics'
 import Card from '@mui/material/Card'
 import CardContent from '@mui/material/CardContent'
@@ -24,7 +25,7 @@ export default function TopicCard({ topic, onDeleted, showMeta = true, showVote 
     if (deleting) return
     try {
       setDeleting(true)
-      const res = await fetch(`/api/topics/${topic.id}`, { method: 'DELETE' })
+      const res = await fetch(withBase(`/api/topics/${topic.id}`), { method: 'DELETE' })
       if (!res.ok && res.status !== 204) throw new Error('DELETE_FAILED')
       onDeleted?.(topic.id)
     } catch {
@@ -38,7 +39,7 @@ export default function TopicCard({ topic, onDeleted, showMeta = true, showVote 
     try {
       setBusy(true)
       setScore((s) => s + delta)
-      const res = await fetch(`/api/topics/${topic.id}/vote`, {
+      const res = await fetch(withBase(`/api/topics/${topic.id}/vote`), {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ delta }),

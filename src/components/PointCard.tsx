@@ -9,6 +9,7 @@ import type { Point } from '../data/points'
 import useLanguage from '../i18n/useLanguage'
 import { formatRelativeAgo } from '../utils/text'
 import useConfirmDialog from '../hooks/useConfirmDialog'
+import { withBase } from '../api/client'
 
 export default function PointCard({ point, onDeleted }: { point: Point; onDeleted?: (id: string) => void }) {
   const { t, locale } = useLanguage()
@@ -45,7 +46,7 @@ export default function PointCard({ point, onDeleted }: { point: Point; onDelete
     if (deleting) return
     try {
       setDeleting(true)
-      const res = await fetch(`/api/points/${point.id}`, { method: 'DELETE' })
+      const res = await fetch(withBase(`/api/points/${point.id}`), { method: 'DELETE' })
       if (!res.ok && res.status !== 204) throw new Error('DELETE_FAILED')
       onDeleted?.(point.id)
     } catch {
