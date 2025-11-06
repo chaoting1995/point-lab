@@ -359,7 +359,7 @@
   margin-bottom: 28px;
 }
 
-.hack-grid {
+.point-grid {
   display: grid;
   gap: 16px;
 }

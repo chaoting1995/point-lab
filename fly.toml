@@ -1,0 +1,42 @@
+# Fly.io configuration for PointLab API
+app = "pointlab-api"    # TODO: change to your unique app name
+primary_region = "sin"   # TODO: choose closest region (e.g., sin/hkg/nrt/syd)
+
+[build]
+  dockerfile = "Dockerfile"
+
+[env]
+  PORT = "8787"
+  # Set your frontend origin(s), comma-separated
+  # Example: https://pointlab.com,https://www.pointlab.com
+  ALLOWED_ORIGINS = "https://pointlab.com"
+
+[[mounts]]
+  source = "data"
+  destination = "/app/server"
+
+[[services]]
+  protocol = "tcp"
+  internal_port = 8787
+
+  [[services.ports]]
+    handlers = ["http"]
+    port = 80
+
+  [[services.ports]]
+    handlers = ["tls", "http"]
+    port = 443
+
+  [services.concurrency]
+    type = "requests"
+    hard_limit = 25
+    soft_limit = 20
+
+  [[services.http_checks]]
+    interval = 10000
+    grace_period = "5s"
+    method = "get"
+    path = "/api/health"
+    protocol = "http"
+    timeout = 2000
+

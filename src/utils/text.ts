@@ -1,5 +1,6 @@
 import { Converter } from 'opencc-js'
 import type { Locale } from '../i18n/translations'
+import { translate } from '../i18n/translations'
 
 const twToCn = Converter({ from: 'tw', to: 'cn' })
 
@@ -25,18 +26,24 @@ export function formatRelativeDate(date: string, locale: Locale): string {
 }
 
 // Simple relative time formatter used in Topic cards
-export function formatRelativeAgo(date: string): string {
+export function formatRelativeAgo(date: string, locale?: Locale): string {
   const now = Date.now()
   const ts = new Date(date).getTime()
-  if (Number.isNaN(ts)) return 'a few seconds ago'
+  const loc: Locale | undefined = locale
+  const t = (key: string, n?: number) => {
+    if (!loc) return key === 'justNow' ? 'a few seconds ago' : key === 'hours' ? `${n} hours ago` : `${n} days ago`
+    const base = translate(loc, `common.time.${key}`)
+    return typeof base === 'string' ? base.replace('{n}', String(n ?? '')) : String(base)
+  }
+  if (Number.isNaN(ts)) return t('justNow')
   const diff = Math.max(0, now - ts)
   const oneHour = 60 * 60 * 1000
   const oneDay = 24 * oneHour
-  if (diff < oneHour) return 'a few seconds ago'
+  if (diff < oneHour) return t('justNow')
   if (diff < oneDay) {
     const h = Math.max(1, Math.floor(diff / oneHour))
-    return `${h} hours ago`
+    return t('hours', h)
   }
   const d = Math.max(1, Math.floor(diff / oneDay))
-  return `${d} days ago`
+  return t('days', d)
 }

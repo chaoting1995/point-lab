@@ -5,13 +5,13 @@ import Typography from '@mui/material/Typography'
 import Box from '@mui/material/Box'
 import IconButton from '@mui/material/IconButton'
 import { ThumbsUp, ThumbsDown, ShareNetwork } from 'phosphor-react'
-import type { Hack } from '../data/hacks'
+import type { Point } from '../data/points'
 import useLanguage from '../i18n/useLanguage'
 import { formatRelativeAgo } from '../utils/text'
 import useConfirmDialog from '../hooks/useConfirmDialog'
 
-export default function PointCard({ point, onDeleted }: { point: Hack; onDeleted?: (id: string) => void }) {
-  const { t } = useLanguage()
+export default function PointCard({ point, onDeleted }: { point: Point; onDeleted?: (id: string) => void }) {
+  const { t, locale } = useLanguage()
   const [score, setScore] = useState<number>(point.upvotes ?? 0)
   const [busy, setBusy] = useState(false)
   const [expanded, setExpanded] = useState(false)
@@ -35,7 +35,7 @@ export default function PointCard({ point, onDeleted }: { point: Hack; onDeleted
     }
   }
 
-  const createdLabel = useMemo(() => formatRelativeAgo(point.createdAt), [point.createdAt])
+  const createdLabel = useMemo(() => formatRelativeAgo(point.createdAt, locale), [point.createdAt, locale])
   const authorName = point.author?.name || '匿名'
 
   async function remove() {
@@ -139,6 +139,16 @@ export default function PointCard({ point, onDeleted }: { point: Hack; onDeleted
               {' '}|{' '}
               <button
                 type="button"
+                onClick={(e) => { e.preventDefault(); e.stopPropagation(); const q = point.topicId ? `?topic=${encodeURIComponent(point.topicId)}` : ''; window.location.assign(`/points/edit/${encodeURIComponent(point.id)}${q}`) }}
+                onMouseDown={(e) => { e.preventDefault(); e.stopPropagation() }}
+                onMouseUp={(e) => { e.preventDefault(); e.stopPropagation() }}
+                className="card-action"
+              >
+                {t('common.edit') || '編輯'}
+              </button>
+              {' '}|{' '}
+              <button
+                type="button"
                 onClick={async (e) => {
                   e.preventDefault();
                   e.stopPropagation();
@@ -148,9 +158,9 @@ export default function PointCard({ point, onDeleted }: { point: Hack; onDeleted
                 onMouseDown={(e) => { e.preventDefault(); e.stopPropagation() }}
                 onMouseUp={(e) => { e.preventDefault(); e.stopPropagation() }}
                 disabled={deleting}
-                style={{ border: 'none', background: 'transparent', color: '#ef4444', cursor: 'pointer', padding: 0 }}
+                className="card-action"
               >
-                刪除
+                {t('common.delete') || '刪除'}
               </button>
             </Typography>
             {ConfirmDialogEl}

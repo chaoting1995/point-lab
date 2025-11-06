@@ -44,7 +44,7 @@
 
 ## 目前狀態（摘要）
 - 已完成：主題/觀點 CRUD（新增/刪除）、排序 tabs、對立模式（position）、i18n、Header/Drawer、指南頁、刪除確認通用元件與 hook、列表穩定刷新
-- 進行中/待辦：全面 Hack→Point 檔名類型清理、無限捲動 hook 統一、更多驗證與錯誤提示優化
+- 進行中/待辦：全面 Hack→Point 檔名類型清理（已啟動，改用 points.json）、無限捲動 hook 統一、更多驗證與錯誤提示優化
 
 ## 驗收標準（Acceptance Criteria）
 - /topics 可載入並依 tabs 排序；刪除主題會二次確認且刪除後列表自動刷新
@@ -55,7 +55,7 @@
 - `npm run dev:all` 可同時啟動前後端；後端程式修改會自動重啟
 
 ## 待確認（Open Questions）
-- Hack→Point 全面改名的時程
+- Hack→Point 全面改名的時程（已開始，剩餘檔名與型別清理）
 - 是否恢復無限捲動（分頁載入）
 - 是否保留 slug 相容或加入 301 轉址
 

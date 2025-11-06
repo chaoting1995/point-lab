@@ -46,6 +46,7 @@ type ActionsTranslation = {
   copied: string
   posted: string
   publish?: string
+  save?: string
 }
 
 type FooterTranslation = {
@@ -84,6 +85,9 @@ export type AppTranslations = {
       success?: string
       firstPrompt?: string
     }
+    edit?: {
+      title?: string
+    }
     list?: {
       title: string
       subtitle: string
@@ -111,6 +115,9 @@ export type AppTranslations = {
       stanceOther?: string
       stanceLabel?: string
     }
+    edit?: {
+      title?: string
+    }
     empty?: string
     footerPrompt?: string
   }
@@ -135,6 +142,13 @@ export type AppTranslations = {
     allLoaded?: string
     seeMore?: string
     seeLess?: string
+    edit?: string
+    delete?: string
+    time?: {
+      justNow: string
+      hours: string // use {n}
+      days: string // use {n}
+    }
   }
 }
 
@@ -182,6 +196,7 @@ const baseZhHant: AppTranslations = {
     copied: '已複製',
     posted: '發布',
     publish: '發布',
+    save: '儲存',
   },
   footer: {
     discover: {
@@ -211,6 +226,7 @@ const baseZhHant: AppTranslations = {
       success: '主題已建立',
       firstPrompt: '這個主題空空如也，為主題添加第一個觀點吧！',
     },
+    edit: { title: '編輯主題' },
     list: {
       title: '主題箱',
       subtitle: '探索你感興趣的主題 / 建立更多主題 / 無需註冊！',
@@ -238,6 +254,7 @@ const baseZhHant: AppTranslations = {
       stanceOther: '其他',
       stanceLabel: '選擇立場',
     },
+    edit: { title: '編輯觀點' },
     empty: '這裡是思維的荒蕪之地，建立第一個觀點！\n無需註冊！',
     footerPrompt: '寫下你的洞見。無需註冊。',
   },
@@ -255,6 +272,13 @@ const baseZhHant: AppTranslations = {
     allLoaded: '已抵達思想邊界',
     seeMore: '查看更多',
     seeLess: '查看更少',
+    edit: '編輯',
+    delete: '刪除',
+    time: {
+      justNow: '剛剛',
+      hours: '{n} 小時前',
+      days: '{n} 天前',
+    },
   },
   guide: {
     title: '指南',
@@ -325,6 +349,7 @@ export const translations: Record<Locale, AppTranslations> = {
       ...baseZhHant.actions,
       posted: 'Posted',
       publish: 'Publish',
+      save: 'Save',
     },
     tabs: {
       hot: 'Hot',
@@ -374,6 +399,7 @@ export const translations: Record<Locale, AppTranslations> = {
         success: 'Topic created',
         firstPrompt: 'This topic is empty — add the first point!'
       },
+      edit: { title: 'Edit Topic' },
       list: {
         title: 'Topics',
         subtitle: 'Tap a topic to view related points.',
@@ -399,6 +425,7 @@ export const translations: Record<Locale, AppTranslations> = {
         stanceOther: 'Other',
         stanceLabel: 'Choose a position',
       },
+      edit: { title: 'Edit Point' },
       empty: 'It\'s quiet here. Be the first to post a point — no signup needed.',
       footerPrompt: 'Share your insight. No signup needed.',
     },
@@ -416,6 +443,13 @@ export const translations: Record<Locale, AppTranslations> = {
       allLoaded: 'All loaded',
       seeMore: 'See more',
       seeLess: 'See less',
+      edit: 'Edit',
+      delete: 'Delete',
+      time: {
+        justNow: 'a few seconds ago',
+        hours: '{n} hours ago',
+        days: '{n} days ago',
+      },
     },
   },
 }

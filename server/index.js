@@ -4,9 +4,12 @@ import cors from 'cors'
 import fs from 'node:fs'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
+import { repo } from './db/repo.js'
 
 const app = express()
-app.use(cors())
+// CORS: allow specific origins in production
+const allowed = (process.env.ALLOWED_ORIGINS || '').split(',').map(s => s.trim()).filter(Boolean)
+app.use(cors({ origin: allowed.length ? allowed : true, credentials: false }))
 app.use(express.json())
 // Avoid 304 on JSON APIs during dev to prevent empty bodies
 app.set('etag', false)
@@ -54,48 +57,19 @@ app.get('/api/health', (req, res) => {
 app.get('/api/topics', (req, res) => {
   try {
     const { page = '1', size = '30', sort = 'new' } = req.query
-    const topics = readJson('topics.json')
-    const withDefaults = topics.map((t, i) => {
-      let createdAt = t.createdAt
+    const p = Math.max(1, parseInt(page, 10) || 1)
+    const s = Math.max(1, Math.min(100, parseInt(size, 10) || 30))
+    const { items: raw, total } = repo.listTopics({ page: p, size: s, sort })
+    const items = (raw || []).map((t, i) => {
+      let createdAt = t.createdAt || t.created_at
       if (!createdAt && typeof t.id === 'string' && t.id.startsWith('t-')) {
         const ts = Number(t.id.slice(2))
         if (!Number.isNaN(ts)) createdAt = new Date(ts).toISOString()
       }
-      // 若仍無 createdAt，依原始索引推一個穩定時間（較前者較新）
-      if (!createdAt) {
-        createdAt = new Date(Date.now() - i * 24 * 60 * 60 * 1000).toISOString()
-      }
-      return {
-        ...t,
-        score: typeof t.score === 'number' ? t.score : 0,
-        createdAt: createdAt || new Date().toISOString(),
-      }
+      if (!createdAt) createdAt = new Date(Date.now() - i * 24 * 60 * 60 * 1000).toISOString()
+      return { ...t, createdAt }
     })
-    // 排序：new(預設)=時間新到舊、old=舊到新、hot=score 多到少
-    let items = withDefaults
-    if (sort === 'old') {
-      // 最舊：由舊到新
-      items = [...items].sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime())
-    } else if (sort === 'hot') {
-      // 熱門：依 score 高到低；同分時由舊到新
-      items = [...items].sort((a, b) => {
-        const sa = a.score ?? 0
-        const sb = b.score ?? 0
-        if (sb !== sa) return sb - sa
-        return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
-      })
-    } else {
-      // 最新：由新到舊
-      items = [...items].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
-    }
-
-    // 將缺漏欄位回寫，避免下次再缺
-    try { writeJson('topics.json', withDefaults) } catch {}
-    const p = Math.max(1, parseInt(page, 10) || 1)
-    const s = Math.max(1, Math.min(100, parseInt(size, 10) || 30))
-    const start = (p - 1) * s
-    const paged = items.slice(start, start + s)
-    res.json({ items: paged, page: p, size: s, total: items.length })
+    res.json({ items, page: p, size: s, total: typeof total === 'number' ? total : items.length })
   } catch (e) {
     res.status(500).json({ error: 'READ_TOPICS_FAILED' })
   }
@@ -104,10 +78,10 @@ app.get('/api/topics', (req, res) => {
 // by id (preferred)
 app.get('/api/topics/id/:id', (req, res) => {
   try {
-    const topics = readJson('topics.json')
-    const topic = topics.find((t) => t.id === req.params.id || t.slug === req.params.id)
+    const topic = repo.getTopic(req.params.id)
     if (!topic) return res.status(404).json({ error: 'NOT_FOUND' })
-    res.json({ data: topic })
+    const createdAt = topic.createdAt || topic.created_at || new Date().toISOString()
+    res.json({ data: { ...topic, createdAt } })
   } catch (e) {
     res.status(500).json({ error: 'READ_TOPIC_FAILED' })
   }
@@ -116,10 +90,10 @@ app.get('/api/topics/id/:id', (req, res) => {
 // backward compat by slug
 app.get('/api/topics/:slug', (req, res) => {
   try {
-    const topics = readJson('topics.json')
-    const topic = topics.find((t) => t.slug === req.params.slug)
+    const topic = repo.getTopic(req.params.slug)
     if (!topic) return res.status(404).json({ error: 'NOT_FOUND' })
-    res.json({ data: topic })
+    const createdAt = topic.createdAt || topic.created_at || new Date().toISOString()
+    res.json({ data: { ...topic, createdAt } })
   } catch (e) {
     res.status(500).json({ error: 'READ_TOPIC_FAILED' })
   }
@@ -131,41 +105,41 @@ app.post('/api/topics', (req, res) => {
     if (!name || String(name).trim().length < 1) {
       return res.status(400).json({ error: 'NAME_REQUIRED' })
     }
-    const topics = readJson('topics.json')
-    let slug = slugify(name)
-    // ensure uniqueness
-    if (topics.some((t) => t.slug === slug)) {
-      let i = 2
-      while (topics.some((t) => t.slug === `${slug}-${i}`)) i += 1
-      slug = `${slug}-${i}`
-    }
     const id = `t-${Date.now()}`
-    const record = {
+    const rec = {
       id,
       name: String(name).trim(),
       description: description ? String(description).trim() : undefined,
-      slug,
-      count: 0,
-      score: 0,
-      createdAt: new Date().toISOString(),
       mode: mode === 'duel' ? 'duel' : 'open',
     }
-    const next = [record, ...topics]
-    writeJson('topics.json', next)
-    res.status(201).json({ data: record })
+    repo.createTopic(rec)
+    res.status(201).json({ data: { ...rec, createdAt: new Date().toISOString(), score: 0, count: 0 } })
   } catch (e) {
     res.status(500).json({ error: 'CREATE_TOPIC_FAILED' })
+  }
+})
+
+// Update topic
+app.patch('/api/topics/:id', (req, res) => {
+  try {
+    const { name, description, mode } = req.body || {}
+    const updated = repo.updateTopic(req.params.id, {
+      ...(typeof name === 'string' && name.trim() ? { name: name.trim() } : {}),
+      ...(typeof description === 'string' ? { description: description.trim() || undefined } : {}),
+      ...(mode === 'open' || mode === 'duel' ? { mode } : {}),
+    })
+    if (!updated) return res.status(404).json({ error: 'NOT_FOUND' })
+    res.json({ data: updated })
+  } catch (e) {
+    res.status(500).json({ error: 'UPDATE_TOPIC_FAILED' })
   }
 })
 
 // 刪除主題（不做級聯刪除 points，列表會因為找不到 topic 而不顯示孤兒點）
 app.delete('/api/topics/:id', (req, res) => {
   try {
-    const topics = readJson('topics.json')
-    const idx = topics.findIndex((t) => t.id === req.params.id)
-    if (idx === -1) return res.status(404).json({ error: 'NOT_FOUND' })
-    topics.splice(idx, 1)
-    writeJson('topics.json', topics)
+    const ok = repo.deleteTopic(req.params.id)
+    if (!ok) return res.status(404).json({ error: 'NOT_FOUND' })
     res.status(204).end()
   } catch (e) {
     res.status(500).json({ error: 'DELETE_TOPIC_FAILED' })
@@ -197,54 +171,15 @@ app.post('/api/topics/:id/vote', applyVote)
 function listPoints(req, res) {
   try {
     const { topic: topicParam, sort = 'hot', page = '1', size = '20' } = req.query
-    const hacks = readJson('hacks.json')
-    let items = hacks.map((h) => {
-      // 向後相容：若舊紀錄使用 stance，映射到 position
-      const pos = h.position || (h.stance === 'pro' ? 'agree' : h.stance === 'other' ? 'others' : undefined)
-      return pos ? { ...h, position: pos } : h
-    })
-
-    if (topicParam) {
-      const topics = readJson('topics.json')
-      const topic = topics.find((t) => t.id === topicParam || t.slug === topicParam)
-      if (topic) {
-        const byTag = topic.tag
-          ? items.filter((h) => (h.hashtags || []).some((tag) => String(tag).includes(topic.tag)))
-          : []
-        const byId = items.filter((h) => h.topicId && h.topicId === topic.id)
-        const map = new Map()
-        ;[...byTag, ...byId].forEach((x) => map.set(x.id, x))
-        items = Array.from(map.values()).map((it) => {
-          // 對立模式：若缺 position，預設為 others，避免前端左右欄出現空值
-          if (topic.mode === 'duel' && !it.position) return { ...it, position: 'others' }
-          return it
-        })
-      } else {
-        items = []
-      }
-    }
-
-    if (sort === 'new') {
-      items = [...items].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
-    } else if (sort === 'old') {
-      items = [...items].sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime())
-    } else if (sort === 'top') {
-      items = [...items].sort((a, b) => (a.rank ?? 999) - (b.rank ?? 999))
-    } else {
-      // hot (by upvotes)
-      items = [...items].sort((a, b) => (b.upvotes ?? 0) - (a.upvotes ?? 0))
-    }
-
     const p = Math.max(1, parseInt(page, 10) || 1)
     const s = Math.max(1, Math.min(100, parseInt(size, 10) || 20))
-    const start = (p - 1) * s
-    const paged = items.slice(start, start + s)
-    res.json({ items: paged, page: p, size: s, total: items.length })
+    const { items: raw, total } = repo.listPoints({ topic: topicParam, sort, page: p, size: s })
+    const items = (raw || []).map((it) => ({ ...it, createdAt: it.createdAt || it.created_at }))
+    res.json({ items, page: p, size: s, total: typeof total === 'number' ? total : items.length })
   } catch (e) {
     res.status(500).json({ error: 'READ_HACKS_FAILED' })
   }
 }
-app.get('/api/hacks', listPoints)
 app.get('/api/points', listPoints)
 
 function createPoint(req, res) {
@@ -253,96 +188,74 @@ function createPoint(req, res) {
     if (!description || String(description).trim().length < 1) {
       return res.status(400).json({ error: 'DESCRIPTION_REQUIRED' })
     }
-    const hacks = readJson('hacks.json')
     const id = `point-${Date.now()}`
     const record = {
       id,
-      rank: 999,
-      upvotes: 0,
-      comments: 0,
-      shares: 0,
-      createdAt: new Date().toISOString(),
+      description: String(description).trim(),
+      topicId: topicId || undefined,
       author: {
         name: (authorName && String(authorName).trim()) || (authorType === 'user' ? '用戶' : '匿名'),
         role: authorType === 'user' ? 'user' : 'guest',
       },
-      hashtags: [],
-      description: String(description).trim(),
-      topicId: topicId || undefined,
-      // 對立模式的立場（'agree' | 'others'）；開放模式可忽略
       position: position === 'agree' || position === 'others' ? position : undefined,
     }
-    hacks.unshift(record)
-    writeJson('hacks.json', hacks)
-
-    // 如果有對應的 topicId，順手將該主題的觀點數量加一
-    try {
-      if (topicId) {
-        const topics = readJson('topics.json')
-        const idx = topics.findIndex((t) => t.id === topicId)
-        if (idx !== -1) {
-          const current = topics[idx]
-          const nextCount = (typeof current.count === 'number' ? current.count : 0) + 1
-          topics[idx] = { ...current, count: nextCount }
-          writeJson('topics.json', topics)
-        }
-      }
-    } catch {}
-    res.status(201).json({ data: record })
+    repo.createPoint(record)
+    res.status(201).json({ data: { ...record, createdAt: new Date().toISOString(), upvotes: 0, comments: 0, shares: 0, rank: 999 } })
   } catch (e) {
     res.status(500).json({ error: 'CREATE_POINT_FAILED' })
   }
 }
-app.post('/api/hacks', createPoint)
 app.post('/api/points', createPoint)
 
-app.get('/api/hacks/:id', (req, res) => {
-  const hacks = readJson('hacks.json')
-  const item = hacks.find((h) => h.id === req.params.id)
-  if (!item) return res.status(404).json({ error: 'NOT_FOUND' })
-  res.json({ data: item })
-})
 app.get('/api/points/:id', (req, res) => {
-  const hacks = readJson('hacks.json')
-  const item = hacks.find((h) => h.id === req.params.id)
+  const item = repo.getPoint(req.params.id)
   if (!item) return res.status(404).json({ error: 'NOT_FOUND' })
-  res.json({ data: item })
+  res.json({ data: { ...item, createdAt: item.createdAt || item.created_at } })
+})
+
+// Update point
+app.patch('/api/points/:id', (req, res) => {
+  try {
+    const { description, position } = req.body || {}
+    const updated = repo.updatePoint(req.params.id, {
+      ...(typeof description === 'string' && description.trim() ? { description: description.trim() } : {}),
+      ...(position === 'agree' || position === 'others' ? { position } : {}),
+    })
+    if (!updated) return res.status(404).json({ error: 'NOT_FOUND' })
+    res.json({ data: updated })
+  } catch (e) {
+    res.status(500).json({ error: 'UPDATE_POINT_FAILED' })
+  }
 })
 
 // 刪除觀點（同步調整對應 topic 的 count）
 app.delete('/api/points/:id', (req, res) => {
   try {
-    const hacks = readJson('hacks.json')
-    const idx = hacks.findIndex((h) => h.id === req.params.id)
-    if (idx === -1) return res.status(404).json({ error: 'NOT_FOUND' })
-    const target = hacks[idx]
-    hacks.splice(idx, 1)
-    writeJson('hacks.json', hacks)
-    try {
-      if (target && target.topicId) {
-        const topics = readJson('topics.json')
-        const tIdx = topics.findIndex((t) => t.id === target.topicId)
-        if (tIdx !== -1) {
-          const cur = topics[tIdx]
-          const next = Math.max(0, (typeof cur.count === 'number' ? cur.count : 0) - 1)
-          topics[tIdx] = { ...cur, count: next }
-          writeJson('topics.json', topics)
-        }
-      }
-    } catch {}
+    const ok = repo.deletePoint(req.params.id)
+    if (!ok) return res.status(404).json({ error: 'NOT_FOUND' })
     res.status(204).end()
   } catch (e) {
     res.status(500).json({ error: 'DELETE_POINT_FAILED' })
   }
 })
-// 兼容舊路由
-app.delete('/api/hacks/:id', (req, res) => {
-  req.url = `/api/points/${req.params.id}`
-  return app._router.handle(req, res)
-})
+// 舊 /api/hacks 路由已移除，請改用 /api/points
 
 const PORT = process.env.PORT || 8787
 app.listen(PORT, () => {
   // eslint-disable-next-line no-console
   console.log(`PointLab API listening on :${PORT}`)
 })
+
+// Optional static hosting (for single-server deploy)
+// If dist folder exists, serve SPA assets and fallback to index.html
+try {
+  const distDir = path.join(path.dirname(__filename), '..', 'dist')
+  if (fs.existsSync(distDir)) {
+    app.use(express.static(distDir))
+    app.get('*', (req, res) => {
+      res.sendFile(path.join(distDir, 'index.html'))
+    })
+    // eslint-disable-next-line no-console
+    console.log('Serving static files from dist/')
+  }
+} catch {}

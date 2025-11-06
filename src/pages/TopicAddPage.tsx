@@ -39,8 +39,7 @@ export default function TopicAddPage() {
           <PageHeader
             align="center"
             backButton
-            onBack={() => navigate(-1)}
-            backDisabled={locked}
+            onBack={() => navigate('/topics')}
             title={t('topics.add.title')}
             subtitle={t('topics.add.subtitle')}
           />

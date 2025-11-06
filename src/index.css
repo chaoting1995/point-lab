@@ -48,3 +48,16 @@ html, body {
 img, svg, video, canvas {
   max-width: 100%;
 }
+
+/* 卡片附加資訊區的操作連結樣式 */
+.card-action {
+  border: none;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+  padding: 0;
+  font-size: 12px;
+}
+.card-action:hover {
+  color: var(--mui-palette-primary-main, #4f46e5);
+}

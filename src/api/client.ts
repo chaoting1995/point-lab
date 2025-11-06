@@ -1,5 +1,13 @@
+const API_BASE = (import.meta as any).env?.VITE_API_BASE || ''
+
+function withBase(url: string): string {
+  if (!API_BASE) return url
+  if (url.startsWith('http')) return url
+  return `${API_BASE.replace(/\/$/, '')}${url.startsWith('/') ? url : `/${url}`}`
+}
+
 export async function getJson<T>(url: string): Promise<T> {
-  const res = await fetch(url, {
+  const res = await fetch(withBase(url), {
     headers: {
       'Accept': 'application/json',
       'Cache-Control': 'no-cache, no-store, must-revalidate',
@@ -10,7 +18,7 @@ export async function getJson<T>(url: string): Promise<T> {
   })
   if (!res.ok) {
     const text = await res.text().catch(() => '')
-    throw new Error(`GET ${url} failed: ${res.status} ${text}`)
+    throw new Error(`GET ${withBase(url)} failed: ${res.status} ${text}`)
   }
   return res.json() as Promise<T>
 }

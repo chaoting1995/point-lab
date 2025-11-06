@@ -8,13 +8,12 @@ import TextField from '@mui/material/TextField'
 import Alert from '@mui/material/Alert'
 import Snackbar from '@mui/material/Snackbar'
 import PageHeader from '../components/PageHeader'
+import TopicCard from '../components/TopicCard'
 import type { Topic } from '../data/topics'
 import { getJson, type ItemResponse, type ListResponse } from '../api/client'
 import useAuth from '../auth/AuthContext'
-import FormControl from '@mui/material/FormControl'
-import FormLabel from '@mui/material/FormLabel'
-import ButtonGroup from '@mui/material/ButtonGroup'
 import Button from '@mui/material/Button'
+import DuelTabs, { type DuelValue } from '../components/DuelTabs'
 
 export default function PointAddPage() {
   const navigate = useNavigate()
@@ -31,7 +30,7 @@ export default function PointAddPage() {
   const { user } = useAuth()
   const [useGuest, setUseGuest] = useState(false)
   // 對立模式下的立場選擇；null 代表未選擇
-  const [positionSel, setPositionSel] = useState<null | 'agree' | 'others'>(null)
+  const [positionSel, setPositionSel] = useState<DuelValue>(null)
 
   useEffect(() => {
     let aborted = false
@@ -77,55 +76,21 @@ export default function PointAddPage() {
           <PageHeader
             align="center"
             backButton
-            onBack={() => navigate(-1)}
-            title={topic?.name || (t('points.add.title') || '新增觀點')}
-            subtitle={topic?.description || (t('points.add.subtitle') || '')}
+            onBack={() => navigate(topicId ? `/topics/${topicId}` : '/topics')}
+            title={t('points.add.title') || '新增觀點'}
+            subtitle={''}
           />
 
           <Stack spacing={2} sx={{ maxWidth: 640, mx: 'auto' }}>
+            {/* 顯示主題卡片（隱藏投票與附加資訊），點擊返回主題詳頁 */}
+            {topic && (
+              <div onClick={() => navigate(`/topics/${topic.id}`)}>
+                <TopicCard topic={topic} showMeta={false} showVote={false} />
+              </div>
+            )}
             {/* 對立模式：立場選擇（Button Group） */}
             {topic?.mode === 'duel' && (
-              <FormControl sx={{ display: 'flex', alignItems: 'stretch' }}>
-                <FormLabel sx={{ mb: 1, textAlign: 'left', fontWeight: 700 }}>{t('points.add.stanceLabel') || '選擇立場'}</FormLabel>
-                <Box sx={{ display: 'flex', gap: 1, width: '100%' }}>
-                  <Button
-                    fullWidth
-                    variant={positionSel === 'agree' ? 'contained' : 'outlined'}
-                    onClick={() => setPositionSel('agree')}
-                    sx={{
-                      flex: 1,
-                      borderRadius: '10px',
-                      bgcolor: positionSel === 'agree' ? 'rgba(16,185,129,1)' : 'transparent',
-                      color: positionSel === 'agree' ? '#fff' : 'rgba(16,185,129,1)',
-                      borderColor: 'rgba(16,185,129,1)',
-                      '&:hover': {
-                        bgcolor: positionSel === 'agree' ? 'rgba(5,150,105,1)' : 'rgba(16,185,129,0.08)',
-                        borderColor: 'rgba(16,185,129,1)',
-                      },
-                    }}
-                  >
-                    {t('points.add.stanceAgree') || '讚同'}
-                  </Button>
-                  <Button
-                    fullWidth
-                    variant={positionSel === 'others' ? 'contained' : 'outlined'}
-                    onClick={() => setPositionSel('others')}
-                    sx={{
-                      flex: 1,
-                      borderRadius: '10px',
-                      bgcolor: positionSel === 'others' ? 'rgba(239,68,68,1)' : 'transparent',
-                      color: positionSel === 'others' ? '#fff' : 'rgba(239,68,68,1)',
-                      borderColor: 'rgba(239,68,68,1)',
-                      '&:hover': {
-                        bgcolor: positionSel === 'others' ? 'rgba(220,38,38,1)' : 'rgba(239,68,68,0.08)',
-                        borderColor: 'rgba(239,68,68,1)',
-                      },
-                    }}
-                  >
-                    {t('points.add.stanceOther') || '其他'}
-                  </Button>
-                </Box>
-              </FormControl>
+              <DuelTabs value={positionSel} onChange={setPositionSel} label={t('points.add.stanceLabel') || '選擇立場'} />
             )}
             <TextField
               label={t('points.add.descLabel') || '觀點內容'}

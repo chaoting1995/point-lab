@@ -23,6 +23,8 @@ export default function TopicDetailPage() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [sort, setSort] = useState<SortKey>('new')
+  // duel filter: null=預設（左右兩欄）、'agree' 或 'others' 單欄篩選
+  const [duelFilter, setDuelFilter] = useState<null | 'agree' | 'others'>(null)
 
   // load topic meta
   useEffect(() => {
@@ -70,6 +72,9 @@ export default function TopicDetailPage() {
     return () => { aborted = true }
   }, [id, sort])
   const handleSort = (v: SortKey) => { setSort(v) }
+  const toggleDuel = (key: 'agree' | 'others') => {
+    setDuelFilter((prev) => (prev === key ? null : key))
+  }
 
   return (
     <div className="app">
@@ -80,17 +85,67 @@ export default function TopicDetailPage() {
           <PageHeader
             align="center"
             backButton
-            onBack={() => navigate(-1)}
+            onBack={() => navigate('/topics')}
             title={topic ? topic.name : '主題'}
             subtitle={topic?.description}
           />
 
           <SortTabs value={sort} onChange={handleSort} />
+          {topic?.mode === 'duel' && (
+            <Box sx={{ mt: 0.5, mb: 1, display: 'flex', gap: 2, width: '100%' }}>
+              <button
+                type="button"
+                onClick={() => toggleDuel('agree')}
+                className="btn btn-sm"
+                style={{
+                  borderRadius: 10,
+                  padding: '6px 12px',
+                  fontWeight: 700,
+                  border: '1px solid',
+                  borderColor: duelFilter === 'agree' ? '#10b981' : '#cbd5e1',
+                  color: duelFilter === 'agree' ? '#fff' : '#10b981',
+                  background: duelFilter === 'agree' ? '#10b981' : 'transparent',
+                  flex: 1,
+                  width: '100%',
+                  cursor: 'pointer',
+                }}
+              >
+                {t('points.add.stanceAgree') || '讚同'}
+              </button>
+              <button
+                type="button"
+                onClick={() => toggleDuel('others')}
+                className="btn btn-sm"
+                style={{
+                  borderRadius: 10,
+                  padding: '6px 12px',
+                  fontWeight: 700,
+                  border: '1px solid',
+                  borderColor: duelFilter === 'others' ? '#ef4444' : '#cbd5e1',
+                  color: duelFilter === 'others' ? '#fff' : '#ef4444',
+                  background: duelFilter === 'others' ? '#ef4444' : 'transparent',
+                  flex: 1,
+                  width: '100%',
+                  cursor: 'pointer',
+                }}
+              >
+                {t('points.add.stanceOther') || '其他'}
+              </button>
+            </Box>
+          )}
           {loading && <p className="text-slate-500">{t('common.loading')}</p>}
           {error && <p className="text-rose-500">{t('common.error')}</p>}
           {list.length > 0 ? (
             <>
               {topic?.mode === 'duel' ? (
+                duelFilter
+                ? (
+                  <div className="point-grid" role="tabpanel">
+                    {list.filter((p) => p.position === duelFilter).map((hack) => (
+                      <PointCard key={hack.id} point={hack} onDeleted={(id) => setList((prev) => prev.filter((x) => x.id !== id))} />
+                    ))}
+                  </div>
+                ) : (
                 // 600px (sm) 以下改為單欄；>=600px 兩欄
                 <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr' }, gap: 2 }}>
                   <Box>
@@ -108,8 +163,9 @@ export default function TopicDetailPage() {
                     ))}
                   </Box>
                 </Box>
+                )
               ) : (
-                <div className="hack-grid" role="tabpanel">
+                <div className="point-grid" role="tabpanel">
                   {list.map((hack) => (
                     <PointCard key={hack.id} point={hack} onDeleted={(id) => setList((prev) => prev.filter((x) => x.id !== id))} />
                   ))}

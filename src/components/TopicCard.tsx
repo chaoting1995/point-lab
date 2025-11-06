@@ -12,12 +12,12 @@ import useLanguage from '../i18n/useLanguage'
 import { formatRelativeAgo } from '../utils/text'
 import useConfirmDialog from '../hooks/useConfirmDialog'
 
-export default function TopicCard({ topic, onDeleted }: { topic: Topic; onDeleted?: (id: string) => void }) {
+export default function TopicCard({ topic, onDeleted, showMeta = true, showVote = true }: { topic: Topic; onDeleted?: (id: string) => void; showMeta?: boolean; showVote?: boolean }) {
   const [score, setScore] = useState<number>(typeof topic.score === 'number' ? topic.score : 0)
   const [busy, setBusy] = useState(false)
   const [deleting, setDeleting] = useState(false)
   const { locale, t } = useLanguage()
-  const createdLabel = formatRelativeAgo(topic.createdAt || new Date().toISOString())
+  const createdLabel = formatRelativeAgo(topic.createdAt || new Date().toISOString(), locale)
   const { confirm, ConfirmDialogEl } = useConfirmDialog()
   const [confirming, setConfirming] = useState(false)
   async function remove() {
@@ -79,37 +79,50 @@ export default function TopicCard({ topic, onDeleted }: { topic: Topic; onDelete
                 {topic.name}
               </Typography>
               {topic.description && (
-                <Typography variant="body2" color="text.secondary" sx={{ m: 0, mt: 0.5 }}>
+                <Typography variant="body2" color="text.secondary" sx={{ m: 0, mt: 0.5, whiteSpace: 'pre-line' }}>
                   {topic.description}
                 </Typography>
               )}
-              <Typography component="div" variant="caption" sx={{ color: 'text.secondary', fontSize: 12, mt: 'auto' }}>
-                {topic.mode === 'duel' ? (t('topics.add.modeDuel') || '對立式主題') : (t('topics.add.modeOpen') || '開放式主題')} |
-                {' '}{(typeof topic.count === 'number' ? topic.count : 0)} 個觀點 |
-                {' '}{createdLabel}
-                {' '}|{' '}
-                <button
-                  type="button"
-                  onClick={async (e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    setConfirming(true)
-                    const ok = await confirm({ title: '確定刪除？' })
-                    setConfirming(false)
-                    if (ok) remove()
-                  }}
-                  onMouseDown={(e) => { e.preventDefault(); e.stopPropagation() }}
-                  onMouseUp={(e) => { e.preventDefault(); e.stopPropagation() }}
-                  disabled={deleting}
-                  style={{ border: 'none', background: 'transparent', color: '#ef4444', cursor: 'pointer', padding: 0 }}
-                >
-                  刪除
-                </button>
-              </Typography>
+              {showMeta && (
+                <Typography component="div" variant="caption" sx={{ color: 'text.secondary', fontSize: 12, mt: 'auto' }}>
+                  {topic.mode === 'duel' ? (t('topics.add.modeDuel') || '對立式主題') : (t('topics.add.modeOpen') || '開放式主題')} |
+                  {' '}{(typeof topic.count === 'number' ? topic.count : 0)} 個觀點 |
+                  {' '}{createdLabel}
+                  {' '}|{' '}
+                  <button
+                    type="button"
+                    onClick={(e) => { e.preventDefault(); e.stopPropagation(); window.location.assign(`/topics/edit/${encodeURIComponent(topic.id)}`) }}
+                    onMouseDown={(e) => { e.preventDefault(); e.stopPropagation() }}
+                    onMouseUp={(e) => { e.preventDefault(); e.stopPropagation() }}
+                    className="card-action"
+                  >
+                    {t('common.edit') || '編輯'}
+                  </button>
+                  {' '}|{' '}
+                  <button
+                    type="button"
+                    onClick={async (e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      setConfirming(true)
+                      const ok = await confirm({ title: '確定刪除？' })
+                      setConfirming(false)
+                      if (ok) remove()
+                    }}
+                    onMouseDown={(e) => { e.preventDefault(); e.stopPropagation() }}
+                    onMouseUp={(e) => { e.preventDefault(); e.stopPropagation() }}
+                    disabled={deleting}
+                    className="card-action"
+                  >
+                    {t('common.delete') || '刪除'}
+                  </button>
+                </Typography>
+              )}
               {/* dialog rendered outside CardActionArea to avoid click suppression */}
             </Box>
 
             {/* 右欄：投票垂直區（阻止冒泡，不導向） */}
+            {showVote && (
             <Box
               sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 0.5 }}
               onClick={(e) => {
@@ -143,6 +156,7 @@ export default function TopicCard({ topic, onDeleted }: { topic: Topic; onDelete
                 <ThumbsDown size={16} weight="bold" />
               </IconButton>
             </Box>
+            )}
           </Box>
         </CardContent>
       </CardActionArea>

@@ -65,6 +65,46 @@ Point（觀點）
 - 對立（duel）模式：新增觀點頁提供「選擇立場」按鈕組（讚同/其他）；詳頁左右分欄顯示兩邊觀點。
 - 多語系：UI 文案支援 繁/簡/英；使用者輸入內容不自動翻譯。
 
+## 部署建議
+
+單機一體（最快）
+- `npm run build` 產生 `dist/`
+- 啟動後端：`npm run server`（Express 會自動服務 `dist/` 並作 SPA fallback）
+- 建議用 Nginx/Caddy 反向代理 80/443 到 Node 服務並簽發 SSL
+
+前後端分離（通用，推薦：Cloudflare Pages + Fly.io）
+- 前端部署到 Cloudflare Pages（或 Netlify/Vercel），建置命令 `npm run build`，輸出 `dist`
+- 後端部署到 Fly.io，設定 `PORT=8787`，並掛載 Volume 保存 `/app/server/pointlab.db`
+- 前端 `.env.production` 設 `VITE_API_BASE=https://api.pointlab.com`
+- 後端 CORS 透過 `ALLOWED_ORIGINS` 控制，例：`https://pointlab.com,https://www.pointlab.com`
+- `src/api/client.ts` 已支援 `VITE_API_BASE`，生產環境會自動改用完整 API Base
+
+Cloudflare Pages（前端）
+- Build command: `npm run build`；Build output: `dist`
+- 環境變數：`VITE_API_BASE=https://api.pointlab.com`
+- 綁定網域 `pointlab.com`（或子網域）到 Pages 專案
+
+Fly.io（後端）
+- 準備：安裝 `flyctl`，`flyctl auth login`
+- 建 app：`flyctl launch`（或修改 `fly.toml` 的 `app` 與 `primary_region`）
+- 建 Volume：`flyctl volumes create data --size 1 --region <你的區域>`
+- 部署：`flyctl deploy`
+- 設環境變數：`flyctl secrets set ALLOWED_ORIGINS="https://pointlab.com,https://www.pointlab.com"`
+- 健檢：`curl https://api.pointlab.com/api/health`
+
+## 資料庫（SQLite）與資料匯入
+
+- 本專案 Phase 1 已支援 SQLite（better-sqlite3）。若未安裝會自動退回 JSON（server/data/*.json）。
+- 建議切換到 SQLite 後執行一次性匯入，將舊 JSON 匯入 pointlab.db：
+
+```
+npm run migrate:json
+```
+
+- 匯入腳本位置：`server/scripts/migrate-from-json.js`
+- 匯入內容：topics.json → topics、points.json（相容舊名 hacks.json）→ points（會保留 createdAt/score/count/position 等欄位）
+- 之後即可僅用 SQLite 提供 API；JSON 可保留為備援快照。
+
 ## Google 登入設定（可選，建議開啟）
 
 若要啟用真實的 Google 第三方登入：
@@ -92,7 +132,7 @@ npm run dev:all
 
 ## 專案結構（節錄）
 
-- `server/`：Express + JSON 資料（topics.json、hacks.json）
+- `server/`：Express + JSON 資料（topics.json、points.json）
 - `src/components/`：可重用元件（Header、PageHeader、TopicCard、PointCard、ConfirmDialog…）
 - `src/pages/`：頁面（TopicsPage、TopicDetailPage、TopicAddPage、PointAddPage、GuidePage）
 - `src/hooks/`：共用邏輯（`useSortTabs`、`usePagedList`、`useConfirmDialog` 等）

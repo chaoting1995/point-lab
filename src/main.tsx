@@ -9,6 +9,8 @@ import TopicsPage from './pages/TopicsPage'
 import TopicDetailPage from './pages/TopicDetailPage'
 import TopicAddPage from './pages/TopicAddPage'
 import PointAddPage from './pages/PointAddPage'
+import TopicEditPage from './pages/TopicEditPage'
+import PointEditPage from './pages/PointEditPage'
 import GuidePage from './pages/GuidePage'
 
 createRoot(document.getElementById('root')!).render(
@@ -21,7 +23,9 @@ createRoot(document.getElementById('root')!).render(
           <Route path="/topics" element={<TopicsPage />} />
           <Route path="/topics/:id" element={<TopicDetailPage />} />
           <Route path="/topics/add" element={<TopicAddPage />} />
+          <Route path="/topics/edit/:id" element={<TopicEditPage />} />
           <Route path="/points/add" element={<PointAddPage />} />
+          <Route path="/points/edit/:id" element={<PointEditPage />} />
           <Route path="/guide" element={<GuidePage />} />
           </Routes>
         </BrowserRouter>
