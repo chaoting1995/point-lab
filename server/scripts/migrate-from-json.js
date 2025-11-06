@@ -6,7 +6,8 @@ import sqliteInit from 'better-sqlite3'
 
 const ROOT = path.join(path.dirname(new URL(import.meta.url).pathname), '..')
 const DATA_DIR = path.join(ROOT, 'data')
-const DB_PATH = path.join(ROOT, 'pointlab.db')
+// Respect external DB path when provided (e.g., Fly volume mount)
+const DB_PATH = process.env.POINTLAB_DB_PATH || path.join(ROOT, 'pointlab.db')
 
 function readJson(file, fallback = []) {
   try {
