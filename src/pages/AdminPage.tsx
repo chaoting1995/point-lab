@@ -5,7 +5,7 @@ import ListItemButton from '@mui/material/ListItemButton'
 import ListItemIcon from '@mui/material/ListItemIcon'
 import ListItemText from '@mui/material/ListItemText'
 import Typography from '@mui/material/Typography'
-import { House, Users, Flag } from 'phosphor-react'
+import { House, Users, Flag, UserCircle } from 'phosphor-react'
 import Select from '@mui/material/Select'
 import MenuItem from '@mui/material/MenuItem'
 import { getJson } from '../api/client'
@@ -31,6 +31,7 @@ import ToggleButton from '@mui/material/ToggleButton'
 import Pagination from '@mui/material/Pagination'
 
 type AdminUser = { id: string; name?: string; email?: string; picture?: string; role?: string; topics?: string[]; points?: string[]; comments?: string[] }
+type Guest = { id: string; name?: string; posts_topic?: number; posts_point?: number; posts_comment?: number; created_at?: string; last_seen?: string }
 
 // 保留空白區塊供未來擴充（避免未使用警告）
 
@@ -39,11 +40,13 @@ export default function AdminPage() {
   const { user, login } = useAuth()
   const location = useLocation()
   const navigate = useNavigate()
-  const [tab, setTab] = useState<'home'|'users'|'reports'>('home')
+  const [tab, setTab] = useState<'home'|'users'|'reports'|'guests'>('home')
   const [users, setUsers] = useState<AdminUser[]>([])
   const [usersTotal, setUsersTotal] = useState<number>(0)
   const [reports, setReports] = useState<any[]>([])
   const [reportsTotal, setReportsTotal] = useState<number>(0)
+  const [guests, setGuests] = useState<Guest[]>([])
+  const [guestsTotal, setGuestsTotal] = useState<number>(0)
   const [reportType, setReportType] = useState<'all'|'topic'|'point'|'comment'>('all')
   const [stats, setStats] = useState<{users:number;topics:number;points:number;comments:number;reports:number} | null>(null)
   const { confirm, ConfirmDialogEl } = useConfirmDialog()
@@ -63,9 +66,11 @@ export default function AdminPage() {
   useEffect(() => {
     if (location.pathname.startsWith('/admin/users')) setTab('users')
     else if (location.pathname.startsWith('/admin/reports')) setTab('reports')
+    else if (location.pathname.startsWith('/admin/guests')) setTab('guests')
     else setTab('home')
     setUsersPage(1)
     setReportsPage(1)
+    // reset guests page
   }, [location.pathname])
 
   // 進入 reports 或切換類型時載入資料
@@ -82,6 +87,15 @@ export default function AdminPage() {
       }
     })()
   }, [tab, reportType, reportsPage])
+
+  // Guests fetch
+  useEffect(() => {
+    if (tab !== 'guests') return
+    fetch(withBase(`/api/admin/guests?page=${usersPage}&size=${pageSize}`), { credentials: 'include' })
+      .then(r => r.ok ? r.json() : Promise.reject(r.status))
+      .then(d => { setGuests(d.items||[]); setGuestsTotal(d.total||0) })
+      .catch(()=> { setGuests([]); setGuestsTotal(0) })
+  }, [tab, usersPage])
 
   if (!user || (user.role !== 'admin' && user.role !== 'superadmin')) {
     return (
@@ -157,6 +171,10 @@ export default function AdminPage() {
             <ListItemButton selected={tab==='reports'} onClick={()=> navigate('/admin/reports')}>
               <ListItemIcon><Flag size={18} /></ListItemIcon>
               <ListItemText className="label" primary="舉報管理" />
+            </ListItemButton>
+            <ListItemButton selected={tab==='guests'} onClick={()=> navigate('/admin/guests')}>
+              <ListItemIcon><UserCircle size={18} /></ListItemIcon>
+              <ListItemText className="label" primary="訪客管理" />
             </ListItemButton>
           </List>
         </Box>
@@ -235,6 +253,40 @@ export default function AdminPage() {
               </TableContainer>
               <Box sx={{ display: 'flex', justifyContent: 'center', mt: 1 }}>
                 <Pagination page={usersPage} onChange={(_,p)=> setUsersPage(p)} count={Math.max(1, Math.ceil((usersTotal||0)/20))} size="small" shape="rounded" siblingCount={0} boundaryCount={1} />
+              </Box>
+            </>
+          )}
+          {tab==='guests' && (
+            <>
+              <Typography sx={{ fontWeight: 800, mb: 1, fontSize: 34 }}>訪客管理</Typography>
+              <TableContainer component={Paper} sx={{ borderRadius: '10px', minWidth: 840, overflowX: 'auto' }}>
+                <Table size="small" sx={{ minWidth: 840 }}>
+                  <TableHead>
+                    <TableRow>
+                      <TableCell sx={{ whiteSpace: 'nowrap' }}>Guest ID</TableCell>
+                      <TableCell sx={{ whiteSpace: 'nowrap' }}>名稱</TableCell>
+                      <TableCell sx={{ whiteSpace: 'nowrap' }}>主題數</TableCell>
+                      <TableCell sx={{ whiteSpace: 'nowrap' }}>觀點數</TableCell>
+                      <TableCell sx={{ whiteSpace: 'nowrap' }}>評論數</TableCell>
+                      <TableCell sx={{ whiteSpace: 'nowrap' }}>最後出現</TableCell>
+                    </TableRow>
+                  </TableHead>
+                  <TableBody>
+                    {guests.map(g => (
+                      <TableRow key={g.id} hover>
+                        <TableCell>{g.id}</TableCell>
+                        <TableCell>{g.name || '—'}</TableCell>
+                        <TableCell>{g.posts_topic || 0}</TableCell>
+                        <TableCell>{g.posts_point || 0}</TableCell>
+                        <TableCell>{g.posts_comment || 0}</TableCell>
+                        <TableCell>{new Date(g.last_seen || g.created_at || '').toLocaleString(undefined, { hour12: false })}</TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </TableContainer>
+              <Box sx={{ display: 'flex', justifyContent: 'center', mt: 1 }}>
+                <Pagination page={usersPage} onChange={(_,p)=> setUsersPage(p)} count={Math.max(1, Math.ceil((guestsTotal||0)/pageSize))} size="small" shape="rounded" siblingCount={0} boundaryCount={1} />
               </Box>
             </>
           )}

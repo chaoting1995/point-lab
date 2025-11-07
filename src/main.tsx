@@ -50,6 +50,7 @@ createRoot(document.getElementById('root')!).render(
             <Route path="/admin" element={<AdminPage />} />
             <Route path="/admin/users" element={<AdminPage />} />
             <Route path="/admin/reports" element={<AdminPage />} />
+            <Route path="/admin/guests" element={<AdminPage />} />
           </Routes>
           </BrowserRouter>
         </AuthProvider>

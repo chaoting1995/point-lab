@@ -629,6 +629,20 @@ export const repo = {
     writeJson('users.json', users)
     return users[idx]
   },
+  listGuests({ page = 1, size = 20 } = {}) {
+    if (db) {
+      try {
+        const total = db.prepare('select count(*) as c from guests').get().c
+        const items = db.prepare('select * from guests order by last_seen desc limit ? offset ?').all(size, (page - 1) * size)
+        return { items, total }
+      } catch { return { items: [], total: 0 } }
+    }
+    try {
+      const all = readJson('guests.json')
+      const items = [...all].sort((a,b)=> new Date(b.last_seen||0) - new Date(a.last_seen||0)).slice((page-1)*size, (page-1)*size+size)
+      return { items, total: all.length }
+    } catch { return { items: [], total: 0 } }
+  },
   createSession(userId, ttlDays = 30) {
     const token = `${userId}.${Math.random().toString(36).slice(2)}${Math.random().toString(36).slice(2)}`
     const now = new Date()

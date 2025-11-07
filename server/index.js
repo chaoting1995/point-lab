@@ -655,6 +655,23 @@ app.get('/api/admin/stats', (req, res) => {
   } catch { res.status(500).json({ error: 'READ_STATS_FAILED' }) }
 })
 
+// Admin: guests list
+app.get('/api/admin/guests', (req, res) => {
+  const cookieMap = parseCookies(req)
+  const token = cookieMap['pl_session'] || cookieMap['pl_session_dev']
+  const u = token ? repo.getUserBySession(token) : null
+  const isSuper = u && ((u.id === 'u-1762500221827') || (u.email === 'chaoting666@gmail.com'))
+  const role = u ? (isSuper ? 'superadmin' : (u.role || 'user')) : 'user'
+  if (role !== 'admin' && role !== 'superadmin') return res.status(403).json({ error: 'FORBIDDEN' })
+  try {
+    const { page = '1', size = '20' } = req.query
+    const p = Math.max(1, parseInt(page, 10) || 1)
+    const s = Math.max(1, Math.min(100, parseInt(size, 10) || 20))
+    const { items, total } = repo.listGuests({ page: p, size: s })
+    res.json({ items, total, page: p, size: s })
+  } catch { res.status(500).json({ error: 'READ_GUESTS_FAILED' }) }
+})
+
 // Local auth
 function hashPassword(password, salt = crypto.randomBytes(16).toString('hex')) {
   const derived = crypto.scryptSync(password, salt, 64)
