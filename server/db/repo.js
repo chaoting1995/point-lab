@@ -580,21 +580,23 @@ export const repo = {
       try {
         const q = (sql)=> db.prepare(sql).get().c
         const users = q('select count(*) as c from users')
+        let guests = 0; try { guests = q('select count(*) as c from guests') } catch {}
         const topics = q('select count(*) as c from topics')
         const points = q('select count(*) as c from points')
         const comments = q('select count(*) as c from comments')
         let reports = 0
         try { reports = q('select count(*) as c from reports') } catch {}
-        return { users, topics, points, comments, reports }
+        return { users, guests, topics, points, comments, reports }
       } catch { return { users: 0, topics: 0, points: 0, comments: 0, reports: 0 } }
     }
     const users = readJson('users.json').length
+    let guests = 0; try { guests = readJson('guests.json').length } catch {}
     const topics = readJson('topics.json').length
     const points = readJson('points.json').length
     const comments = readJson('comments.json').length
     let reports = 0
     try { reports = readJson('reports.json').length } catch {}
-    return { users, topics, points, comments, reports }
+    return { users, guests, topics, points, comments, reports }
   },
   createLocalUser({ email, password_hash, name }) {
     const now = nowIso()

@@ -89,7 +89,7 @@ export default function AdminPage() {
       <div className="app">
         <Header />
         <main className="admin__inner" style={{ display: 'flex' }}>
-          <Box sx={{ flex: 1, p: 2, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <Box sx={{ flex: 1, p: 2, display: 'flex', alignItems: 'center', justifyContent: 'center', marginTop: '96px' }}>
             <Paper elevation={0} sx={{ p: 3, borderRadius: '10px', border: '1px solid', borderColor: 'divider', textAlign: 'center', maxWidth: 360 }}>
               <Typography variant="h6" sx={{ fontWeight: 800, mb: 0.5 }}>登入</Typography>
               <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>登入後，可累積數據、參與排名</Typography>
@@ -353,10 +353,11 @@ function HomeStats({ stats, onLoad, onNavigate }: { stats: any, onLoad: (s:any)=
       try { const r = await fetch(withBase('/api/admin/stats'), { credentials: 'include' }); if (r.ok) { const d = await r.json(); onLoad(d.data) } } catch {}
     })()
   }, [])
-  const s = stats || { users: 0, topics: 0, points: 0, comments: 0, reports: 0 }
+  const s = stats || { users: 0, guests: 0, topics: 0, points: 0, comments: 0, reports: 0 }
   return (
-    <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 2 }}>
+    <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(6, 1fr)', gap: 2 }}>
       <StatCard label="用戶數" value={s.users} onClick={()=> onNavigate('/admin/users')} />
+      <StatCard label="訪客數" value={s.guests||0} onClick={()=> onNavigate('/admin/users')} />
       <StatCard label="主題數" value={s.topics} onClick={()=> onNavigate('/topics')} />
       <StatCard label="觀點數" value={s.points} onClick={()=> onNavigate('/topics')} />
       <StatCard label="評論數" value={s.comments} onClick={()=> onNavigate('/topics')} />
