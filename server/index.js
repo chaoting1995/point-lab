@@ -74,7 +74,10 @@ function setSessionCookie(req, res, token, maxAgeSec = 2592000) {
   const secureEnv = isSecureReq(req)
   const sameSite = secureEnv ? 'None' : 'Lax'
   const secureFlag = secureEnv ? '; Secure' : ''
-  const cookie = `pl_session=${encodeURIComponent(token)}; Path=/; Max-Age=${maxAgeSec}; HttpOnly${secureFlag}; SameSite=${sameSite}`
+  // 為了支援第三方情境（前端與 API 不同網域），在 HTTPS 下加上 Partitioned（CHIPS），
+  // 以降低瀏覽器封鎖第三方 Cookie 的風險（Chrome 支援）。
+  const partitioned = secureEnv && sameSite === 'None' ? '; Partitioned' : ''
+  const cookie = `pl_session=${encodeURIComponent(token)}; Path=/; Max-Age=${maxAgeSec}; HttpOnly${secureFlag}; SameSite=${sameSite}${partitioned}`
   // 單一或多個 Set-Cookie
   const cookies = [cookie]
   if (!secureEnv) {
