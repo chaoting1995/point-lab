@@ -11,6 +11,7 @@ import { ThumbsUp, ThumbsDown } from 'phosphor-react'
 import { useEffect, useState } from 'react'
 import Snackbar from '@mui/material/Snackbar'
 import Alert from '@mui/material/Alert'
+import { getVoteState as getStoredVote, setVoteState as setStoredVote } from '../utils/votes'
 import useLanguage from '../i18n/useLanguage'
 import { formatRelativeAgo } from '../utils/text'
 import useConfirmDialog from '../hooks/useConfirmDialog'
@@ -44,23 +45,25 @@ export default function TopicCard({ topic, onDeleted, showMeta = true, showVote 
   }
   const [voteState, setVoteState] = useState<'up'|'down'|undefined>(undefined)
   useEffect(() => {
-    try { const v = localStorage.getItem(`pl:tv:${topic.id}`) as any; if (v==='up'||v==='down') setVoteState(v) } catch {}
+    try { setVoteState(getStoredVote('topic', topic.id)) } catch {}
   }, [topic.id])
   async function voteDir(dir: 'up'|'down') {
     if (busy) return
     const current = voteState
     if (current === dir) return
-    const delta = !current ? (dir==='up'?+1:-1) : (dir==='up'?+2:-2)
+    const { next, delta } = setStoredVote('topic', topic.id, dir)
+    if (delta === 0) return
     try {
       setBusy(true)
       setScore((s)=> s+delta)
       const res = await fetch(withBase(`/api/topics/${topic.id}/vote`), { method:'PATCH', headers:{ 'Content-Type':'application/json' }, body: JSON.stringify({ delta }) })
       if (!res.ok) throw new Error('VOTE_FAILED')
       const data = await res.json(); setScore(typeof data?.data?.score==='number'? data.data.score : 0)
-      const next = dir
-      setVoteState(next); try { localStorage.setItem(`pl:tv:${topic.id}`, next) } catch {}
+      setVoteState(next)
     } catch {
       setScore((s)=> s-delta)
+      // revert local store
+      setStoredVote('topic', topic.id, current)
     } finally { setBusy(false) }
   }
   return (

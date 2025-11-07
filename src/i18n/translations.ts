@@ -153,6 +153,12 @@ export type AppTranslations = {
     profileCenter?: string
     adminConsole?: string
   }
+  admin?: {
+    reports?: {
+      headers: { type: string; targetId: string; reason: string; reporter: string; time: string }
+      type: { topic: string; point: string; comment: string }
+    }
+  }
   nav?: {
     home: string
     topics: string
@@ -375,6 +381,12 @@ const baseZhHant: AppTranslations = {
     profileCenter: '會員中心',
     adminConsole: '管理後台',
   },
+  admin: {
+    reports: {
+      headers: { type: '類型', targetId: '目標ID', reason: '舉報原因', reporter: '舉報人', time: '時間' },
+      type: { topic: '主題', point: '觀點', comment: '評論' },
+    },
+  },
 }
 
 function convertToSimplified<T>(value: T): T {
@@ -477,6 +489,12 @@ export const translations: Record<Locale, AppTranslations> = {
       viewAsMe: 'View as me',
       profileCenter: 'Profile Center',
       adminConsole: 'Admin Console',
+    },
+    admin: {
+      reports: {
+        headers: { type: 'Type', targetId: 'Target ID', reason: 'Reason', reporter: 'Reporter', time: 'Time' },
+        type: { topic: 'Topic', point: 'Point', comment: 'Comment' },
+      },
     },
     topics: {
       add: {

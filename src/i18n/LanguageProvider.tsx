@@ -3,7 +3,7 @@ import { LanguageContext, type LanguageContextValue } from './LanguageContext'
 import type { Locale } from './translations'
 import { translate } from './translations'
 
-const STORAGE_KEY = 'pointlab:locale'
+const STORAGE_KEY = 'pl:locale'
 
 function resolveInitialLocale(): Locale {
   if (typeof window === 'undefined') {

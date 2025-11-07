@@ -12,6 +12,7 @@ import useConfirmDialog from '../hooks/useConfirmDialog'
 import usePromptDialog from '../hooks/usePromptDialog'
 import Snackbar from '@mui/material/Snackbar'
 import Alert from '@mui/material/Alert'
+import { getVoteState as getStoredVote, setVoteState as setStoredVote } from '../utils/votes'
 import { withBase } from '../api/client'
 import CommentsPanel from './CommentsPanel'
 import useAuth from '../auth/AuthContext'
@@ -37,13 +38,13 @@ export default function PointCard({ point, onDeleted }: { point: Point; onDelete
     : 'background.paper'
 
   const [voteState, setVoteState] = useState<'up'|'down'|undefined>(undefined)
-  useEffect(() => { try { const v = localStorage.getItem(`pl:pv:${point.id}`) as any; if (v==='up'||v==='down') setVoteState(v) } catch {} }, [point.id])
+  useEffect(() => { try { setVoteState(getStoredVote('point', point.id)) } catch {} }, [point.id])
   async function voteDir(dir:'up'|'down') {
     if (busy) return
     setBusy(true)
     const current = voteState
     if (current === dir) { setBusy(false); return }
-    const delta = !current ? (dir==='up'?+1:-1) : (dir==='up'?+2:-2)
+    const { next, delta } = setStoredVote('point', point.id, dir)
     try {
       setScore((s)=> (s||0)+delta)
       const res = await fetch(withBase(`/api/points/${point.id}/vote`), { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ delta }) })
@@ -51,11 +52,10 @@ export default function PointCard({ point, onDeleted }: { point: Point; onDelete
       const data = await res.json().catch(()=>null)
       const serverScore = typeof data?.data?.upvotes === 'number' ? data.data.upvotes : undefined
       if (typeof serverScore === 'number') setScore(serverScore)
-      const next = dir
       setVoteState(next)
-      try { localStorage.setItem(`pl:pv:${point.id}`, next) } catch {}
     } catch {
       setScore((s)=> (s||0)-delta)
+      setStoredVote('point', point.id, current)
     } finally {
       setBusy(false)
     }

@@ -14,6 +14,7 @@ import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { useEffect, useState } from 'react'
 import useAuth from '../auth/AuthContext'
 import { withBase } from '../api/client'
+import useLanguage from '../i18n/useLanguage'
 import Button from '@mui/material/Button'
 import GoogleLogo from '../components/icons/GoogleLogo'
 import Divider from '@mui/material/Divider'
@@ -25,35 +26,47 @@ import TableCell from '@mui/material/TableCell'
 import TableBody from '@mui/material/TableBody'
 import Paper from '@mui/material/Paper'
 import useConfirmDialog from '../hooks/useConfirmDialog'
+// 時間以絕對時間呈現
+import ToggleButtonGroup from '@mui/material/ToggleButtonGroup'
+import ToggleButton from '@mui/material/ToggleButton'
+import Pagination from '@mui/material/Pagination'
 
 type AdminUser = { id: string; name?: string; email?: string; picture?: string; role?: string; topics?: string[]; points?: string[]; comments?: string[] }
 
 // 保留空白區塊供未來擴充（避免未使用警告）
 
 export default function AdminPage() {
+  const { t } = useLanguage()
   const { user, login } = useAuth()
   const location = useLocation()
   const navigate = useNavigate()
   const [tab, setTab] = useState<'home'|'users'|'reports'>('home')
   const [users, setUsers] = useState<AdminUser[]>([])
+  const [usersTotal, setUsersTotal] = useState<number>(0)
   const [reports, setReports] = useState<any[]>([])
-  const [reportType, setReportType] = useState<'topic'|'point'|'comment'>('topic')
+  const [reportsTotal, setReportsTotal] = useState<number>(0)
+  const [reportType, setReportType] = useState<'all'|'topic'|'point'|'comment'>('all')
   const [stats, setStats] = useState<{users:number;topics:number;points:number;comments:number;reports:number} | null>(null)
   const { confirm, ConfirmDialogEl } = useConfirmDialog()
+  const pageSize = 20
+  const [usersPage, setUsersPage] = useState(1)
+  const [reportsPage, setReportsPage] = useState(1)
 
   useEffect(() => {
     if (tab !== 'users') return
-    fetch(withBase('/api/admin/users'), { credentials: 'include' })
+    fetch(withBase(`/api/admin/users?page=${usersPage}&size=${pageSize}`), { credentials: 'include' })
       .then(r => r.ok ? r.json() : Promise.reject(r.status))
-      .then(d => setUsers(d.items||[]))
-      .catch(() => setUsers([]))
-  }, [tab])
+      .then(d => { setUsers(d.items||[]); setUsersTotal(d.total||0) })
+      .catch(() => { setUsers([]); setUsersTotal(0) })
+  }, [tab, usersPage])
 
   // 路由 -> tab
   useEffect(() => {
     if (location.pathname.startsWith('/admin/users')) setTab('users')
     else if (location.pathname.startsWith('/admin/reports')) setTab('reports')
     else setTab('home')
+    setUsersPage(1)
+    setReportsPage(1)
   }, [location.pathname])
 
   // 進入 reports 或切換類型時載入資料
@@ -61,13 +74,15 @@ export default function AdminPage() {
     if (tab !== 'reports') return
     ;(async () => {
       try {
-        const d = await getJson<any>(`/api/admin/reports?type=${reportType}`)
+        const base = reportType==='all' ? '/api/admin/reports' : (`/api/admin/reports?type=${reportType}`)
+        const d = await getJson<any>(`${base}${base.includes('?')?'&':'?'}page=${reportsPage}&size=${pageSize}`)
         setReports(d.items || [])
+        setReportsTotal(d.total || 0)
       } catch {
-        setReports([])
+        setReports([]); setReportsTotal(0)
       }
     })()
-  }, [tab, reportType])
+  }, [tab, reportType, reportsPage])
 
   if (!user || (user.role !== 'admin' && user.role !== 'superadmin')) {
     return (
@@ -155,11 +170,11 @@ export default function AdminPage() {
             </ListItemButton>
             <ListItemButton selected={tab==='reports'} onClick={()=> navigate('/admin/reports')}>
               <ListItemIcon><Flag size={18} /></ListItemIcon>
-              <ListItemText className="label" primary="回報管理" />
+              <ListItemText className="label" primary="舉報管理" />
             </ListItemButton>
           </List>
         </Box>
-        <Box sx={{ flex: 1, p: 2, ml: { xs: `${collapsedWidth}px`, lg: `${drawerWidth}px` }, maxWidth: 'none', width: 'auto', m: 0, textAlign: 'left', alignSelf: 'stretch' }}>
+        <Box sx={{ flex: 1, p: 2, pt: '76px', ml: { xs: `${collapsedWidth}px`, lg: `${drawerWidth}px` }, maxWidth: 'none', width: 'auto', m: 0, textAlign: 'left', alignSelf: 'stretch', overflowX: 'auto' }}>
           {tab==='home' && (
             <>
               <Typography sx={{ fontWeight: 800, mb: 1, fontSize: 34 }}>資訊主頁</Typography>
@@ -169,8 +184,8 @@ export default function AdminPage() {
           {tab==='users' && (
             <>
               <Typography sx={{ fontWeight: 800, mb: 1, fontSize: 34 }}>用戶列表</Typography>
-              <TableContainer component={Paper} sx={{ borderRadius: '10px' }}>
-                <Table size="small">
+              <TableContainer component={Paper} sx={{ borderRadius: '10px', minWidth: 840 }}>
+                <Table size="small" sx={{ minWidth: 840 }}>
                   <TableHead>
                     <TableRow>
                       <TableCell sx={{ width: 60, whiteSpace: 'nowrap' }}>頭像</TableCell>
@@ -232,38 +247,97 @@ export default function AdminPage() {
                   </TableBody>
                 </Table>
               </TableContainer>
+              <Box sx={{ display: 'flex', justifyContent: 'center', mt: 1 }}>
+                <Pagination page={usersPage} onChange={(_,p)=> setUsersPage(p)} count={Math.max(1, Math.ceil((usersTotal||0)/20))} size="small" shape="rounded" siblingCount={0} boundaryCount={1} />
+              </Box>
             </>
           )}
           {tab==='reports' && (
             <>
-              <Typography sx={{ fontWeight: 800, mb: 1, fontSize: 34 }}>回報管理</Typography>
-              <Box sx={{ display: 'flex', gap: 8, mb: 1 }}>
-                <div style={{ display: 'flex', gap: 8 }}>
-                  <button className={`btn btn-sm ${reportType==='topic'?'btn-primary':''}`} onClick={()=> setReportType('topic')}>主題</button>
-                  <button className={`btn btn-sm ${reportType==='point'?'btn-primary':''}`} onClick={()=> setReportType('point')}>觀點</button>
-                  <button className={`btn btn-sm ${reportType==='comment'?'btn-primary':''}`} onClick={()=> setReportType('comment')}>評論</button>
-                </div>
+              <Typography sx={{ fontWeight: 800, mb: 1, fontSize: 34 }}>舉報管理</Typography>
+              <Box sx={{ mb: 1 }}>
+                <ToggleButtonGroup
+                  exclusive
+                  size="small"
+                  color="primary"
+                  value={reportType}
+                  onChange={(_, v)=>{ if (v) setReportType(v) }}
+                  sx={{
+                    borderRadius: '12px',
+                    columnGap: 1,
+                    '& .MuiToggleButtonGroup-grouped': {
+                      borderRadius: '12px',
+                      px: 2,
+                      borderColor: 'divider',
+                      mr: 0,
+                      '&:not(:last-of-type)': { mr: 1 },
+                      '&.Mui-selected': {
+                        bgcolor: 'primary.main',
+                        color: '#fff',
+                        '&:hover': { bgcolor: 'primary.dark' },
+                      },
+                    },
+                  }}
+                >
+                  <ToggleButton value="all">全部</ToggleButton>
+                  <ToggleButton value="topic">主題</ToggleButton>
+                  <ToggleButton value="point">觀點</ToggleButton>
+                  <ToggleButton value="comment">評論</ToggleButton>
+                </ToggleButtonGroup>
               </Box>
-              <TableContainer component={Paper} sx={{ borderRadius: '10px' }}>
-                <Table size="small">
+              <TableContainer component={Paper} sx={{ borderRadius: '10px', minWidth: 860 }}>
+                <Table size="small" sx={{ minWidth: 860 }}>
                   <TableHead>
                     <TableRow>
-                      <TableCell sx={{ whiteSpace: 'nowrap' }}>類型</TableCell>
-                      <TableCell sx={{ whiteSpace: 'nowrap' }}>TargetId</TableCell>
-                      <TableCell sx={{ whiteSpace: 'nowrap' }}>時間</TableCell>
+                      <TableCell sx={{ whiteSpace: 'nowrap' }}>{t('admin.reports.headers.targetId') || '目標ID'}</TableCell>
+                      <TableCell sx={{ whiteSpace: 'nowrap' }}>{t('admin.reports.headers.type') || '類型'}</TableCell>
+                      <TableCell sx={{ whiteSpace: 'nowrap' }}>{t('admin.reports.headers.reason') || '舉報原因'}</TableCell>
+                      <TableCell sx={{ whiteSpace: 'nowrap' }}>{t('admin.reports.headers.reporter') || '舉報人'}</TableCell>
+                      <TableCell sx={{ whiteSpace: 'nowrap' }}>{t('admin.reports.headers.time') || '時間'}</TableCell>
                     </TableRow>
                   </TableHead>
                   <TableBody>
                     {reports.map((r:any)=> (
                       <TableRow key={r.id} hover>
-                        <TableCell>{r.type}</TableCell>
-                        <TableCell>{r.targetId}</TableCell>
-                        <TableCell>{r.createdAt}</TableCell>
+                        <TableCell>
+                          {(r.type==='topic' && (r.topicId||r.targetId)) ? (
+                            <Link
+                              to={`/topics/${encodeURIComponent(r.topicId||r.targetId)}`}
+                              style={{ color: '#0f172a', textDecoration: 'none', fontWeight: 700 }}
+                              onMouseEnter={(e)=>{ (e.currentTarget as HTMLAnchorElement).style.color = 'var(--mui-palette-primary-main, #4f46e5)' }}
+                              onMouseLeave={(e)=>{ (e.currentTarget as HTMLAnchorElement).style.color = '#0f172a' }}
+                            >
+                              {r.targetId}
+                            </Link>
+                          ) : (r.type!=='topic' && r.topicId) ? (
+                            <Link
+                              to={`/topics/${encodeURIComponent(r.topicId)}`}
+                              style={{ color: '#0f172a', textDecoration: 'none', fontWeight: 700 }}
+                              onMouseEnter={(e)=>{ (e.currentTarget as HTMLAnchorElement).style.color = 'var(--mui-palette-primary-main, #4f46e5)' }}
+                              onMouseLeave={(e)=>{ (e.currentTarget as HTMLAnchorElement).style.color = '#0f172a' }}
+                            >
+                              {r.targetId}
+                            </Link>
+                          ) : (
+                            r.targetId
+                          )}
+                        </TableCell>
+                        <TableCell>{r.type==='topic' ? (t('admin.reports.type.topic')||'主題') : (r.type==='point' ? (t('admin.reports.type.point')||'觀點') : (t('admin.reports.type.comment')||'評論'))}</TableCell>
+                        <TableCell sx={{ maxWidth: 320, whiteSpace: 'nowrap', textOverflow: 'ellipsis', overflow: 'hidden' }}>{r.reason || '—'}</TableCell>
+                        <TableCell>
+                          {r.reporter?.id ? (
+                            <Link to={`/users/${encodeURIComponent(r.reporter.id)}`} style={{ color: '#0f172a', textDecoration: 'none', fontWeight: 700 }}>{r.reporter.name || '用戶'}</Link>
+                          ) : (r.reporter?.name || '訪客')}
+                        </TableCell>
+                        <TableCell>{new Date(r.createdAt).toLocaleString(undefined, { hour12: false })}</TableCell>
                       </TableRow>
                     ))}
                   </TableBody>
                 </Table>
               </TableContainer>
+              <Box sx={{ display: 'flex', justifyContent: 'center', mt: 1 }}>
+                <Pagination page={reportsPage} onChange={(_,p)=> setReportsPage(p)} count={Math.max(1, Math.ceil((reportsTotal||0)/20))} size="small" shape="rounded" siblingCount={0} boundaryCount={1} />
+              </Box>
             </>
           )}
           {ConfirmDialogEl}

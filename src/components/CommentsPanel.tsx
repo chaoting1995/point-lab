@@ -14,6 +14,7 @@ import { formatRelativeAgo } from '../utils/text'
 import { getJson, type ListResponse, withBase } from '../api/client'
 import useAuth from '../auth/AuthContext'
 import usePromptDialog from '../hooks/usePromptDialog'
+import { getVoteState as getStoredVote, setVoteState as setStoredVote } from '../utils/votes'
 import Snackbar from '@mui/material/Snackbar'
 import Alert from '@mui/material/Alert'
 
@@ -97,8 +98,8 @@ export default function CommentsPanel({ open, onClose, pointId }: { open: boolea
     try {
       const map: Record<string, 'up'|'down'> = {}
       for (const c of items) {
-        const v = localStorage.getItem(`pl:cv:${c.id}`) as any
-        if (v === 'up' || v === 'down') map[c.id] = v
+        const v = getStoredVote('comment', c.id)
+        if (v) map[c.id] = v
       }
       setVotes((prev) => ({ ...map, ...prev }))
     } catch {}
@@ -137,6 +138,7 @@ export default function CommentsPanel({ open, onClose, pointId }: { open: boolea
     if (res.ok) {
       const created = await res.json().catch(() => null)
       const createdItem = created?.data as CommentItem | undefined
+      try { if (!user) { const id = createdItem?.id; if (id) { const mod = await import('../utils/guestActivity'); (mod as any).addGuestItem?.('comment', id) } } } catch {}
       setContent('')
       if (guestName?.trim()) { try { localStorage.setItem('pl:guestName', guestName.trim()) } catch {} }
       // 若是針對某一則一級評論的回覆，確保該父層展開並立即看到新留言
@@ -228,7 +230,7 @@ export default function CommentsPanel({ open, onClose, pointId }: { open: boolea
                 await fetch(withBase(`/api/comments/${c.id}/vote`), { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ delta }) })
                 setVotes(prev => {
                   const next: 'up' = 'up'
-                  try { localStorage.setItem(`pl:cv:${c.id}`, next) } catch {}
+                  try { setStoredVote('comment', c.id, next) } catch {}
                   return { ...prev, [c.id]: next }
                 })
                 setItems(prev => prev.map(it => it.id===c.id?{...it, upvotes: (it.upvotes||0)+delta}:it))
@@ -251,7 +253,7 @@ export default function CommentsPanel({ open, onClose, pointId }: { open: boolea
                 await fetch(withBase(`/api/comments/${c.id}/vote`), { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ delta }) })
                 setVotes(prev => {
                   const next: 'down' = 'down'
-                  try { localStorage.setItem(`pl:cv:${c.id}`, next) } catch {}
+                  try { setStoredVote('comment', c.id, next) } catch {}
                   return { ...prev, [c.id]: next }
                 })
                 setItems(prev => prev.map(it => it.id===c.id?{...it, upvotes: (it.upvotes||0)+delta}:it))
@@ -306,7 +308,7 @@ export default function CommentsPanel({ open, onClose, pointId }: { open: boolea
                         await fetch(withBase(`/api/comments/${rc.id}/vote`), { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ delta }) })
                         setVotes(prev => {
                           const next: 'up' = 'up'
-                          try { localStorage.setItem(`pl:cv:${rc.id}`, next) } catch {}
+                          try { setStoredVote('comment', rc.id, next) } catch {}
                           return { ...prev, [rc.id]: next }
                         })
                         setExpanded(prev => ({ ...prev, [c.id]: { ...prev[c.id]!, items: prev[c.id]!.items.map(x => x.id===rc.id?{...x, upvotes: (x.upvotes||0)+delta}:x) } }))
@@ -329,7 +331,7 @@ export default function CommentsPanel({ open, onClose, pointId }: { open: boolea
                         await fetch(withBase(`/api/comments/${rc.id}/vote`), { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ delta }) })
                         setVotes(prev => {
                           const next: 'down' = 'down'
-                          try { localStorage.setItem(`pl:cv:${rc.id}`, next) } catch {}
+                          try { setStoredVote('comment', rc.id, next) } catch {}
                           return { ...prev, [rc.id]: next }
                         })
                         setExpanded(prev => ({ ...prev, [c.id]: { ...prev[c.id]!, items: prev[c.id]!.items.map(x => x.id===rc.id?{...x, upvotes: (x.upvotes||0)+delta}:x) } }))

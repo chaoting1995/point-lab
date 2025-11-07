@@ -388,6 +388,11 @@ export const repo = {
     }
     return { items: pageItems, total: items.length }
   },
+  getComment(id) {
+    if (db) return db.prepare('select * from comments where id=?').get(id) || null
+    const all = readJson('comments.json')
+    return all.find(c=>c.id===id) || null
+  },
   createComment({ id, pointId, parentId, content, authorName, authorType, userId }) {
     if (db) {
       try { db.prepare('alter table comments add column user_id text').run() } catch {}

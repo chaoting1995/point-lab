@@ -36,8 +36,9 @@ export default function PromptDialog({
   const disabled = required && !value.trim()
   return (
     <Dialog open={open} onClose={onCancel} PaperProps={{ sx: { width: '100%', maxWidth: 360, m: 1.5, borderRadius: '10px' } }}>
-      <DialogTitle sx={{ textAlign: 'center', fontWeight: 800 }}>{title}</DialogTitle>
-      <DialogContent sx={{ pt: 0, px: 2, pb: 0 }}>
+      <DialogTitle sx={{ textAlign: 'center', fontWeight: 800, mb: 0.5 }}>{title}</DialogTitle>
+      {/* 注意：不能把 DialogContent 的 padding-top 設成 0；額外加上 margin-top 讓浮動 Label 不貼到標題 */}
+      <DialogContent sx={{ px: 2, pt: 2, pb: 0 }}>
         <TextField
           autoFocus
           fullWidth
@@ -46,6 +47,7 @@ export default function PromptDialog({
           placeholder={placeholder}
           value={value}
           onChange={(e)=> setValue(e.target.value)}
+          sx={{ mt: 1 }}
         />
       </DialogContent>
       <DialogActions sx={{ justifyContent: 'center', pb: 2, gap: 1 }}>
@@ -59,4 +61,3 @@ export default function PromptDialog({
     </Dialog>
   )
 }
-

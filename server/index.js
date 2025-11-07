@@ -365,6 +365,7 @@ app.get('/api/points/:id', (req, res) => {
   const data = {
     ...it,
     createdAt: it.createdAt || it.created_at,
+    ...(it.topic_id ? { topicId: it.topic_id } : (it.topicId ? { topicId: it.topicId } : {})),
     ...(it.user_id ? { userId: it.user_id } : {}),
     ...(it.author || it.author_name ? { author: it.author || { name: it.author_name, role: it.author_type || (it.user_id ? 'user' : 'guest') } } : {}),
   }
@@ -563,9 +564,33 @@ app.get('/api/admin/reports', (req, res) => {
   const role = u ? (isSuper ? 'superadmin' : (u.role || 'user')) : 'user'
   if (role !== 'admin' && role !== 'superadmin') return res.status(403).json({ error: 'FORBIDDEN' })
   try {
-    const { type } = req.query
-    const items = repo.listReports(type)
-    res.json({ items })
+    const { type, page = '1', size = '20' } = req.query
+    const p = Math.max(1, parseInt(page, 10) || 1)
+    const s = Math.max(1, Math.min(100, parseInt(size, 10) || 20))
+    const all = repo.listReports(type).map((r) => {
+      const urec = r.userId ? (repo.getUserById?.(r.userId) || null) : null
+      let topicId = null
+      let pointId = null
+      if (r.type === 'topic') {
+        topicId = r.targetId
+      } else if (r.type === 'point') {
+        const p = repo.getPoint?.(r.targetId)
+        if (p) { pointId = p.id; topicId = p.topic_id || p.topicId || null }
+      } else if (r.type === 'comment') {
+        const c = repo.getComment?.(r.targetId)
+        if (c) {
+          pointId = c.point_id || c.pointId || null
+          if (pointId) {
+            const p = repo.getPoint?.(pointId)
+            if (p) topicId = p.topic_id || p.topicId || null
+          }
+        }
+      }
+      return { ...r, reporter: urec ? { id: urec.id, name: urec.name || urec.email || '用戶' } : null, topicId, pointId }
+    })
+    const total = all.length
+    const items = all.slice((p - 1) * s, (p - 1) * s + s)
+    res.json({ items, total, page: p, size: s })
   } catch { res.status(500).json({ error: 'READ_REPORTS_FAILED' }) }
 })
 
@@ -595,14 +620,19 @@ app.get('/api/admin/users', (req, res) => {
   const role = u ? (isSuper ? 'superadmin' : (u.role || 'user')) : 'user'
   if (role !== 'admin' && role !== 'superadmin') return res.status(403).json({ error: 'FORBIDDEN' })
   try {
+    const { page = '1', size = '20' } = req.query
+    const p = Math.max(1, parseInt(page, 10) || 1)
+    const s = Math.max(1, Math.min(100, parseInt(size, 10) || 20))
     const base = repo.listUsers?.() || []
-    const items = base.map(it => ({
+    const enriched = base.map(it => ({
       ...it,
       topicLikes: repo.sumTopicScoreByUser(it.id),
       pointLikes: repo.sumPointUpvotesByUser(it.id),
       commentLikes: repo.sumCommentUpvotesByUser(it.id),
     }))
-    res.json({ items })
+    const total = enriched.length
+    const items = enriched.slice((p - 1) * s, (p - 1) * s + s)
+    res.json({ items, total, page: p, size: s })
   } catch { res.status(500).json({ error: 'READ_USERS_FAILED' }) }
 })
 

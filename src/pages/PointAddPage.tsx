@@ -15,6 +15,7 @@ import useAuth from '../auth/AuthContext'
 import FormControlLabel from '@mui/material/FormControlLabel'
 import Switch from '@mui/material/Switch'
 import DuelTabs, { type DuelValue } from '../components/DuelTabs'
+import { addGuestItem } from '../utils/guestActivity'
 
 export default function PointAddPage() {
   const navigate = useNavigate()
@@ -175,13 +176,14 @@ export default function PointAddPage() {
                     }),
                   })
                     if (!res.ok) throw new Error('發布失敗，請稍後再試')
-                    await res.json()
+                    const body = await res.json().catch(()=>null)
                     try {
                       if (!user) {
                         const nameToSave = authorName.trim()
                         if (nameToSave) localStorage.setItem('pl:guestName', nameToSave)
                       }
                     } catch {}
+                    try { if (!user || useGuest) { const pid = body?.data?.id; if (pid) addGuestItem('point', pid) } } catch {}
                     setSuccessOpen(true)
                     setTimeout(() => navigate(topicId ? `/topics/${topicId}` : '/'), 1200)
                   } catch (e) {

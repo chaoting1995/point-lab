@@ -16,6 +16,7 @@ import FormControlLabel from '@mui/material/FormControlLabel'
 import Radio from '@mui/material/Radio'
 import PageHeader from '../components/PageHeader'
 import { withBase } from '../api/client'
+import { addGuestItem } from '../utils/guestActivity'
 
 export default function TopicAddPage() {
   const navigate = useNavigate()
@@ -114,6 +115,8 @@ export default function TopicAddPage() {
                     const body = await res.json()
                     // 顯示下一步提示與按鈕，引導前往新增觀點
                     setCreatedId(body?.data?.id || null)
+                    // 未登入（或後端未回傳 createdBy）時，將主題 id 記錄到 guest activity
+                    try { if (!body?.data?.createdBy) addGuestItem('topic', body?.data?.id) } catch {}
                     setSuccessOpen(true)
                   } catch (e) {
                     setError(e instanceof Error ? e.message : '發布失敗')

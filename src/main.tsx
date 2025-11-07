@@ -27,6 +27,8 @@ const theme = createTheme({
   },
 })
 
+// 已不需要舊資料遷移（正式站無舊使用者資料）
+
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <ThemeProvider theme={theme}>
