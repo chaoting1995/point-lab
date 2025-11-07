@@ -35,7 +35,7 @@ export default function DuelTabs({ value, onChange, label }: Props) {
             padding: '6px 12px',
             fontWeight: 700,
             border: '1px solid',
-            borderColor: agreeActive ? '#10b981' : '#cbd5e1',
+            borderColor: agreeActive ? '#10b981' : 'var(--mui-palette-divider)',
             color: agreeActive ? '#fff' : '#10b981',
             background: agreeActive ? '#10b981' : 'transparent',
             flex: 1,
@@ -53,7 +53,7 @@ export default function DuelTabs({ value, onChange, label }: Props) {
             padding: '6px 12px',
             fontWeight: 700,
             border: '1px solid',
-            borderColor: othersActive ? '#ef4444' : '#cbd5e1',
+            borderColor: othersActive ? '#ef4444' : 'var(--mui-palette-divider)',
             color: othersActive ? '#fff' : '#ef4444',
             background: othersActive ? '#ef4444' : 'transparent',
             flex: 1,
@@ -67,4 +67,3 @@ export default function DuelTabs({ value, onChange, label }: Props) {
     </FormControl>
   )
 }
-

@@ -58,6 +58,7 @@ Point（觀點）
 - 欄位：`id`、`description`、`createdAt`、`author{name,role}`、`topicId?`、`position?`（對立模式下 `agree｜others`）
 - 列表：`GET /api/points?topic=<topicId>&page=1&size=30&sort=new|hot|old`
 - 建立：`POST /api/points` 參數：`description`、`topicId?`、`authorName?`、`authorType=guest|user`、`position?`
+- 投票：`PATCH /api/points/:id/vote` Body：`{ delta: 1 | -1 }`（三態切換會出現 ±2 的累計行為，後端最終以整數 upvotes 儲存並影響熱門排序）
 - 刪除：`DELETE /api/points/:id`（會同步將對應 Topic 的 `count - 1`）
 
 Comments（評論）
@@ -68,6 +69,28 @@ Comments（評論）
   - 回傳一級評論含 `childCount` 供展開提示
 - 建立：`POST /api/points/:id/comments` Body：`{ content, parentId?, authorName?, authorType? }`
 - 投票：`PATCH /api/comments/:id/vote` Body：`{ delta: 1 | -1 | ±2 }`（允許負數）
+
+## 評論功能（前端互動規格）
+
+- 容器與版型
+  - 桌面（≥756px）：MUI Dialog（max-width 576px、圓角 10px）
+  - 行動（<756px）：MUI Drawer 自下而上（約 75vh）
+  - 左側排序 Select：最舊/最新/熱門（預設最舊），不顯示標題文字
+- 列表與分頁
+  - 一級列表使用上方 API；二級列表帶 `parent=<commentId>`；每頁 10 筆
+  - 一級回傳含 `childCount`，顯示「View {n} replies / 查看 {n} 則回覆」按鈕
+  - 長文預設顯示 3 行，行尾提供「See more/查看更多」，展開後改為「See less/查看更少」
+  - 一級留言同時存在「See more」與「View n replies」時兩者並存
+- 回覆行為
+  - 點「回覆」進入回覆模式，輸入區上方顯示「正在回覆 {名稱}・取消」
+  - 送出二級留言後自動展開父留言，並把新留言插入最上方，避免使用者看不到
+- 投票（三態且允許負數）
+  - 狀態：未投 / 讚 / 倒讚；切換規則依 delta 調整（未投→讚 +1、未投→倒讚 -1、讚→倒讚 -2、倒讚→讚 +2、再次點同方向取消）
+  - 前端以 localStorage 記錄（`pl:cv:<commentId>`）；icon 採主色填滿，hover/active 僅變深色；按讚區置頂
+- 輸入區
+  - 多行輸入：預設單行，輸入時自動增高（最多 6 行）
+  - 送出按鈕：固定圓形（40x40）；icon 為主色填滿；hover/active 不出現底色
+  - 訪客名稱：localStorage 無則顯示「訪客名稱」欄位，首次送出後保存名稱
 
 注意事項
 - 前端路由一律使用 `id`；後端仍容許以舊 `slug` 查找（避免舊連結 404）。

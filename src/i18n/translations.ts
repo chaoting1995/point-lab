@@ -145,6 +145,11 @@ export type AppTranslations = {
     logout?: string
     guide?: string
   }
+  auth?: {
+    loginTitle: string
+    loginDesc: string
+    signInWithGoogle: string
+  }
   common?: {
     loading: string
     error: string
@@ -286,6 +291,11 @@ const baseZhHant: AppTranslations = {
     login: '登入',
     logout: '登出',
     guide: '指南',
+  },
+  auth: {
+    loginTitle: '登入或註冊',
+    loginDesc: '登入後，可參與排名、競賽',
+    signInWithGoogle: '使用 Google 登入',
   },
   common: {
     loading: '載入中…',
@@ -470,6 +480,11 @@ export const translations: Record<Locale, AppTranslations> = {
       login: 'Sign in',
       logout: 'Sign out',
       guide: 'Guide',
+    },
+    auth: {
+      loginTitle: 'Sign in or register',
+      loginDesc: 'Sign in to join ranking and competitions.',
+      signInWithGoogle: 'Sign in with Google',
     },
     common: {
       loading: 'Loading…',

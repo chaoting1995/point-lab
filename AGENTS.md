@@ -34,6 +34,7 @@
   - `GET /api/points?topic=<id>&page&size&sort=new|hot|old|top`
   - `GET /api/points/:id`
   - `POST /api/points`（description, topicId?, authorName?, authorType=guest|user, position?=agree|others）
+  - `PATCH|POST /api/points/:id/vote`（Body: { delta: 1|-1|±2 }；三態切換時可能為 ±2）
   - `PATCH /api/points/:id`（description/position）
   - `DELETE /api/points/:id`
   - Comments（新）：
@@ -107,3 +108,26 @@
 - 常見問題
   - 線上新增 405：通常是 fetch 未走 `withBase()`，已在程式統一修正。
   - 線上無資料：確認 DB 路徑為 `/app/data/pointlab.db`，必要時重跑匯入腳本；或將 `/app/server/pointlab.db` 複製到 `/app/data/pointlab.db` 後重啟。
+
+## 前端 UI 規範（評論/投票）
+
+- Icon 規則：
+  - 採主色 `var(--mui-palette-primary-main, #4f46e5)`；hover/active 使用 `var(--mui-palette-primary-dark, #4338ca)`。
+  - 不得出現 hover 背景（`backgroundColor: transparent`）。
+  - 選中使用 `weight="fill"`，未選 `weight="regular"`。
+- 投票三態（允許負數）：未投/讚/倒讚；本地以 localStorage 紀錄（topic: `pl:tv:<id>`、point: `pl:pv:<id>`、comment: `pl:cv:<id>`）。
+- 評論輸入：預設單行，自動增高（max 6）；送出按鈕固定圓形 40×40。
+- 長文截斷：預設 3 行；顯示「See more/查看更多」與「See less/查看更少」。
+- 回覆行為：送出二級留言後，自動展開該父留言並把新留言插在頂部。
+
+## 工作流程（建議）
+
+1) 開發：遵循單行 commit 規範（≤72 字元），詳細內容寫入 `CHANGELOG.md`。
+2) 本地驗證：`npm run build`；評論對話框（桌面/行動）、投票三態、i18n 切換。
+3) 部署：
+   - 前端：推到 `master` 觸發 Pages
+   - 後端：`npm run fly:deploy`（先後端、再前端，避免 API 404）
+4) 檢查清單：
+   - Pages `VITE_API_BASE` 指向 `https://pointlab-api.fly.dev`
+   - Fly `ALLOWED_ORIGINS` 包含 Pages 網域
+   - `GET /api/points/:id/comments` 正常、POST/投票無 404

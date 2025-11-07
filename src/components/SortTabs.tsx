@@ -20,18 +20,18 @@ export default function SortTabs({ value, onChange, fullWidth = true }: Props) {
         onChange={(_, v) => onChange(v)}
         variant={fullWidth ? 'fullWidth' : 'standard'}
         aria-label="sort tabs"
-        sx={{
+        sx={(t)=>({
           // Keep only the outer bottom border; ensure Tabs itself不產生額外底線
           '& .MuiTabs-scroller': { borderBottom: 'none' },
           '& .MuiTabs-flexContainer': { borderBottom: 'none' },
-          '& .MuiTabs-indicator': { backgroundColor: '#4f46e5', height: 2, borderRadius: 1 },
+          '& .MuiTabs-indicator': { backgroundColor: t.palette.primary.main, height: 2, borderRadius: 1 },
           '& .MuiTab-root': {
             fontSize: 16,
-            color: '#64748b',
+            color: t.palette.text.secondary,
             minHeight: 44,
-            '&.Mui-selected': { color: '#4f46e5', fontWeight: 800 },
+            '&.Mui-selected': { color: t.palette.primary.main, fontWeight: 800 },
           },
-        }}
+        })}
       >
         <Tab value="new" label={t('tabs.new')} icon={<Sparkle size={16} />} iconPosition="start" />
         <Tab value="hot" label={t('tabs.hot')} icon={<Flame size={16} />} iconPosition="start" />

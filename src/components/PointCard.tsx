@@ -30,16 +30,27 @@ export default function PointCard({ point, onDeleted }: { point: Point; onDelete
 
   const [voteState, setVoteState] = useState<'up'|'down'|undefined>(undefined)
   useEffect(() => { try { const v = localStorage.getItem(`pl:pv:${point.id}`) as any; if (v==='up'||v==='down') setVoteState(v) } catch {} }, [point.id])
-  function voteDir(dir:'up'|'down') {
+  async function voteDir(dir:'up'|'down') {
     if (busy) return
     setBusy(true)
     const current = voteState
-    const delta = current===dir ? (dir==='up'?-1:+1) : (!current ? (dir==='up'?+1:-1) : (dir==='up'?+2:-2))
-    setScore((s)=> (s||0)+delta)
-    const next = current===dir ? undefined : dir
-    setVoteState(next)
-    try { if (next) localStorage.setItem(`pl:pv:${point.id}`, next); else localStorage.removeItem(`pl:pv:${point.id}`) } catch {}
-    setBusy(false)
+    if (current === dir) { setBusy(false); return }
+    const delta = !current ? (dir==='up'?+1:-1) : (dir==='up'?+2:-2)
+    try {
+      setScore((s)=> (s||0)+delta)
+      const res = await fetch(withBase(`/api/points/${point.id}/vote`), { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ delta }) })
+      if (!res.ok) throw new Error('VOTE_FAILED')
+      const data = await res.json().catch(()=>null)
+      const serverScore = typeof data?.data?.upvotes === 'number' ? data.data.upvotes : undefined
+      if (typeof serverScore === 'number') setScore(serverScore)
+      const next = dir
+      setVoteState(next)
+      try { localStorage.setItem(`pl:pv:${point.id}`, next) } catch {}
+    } catch {
+      setScore((s)=> (s||0)-delta)
+    } finally {
+      setBusy(false)
+    }
   }
 
   const createdLabel = useMemo(() => {
@@ -129,20 +140,21 @@ export default function PointCard({ point, onDeleted }: { point: Point; onDelete
             </Typography>
             {showToggle && (
               <Box sx={{ mt: 0.5 }}>
-                <button
+                <Box
+                  component="button"
                   type="button"
                   onClick={() => setExpanded((v) => !v)}
-                  style={{
+                  sx={(t)=>({
                     border: 'none',
                     background: 'transparent',
-                    color: 'var(--mui-palette-primary-main, #4f46e5)',
+                    color: t.palette.primary.main,
                     fontSize: 12,
-                    padding: 0,
+                    p: 0,
                     cursor: 'pointer',
-                  }}
+                  })}
                 >
                   {expanded ? (t('common.seeLess') || '查看更少') : (t('common.seeMore') || '查看更多')}
-                </button>
+                </Box>
               </Box>
             )}
             <Typography component="div" variant="caption" sx={{ color: 'text.secondary', fontSize: 12, mt: 'auto' }}>
@@ -179,13 +191,13 @@ export default function PointCard({ point, onDeleted }: { point: Point; onDelete
 
           {/* 右欄：投票垂直區 */}
           <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 0.5 }}>
-            <IconButton size="small" aria-label="讚" onClick={() => voteDir('up')} disabled={busy} sx={{ borderRadius: '10px', color: voteState==='up' ? 'var(--mui-palette-primary-main, #4f46e5)' : undefined, '&:hover': { color: 'var(--mui-palette-primary-dark, #4338ca)' }, '&:active': { color: 'var(--mui-palette-primary-dark, #4338ca)' }, '&.Mui-disabled': { color: '#cbd5e1' } }}>
+            <IconButton size="small" aria-label="讚" onClick={() => voteDir('up')} disabled={busy || voteState==='up'} sx={(t)=>({ borderRadius: '10px', color: voteState==='up' ? t.palette.primary.main : undefined, '&:hover': { color: t.palette.primary.dark, backgroundColor: 'transparent' }, '&:active': { color: t.palette.primary.dark, backgroundColor: 'transparent' }, '&.Mui-disabled': { color: voteState==='up' ? t.palette.primary.main : t.palette.action.disabled } })}>
               <ThumbsUp size={18} weight={voteState==='up' ? 'fill' : 'regular'} />
             </IconButton>
             <Typography variant="subtitle2" sx={{ minWidth: 16, textAlign: 'center', fontWeight: 800 }}>
               {score}
             </Typography>
-            <IconButton size="small" aria-label="倒讚" onClick={() => voteDir('down')} disabled={busy} sx={{ borderRadius: '10px', color: voteState==='down' ? 'var(--mui-palette-primary-main, #4f46e5)' : undefined, '&:hover': { color: 'var(--mui-palette-primary-dark, #4338ca)' }, '&:active': { color: 'var(--mui-palette-primary-dark, #4338ca)' }, '&.Mui-disabled': { color: '#cbd5e1' } }}>
+            <IconButton size="small" aria-label="倒讚" onClick={() => voteDir('down')} disabled={busy || voteState==='down'} sx={(t)=>({ borderRadius: '10px', color: voteState==='down' ? t.palette.primary.main : undefined, '&:hover': { color: t.palette.primary.dark, backgroundColor: 'transparent' }, '&:active': { color: t.palette.primary.dark, backgroundColor: 'transparent' }, '&.Mui-disabled': { color: voteState==='down' ? t.palette.primary.main : t.palette.action.disabled } })}>
               <ThumbsDown size={18} weight={voteState==='down' ? 'fill' : 'regular'} />
             </IconButton>
           </Box>

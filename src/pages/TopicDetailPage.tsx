@@ -92,44 +92,46 @@ export default function TopicDetailPage() {
           <SortTabs value={sort} onChange={handleSort} />
           {topic?.mode === 'duel' && (
             <Box sx={{ mt: 0.5, mb: 1, display: 'flex', gap: 2, width: '100%' }}>
-              <button
+              <Box
+                component="button"
                 type="button"
                 onClick={() => toggleDuel('agree')}
                 className="btn btn-sm"
-                style={{
-                  borderRadius: 10,
-                  padding: '6px 12px',
+                sx={(t)=>({
+                  borderRadius: 2,
+                  px: 1.5, py: 0.75,
                   fontWeight: 700,
                   border: '1px solid',
-                  borderColor: duelFilter === 'agree' ? '#10b981' : '#cbd5e1',
+                  borderColor: duelFilter === 'agree' ? '#10b981' : t.palette.divider,
                   color: duelFilter === 'agree' ? '#fff' : '#10b981',
                   background: duelFilter === 'agree' ? '#10b981' : 'transparent',
                   flex: 1,
                   width: '100%',
                   cursor: 'pointer',
-                }}
+                })}
               >
                 {t('points.add.stanceAgree') || '讚同'}
-              </button>
-              <button
+              </Box>
+              <Box
+                component="button"
                 type="button"
                 onClick={() => toggleDuel('others')}
                 className="btn btn-sm"
-                style={{
-                  borderRadius: 10,
-                  padding: '6px 12px',
+                sx={(t)=>({
+                  borderRadius: 2,
+                  px: 1.5, py: 0.75,
                   fontWeight: 700,
                   border: '1px solid',
-                  borderColor: duelFilter === 'others' ? '#ef4444' : '#cbd5e1',
+                  borderColor: duelFilter === 'others' ? '#ef4444' : t.palette.divider,
                   color: duelFilter === 'others' ? '#fff' : '#ef4444',
                   background: duelFilter === 'others' ? '#ef4444' : 'transparent',
                   flex: 1,
                   width: '100%',
                   cursor: 'pointer',
-                }}
+                })}
               >
                 {t('points.add.stanceOther') || '其他'}
-              </button>
+              </Box>
             </Box>
           )}
           {loading && <p className="text-slate-500">{t('common.loading')}</p>}

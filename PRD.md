@@ -36,6 +36,31 @@
 - 新增觀點：對立模式顯示「選擇立場」按鈕組（未選不可發布）
 - 版面：移除雙層左右 padding（比照主題列表），統一圓角 10px
 
+### 評論規格（Comments Spec）
+- 容器與版型
+  - 桌面 ≥756px：MUI Dialog（max-width 576px、border-radius 10px）
+  - 行動 ＜756px：MUI Drawer（自下而上，約 75vh）
+  - 標題不顯示，左側為排序 Select（最舊/最新/熱門），預設最舊
+- 列表與分頁
+  - 一級列表：`GET /api/points/:id/comments?page&size&sort`；回傳含 `childCount`
+  - 二級列表：`GET /api/points/:id/comments?parent=<cid>`（每頁 10 筆，「查看更多評論」載入下一頁）
+  - 長文截斷：預設顯示 3 行，行尾提供「See more/查看更多」，展開後顯示「See less/查看更少」
+  - 一級留言有「See more」時，與「View n replies」可同時存在（互不影響）
+- 回覆行為
+  - 點任何一級留言的「回覆」進入回覆模式；輸入區上方顯示「正在回覆 {名稱}・取消」
+  - 送出二級留言後：對應父留言保持展開，並把新留言插入列表頂部（避免用戶看不到）
+- 投票（全站統一）
+  - 三態：未投 / 讚 / 倒讚；允許為負數（例：-1）
+  - 前端用 localStorage 記錄（`pl:cv:<commentId>`），切換規則：未投→讚(+1)、未投→倒讚(-1)、讚→倒讚(-2)、倒讚→讚(+2)、再次點同方向取消（讚→未投 -1、倒讚→未投 +1）
+  - UI：純 icon（填滿主色），hover/active 僅變深色；無圓形底色
+  - 一級與二級按讚區置頂對齊
+- 輸入區
+  - 多行輸入：預設單行，輸入時自動增高（最多 6 行）
+  - 送出按鈕：固定圓形（40x40），icon 為主色填滿；hover/active 僅變深色，不出現底色
+  - 訪客名稱：localStorage 無則顯示「訪客名稱」欄位，首次送出後保存名稱並隱藏
+- 多語系
+  - action 文案：reply/replying/cancel/share/commentPlaceholder/viewRepliesCount/hideReplies 等
+
 ## 語言（i18n）
 - 支援 zh-Hant / zh-Hans / en；單一按鈕循環切換（繁→簡→英）
 - UI 文案覆蓋 header/menu、tabs、actions、topics/points、guide 等；使用者內容不翻譯
@@ -86,7 +111,41 @@
 更新紀錄：
 - 2025-11-04：初版 PRD
 - 2025-11-05：加入主題/觀點 API、對立模式(position)、刪除流程與通用確認彈窗、同時啟動前後端腳本與說明
- - 2025-11-07：加入評論（API/前端）、投票行為統一（每項三態：不投/讚/倒讚；允許負數）、移除 hacks.json、部署策略（Pages+Fly）
+- 2025-11-07：加入評論（API/前端）、投票行為統一（每項三態：不投/讚/倒讚；允許負數）、移除 hacks.json、部署策略（Pages+Fly）
+
+## 非功能需求（NFR）
+- 效能：首屏 TTI 合理（開發期不設硬指標），載入有骨架/提示，網路錯誤提供重試。
+- 相容：現代瀏覽器最新兩版；行動裝置按鈕可點區至少 40×40。
+- 可存取性：IconButton 需 aria-label；Dialog/Drawer 焦點鎖；鍵盤可關閉（Esc）。
+- SEO/分享：主題/觀點頁 meta/OG（後續 PR 增補）。
+
+## 資料與安全
+- 內容規範：Report（報告）流程規劃（未實作 API，可採外部表單作 MVP）。
+- XSS：使用者文字採純文字呈現（換行轉 <br>），不允許 HTML/Markdown；未來若開放，需加白名單與轉義。
+- CORS：生產網域透過 `ALLOWED_ORIGINS` 白名單控制；預覽網域視需要加入。
+- 備份：SQLite Volume 依 Fly 的 snapshot 機制，定期導出（後續腳本）。
+
+## API 補強（建議）
+- Points 投票：`PATCH /api/points/:id/vote` Body: `{ delta: 1|-1|±2 }`（三態切換導致的累計），資料欄位：points.upvotes；影響熱門排序。
+- Report（可選）：`POST /api/comments/:id/report`、`POST /api/points/:id/report`（MVP 可先導向外部表單）。
+
+## i18n key（補充清單）
+- actions.reply / replying / cancel / share / commentPlaceholder / viewRepliesCount / hideReplies
+- common.counts.comments
+
+## 測試與驗收清單（QA）
+- 評論：
+  - 一級/二級列表載入；分頁「查看更多評論」。
+  - 回覆模式送出後父留言展開，新留言置頂可見。
+  - 長文 3 行截斷 + See more/See less；同時存在 View n replies 時並存顯示。
+  - 投票三態切換（含負數）：未投→讚、未投→倒讚、讚↔倒讚、取消；localStorage 狀態保留。
+- 主題/觀點卡：投票三態與 i18n 顯示（8 則評論 | 報告 | 分享）。
+- 裝置：桌面 Dialog 與行動 Drawer 外觀、捲動、關閉（Esc / 點 backdrop）。
+
+## 部署與回滾
+- 部署順序：先後端（Fly）→ 前端（Pages），避免前端呼叫尚未上線之 API 造成 404。
+- Pages：`VITE_API_BASE` 指向後端；如調整需重新部署。
+- Fly：`ALLOWED_ORIGINS` 含 Pages 網域；DB 掛載 `/app/data/pointlab.db`；必要時以舊映像回滾。
 
 ## 決策紀錄（Decision Log）
 - 本段將持續更新，作為需求與設計決策的單一事實來源（SSOT）。

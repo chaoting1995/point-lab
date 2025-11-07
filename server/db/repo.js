@@ -140,14 +140,16 @@ export const repo = {
     if (db) {
       const t = this.getTopic(id)
       if (!t) return null
-      const next = (t.score ?? 0) + (delta === -1 ? -1 : 1)
+      const d = Number.isFinite(delta) ? Math.max(-2, Math.min(2, Math.trunc(delta))) : (delta === -1 ? -1 : 1)
+      const next = (t.score ?? 0) + d
       db.prepare('update topics set score=? where id=?').run(next, id)
       return this.getTopic(id)
     }
     const topics = readJson('topics.json')
     const idx = topics.findIndex(t => t.id === id)
     if (idx === -1) return null
-    topics[idx].score = (topics[idx].score ?? 0) + (delta === -1 ? -1 : 1)
+    const d = Number.isFinite(delta) ? Math.max(-2, Math.min(2, Math.trunc(delta))) : (delta === -1 ? -1 : 1)
+    topics[idx].score = (topics[idx].score ?? 0) + d
     writeJson('topics.json', topics)
     return topics[idx]
   },
@@ -223,6 +225,23 @@ export const repo = {
     hacks[idx] = { ...hacks[idx], ...fields }
     writeJson('points.json', hacks)
     return hacks[idx]
+  },
+  votePoint(id, delta) {
+    if (db) {
+      const p = this.getPoint(id)
+      if (!p) return null
+      const d = Number.isFinite(delta) ? Math.max(-2, Math.min(2, Math.trunc(delta))) : (delta === -1 ? -1 : 1)
+      const next = (p.upvotes ?? 0) + d
+      db.prepare('update points set upvotes=? where id=?').run(next, id)
+      return this.getPoint(id)
+    }
+    const points = readJson('points.json')
+    const idx = points.findIndex(h => h.id === id)
+    if (idx === -1) return null
+    const d = Number.isFinite(delta) ? Math.max(-2, Math.min(2, Math.trunc(delta))) : (delta === -1 ? -1 : 1)
+    points[idx].upvotes = (points[idx].upvotes || 0) + d
+    writeJson('points.json', points)
+    return points[idx]
   },
   deletePoint(id) {
     if (db) {
@@ -305,14 +324,16 @@ export const repo = {
     if (db) {
       const row = db.prepare('select * from comments where id=?').get(id)
       if (!row) return null
-      const next = (row.upvotes ?? 0) + (delta === -1 ? -1 : 1)
+      const d = Number.isFinite(delta) ? Math.max(-2, Math.min(2, Math.trunc(delta))) : (delta === -1 ? -1 : 1)
+      const next = (row.upvotes ?? 0) + d
       db.prepare('update comments set upvotes=? where id=?').run(next, id)
       return db.prepare('select * from comments where id=?').get(id)
     }
     const all = readJson('comments.json')
     const idx = all.findIndex(c => c.id === id)
     if (idx === -1) return null
-    all[idx].upvotes = (all[idx].upvotes || 0) + (delta === -1 ? -1 : 1)
+    const d = Number.isFinite(delta) ? Math.max(-2, Math.min(2, Math.trunc(delta))) : (delta === -1 ? -1 : 1)
+    all[idx].upvotes = (all[idx].upvotes || 0) + d
     writeJson('comments.json', all)
     return all[idx]
   },

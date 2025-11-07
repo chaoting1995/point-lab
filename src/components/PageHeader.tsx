@@ -2,7 +2,7 @@ import Box from '@mui/material/Box'
 import Stack from '@mui/material/Stack'
 import Typography from '@mui/material/Typography'
 import IconButton from '@mui/material/IconButton'
-import ChevronLeftIcon from '@mui/icons-material/ChevronLeft'
+import { CaretLeft } from 'phosphor-react'
 import type { ReactNode } from 'react'
 
 type Props = {
@@ -43,7 +43,7 @@ export default function PageHeader({
           <Box sx={{ justifySelf: 'start' }}>
             {backButton && (
               <IconButton aria-label={backAriaLabel} onClick={onBack} disabled={backDisabled} size="small" sx={{ borderRadius: '10px' }}>
-                <ChevronLeftIcon fontSize="small" />
+                <CaretLeft size={18} />
               </IconButton>
             )}
           </Box>
@@ -71,7 +71,7 @@ export default function PageHeader({
       <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
         {backButton && (
           <IconButton aria-label={backAriaLabel} onClick={onBack} disabled={backDisabled} size="small" sx={{ borderRadius: '10px' }}>
-            <ChevronLeftIcon fontSize="small" />
+            <CaretLeft size={18} />
           </IconButton>
         )}
         <Typography variant="h5" sx={{ fontWeight: 800, m: 0 }}>

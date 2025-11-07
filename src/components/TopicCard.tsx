@@ -41,15 +41,16 @@ export default function TopicCard({ topic, onDeleted, showMeta = true, showVote 
   async function voteDir(dir: 'up'|'down') {
     if (busy) return
     const current = voteState
-    const delta = current===dir ? (dir==='up'?-1:+1) : (!current ? (dir==='up'?+1:-1) : (dir==='up'?+2:-2))
+    if (current === dir) return
+    const delta = !current ? (dir==='up'?+1:-1) : (dir==='up'?+2:-2)
     try {
       setBusy(true)
       setScore((s)=> s+delta)
       const res = await fetch(withBase(`/api/topics/${topic.id}/vote`), { method:'PATCH', headers:{ 'Content-Type':'application/json' }, body: JSON.stringify({ delta }) })
       if (!res.ok) throw new Error('VOTE_FAILED')
       const data = await res.json(); setScore(typeof data?.data?.score==='number'? data.data.score : 0)
-      const next = current===dir ? undefined : dir
-      setVoteState(next); try { if (next) localStorage.setItem(`pl:tv:${topic.id}`, next); else localStorage.removeItem(`pl:tv:${topic.id}`) } catch {}
+      const next = dir
+      setVoteState(next); try { localStorage.setItem(`pl:tv:${topic.id}`, next) } catch {}
     } catch {
       setScore((s)=> s-delta)
     } finally { setBusy(false) }
@@ -134,11 +135,11 @@ export default function TopicCard({ topic, onDeleted, showMeta = true, showVote 
               <IconButton
                 size="small"
                 aria-label="讚"
-                disabled={busy}
+                disabled={busy || voteState==='up'}
                 disableRipple
                 onMouseDown={(e) => { e.preventDefault(); e.stopPropagation() }}
                 onClick={(e) => { e.preventDefault(); e.stopPropagation(); voteDir('up') }}
-                sx={{ borderRadius: '10px', color: voteState==='up' ? 'var(--mui-palette-primary-main, #4f46e5)' : undefined, '&:hover': { color: 'var(--mui-palette-primary-dark, #4338ca)' }, '&:active': { color: 'var(--mui-palette-primary-dark, #4338ca)' }, '&.Mui-disabled': { color: '#cbd5e1' } }}
+                sx={(t) => ({ borderRadius: '10px', color: voteState==='up' ? t.palette.primary.main : undefined, '&:hover': { color: t.palette.primary.dark, backgroundColor: 'transparent' }, '&:active': { color: t.palette.primary.dark, backgroundColor: 'transparent' }, '&.Mui-disabled': { color: voteState==='up' ? t.palette.primary.main : t.palette.action.disabled } })}
               >
                 <ThumbsUp size={18} weight={voteState==='up' ? 'fill' : 'regular'} />
               </IconButton>
@@ -148,11 +149,11 @@ export default function TopicCard({ topic, onDeleted, showMeta = true, showVote 
               <IconButton
                 size="small"
                 aria-label="倒讚"
-                disabled={busy}
+                disabled={busy || voteState==='down'}
                 disableRipple
                 onMouseDown={(e) => { e.preventDefault(); e.stopPropagation() }}
                 onClick={(e) => { e.preventDefault(); e.stopPropagation(); voteDir('down') }}
-                sx={{ borderRadius: '10px', color: voteState==='down' ? 'var(--mui-palette-primary-main, #4f46e5)' : undefined, '&:hover': { color: 'var(--mui-palette-primary-dark, #4338ca)' }, '&:active': { color: 'var(--mui-palette-primary-dark, #4338ca)' }, '&.Mui-disabled': { color: '#cbd5e1' } }}
+                sx={(t) => ({ borderRadius: '10px', color: voteState==='down' ? t.palette.primary.main : undefined, '&:hover': { color: t.palette.primary.dark, backgroundColor: 'transparent' }, '&:active': { color: t.palette.primary.dark, backgroundColor: 'transparent' }, '&.Mui-disabled': { color: voteState==='down' ? t.palette.primary.main : t.palette.action.disabled } })}
               >
                 <ThumbsDown size={18} weight={voteState==='down' ? 'fill' : 'regular'} />
               </IconButton>

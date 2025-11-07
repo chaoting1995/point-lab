@@ -146,19 +146,14 @@ app.delete('/api/topics/:id', (req, res) => {
   }
 })
 
-// Topic vote (up/down). Body: { delta: 1 | -1 }
+// Topic vote (up/down). Body: { delta: 1 | -1 | ±2 }
 function applyVote(req, res) {
   try {
     const { delta } = req.body || {}
-    const topics = readJson('topics.json')
-    const idx = topics.findIndex((t) => t.id === req.params.id)
-    if (idx === -1) return res.status(404).json({ error: 'NOT_FOUND' })
-    const current = topics[idx]
-    const nextScore = (typeof current.score === 'number' ? current.score : 0) + (delta === -1 ? -1 : 1)
-    const updated = { ...current, score: nextScore }
-    topics[idx] = updated
-    writeJson('topics.json', topics)
-    res.json({ data: updated })
+    const row = repo.voteTopic(req.params.id, delta)
+    if (!row) return res.status(404).json({ error: 'NOT_FOUND' })
+    const createdAt = row.created_at || row.createdAt || new Date().toISOString()
+    res.json({ data: { ...row, createdAt } })
   } catch (e) {
     res.status(500).json({ error: 'VOTE_TOPIC_FAILED' })
   }
@@ -239,6 +234,21 @@ app.delete('/api/points/:id', (req, res) => {
   }
 })
 // 舊 /api/hacks 路由已移除，請改用 /api/points
+
+// Points vote (up/down). Body: { delta: 1 | -1 }
+function applyPointVote(req, res) {
+  try {
+    const { delta } = req.body || {}
+    const row = repo.votePoint(req.params.id, delta)
+    if (!row) return res.status(404).json({ error: 'NOT_FOUND' })
+    const createdAt = row.created_at || row.createdAt
+    res.json({ data: { ...row, createdAt } })
+  } catch (e) {
+    res.status(500).json({ error: 'VOTE_POINT_FAILED' })
+  }
+}
+app.patch('/api/points/:id/vote', applyPointVote)
+app.post('/api/points/:id/vote', applyPointVote)
 
 // Comments API
 // List comments (top-level) for a point

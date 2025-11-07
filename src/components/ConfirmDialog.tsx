@@ -38,25 +38,25 @@ export default function ConfirmDialog({
         <Button
           onClick={onCancel}
           variant="outlined"
-          sx={{
-            color: '#64748b',
-            borderColor: '#cbd5e1',
-            '&:hover': { borderColor: '#94a3b8', bgcolor: '#f8fafc' },
+          sx={(t)=>({
+            color: t.palette.text.secondary,
+            borderColor: t.palette.divider,
+            '&:hover': { borderColor: t.palette.text.disabled, bgcolor: t.palette.action.hover },
             borderRadius: '10px',
             minWidth: 96,
-          }}
+          })}
         >
           {cancelText}
         </Button>
         <Button
           onClick={onConfirm}
           variant="contained"
-          sx={{
+          sx={(t)=>({
             borderRadius: '10px',
             minWidth: 96,
-            bgcolor: '#4f46e5',
-            '&:hover': { bgcolor: '#4338ca' },
-          }}
+            bgcolor: t.palette.primary.main,
+            '&:hover': { bgcolor: t.palette.primary.dark },
+          })}
         >
           {confirmText}
         </Button>

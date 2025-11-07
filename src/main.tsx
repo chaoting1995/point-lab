@@ -2,6 +2,8 @@ import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import { BrowserRouter, Routes, Route } from 'react-router-dom'
 import { LanguageProvider } from './i18n/LanguageProvider'
+import { ThemeProvider, createTheme } from '@mui/material/styles'
+import CssBaseline from '@mui/material/CssBaseline'
 import { AuthProvider } from './auth/AuthContext'
 import './index.css'
 import App from './App.tsx'
@@ -13,23 +15,35 @@ import TopicEditPage from './pages/TopicEditPage'
 import PointEditPage from './pages/PointEditPage'
 import GuidePage from './pages/GuidePage'
 
+const theme = createTheme({
+  palette: {
+    primary: {
+      main: '#4f46e5',
+      dark: '#4338ca',
+    },
+  },
+})
+
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
-    <LanguageProvider>
-      <AuthProvider>
-        <BrowserRouter>
-          <Routes>
-            <Route path="/" element={<App />} />
-          <Route path="/topics" element={<TopicsPage />} />
-          <Route path="/topics/:id" element={<TopicDetailPage />} />
-          <Route path="/topics/add" element={<TopicAddPage />} />
-          <Route path="/topics/edit/:id" element={<TopicEditPage />} />
-          <Route path="/points/add" element={<PointAddPage />} />
-          <Route path="/points/edit/:id" element={<PointEditPage />} />
-          <Route path="/guide" element={<GuidePage />} />
-          </Routes>
-        </BrowserRouter>
-      </AuthProvider>
-    </LanguageProvider>
+    <ThemeProvider theme={theme}>
+      <CssBaseline />
+      <LanguageProvider>
+        <AuthProvider>
+          <BrowserRouter>
+            <Routes>
+              <Route path="/" element={<App />} />
+              <Route path="/topics" element={<TopicsPage />} />
+              <Route path="/topics/:id" element={<TopicDetailPage />} />
+              <Route path="/topics/add" element={<TopicAddPage />} />
+              <Route path="/topics/edit/:id" element={<TopicEditPage />} />
+              <Route path="/points/add" element={<PointAddPage />} />
+              <Route path="/points/edit/:id" element={<PointEditPage />} />
+              <Route path="/guide" element={<GuidePage />} />
+            </Routes>
+          </BrowserRouter>
+        </AuthProvider>
+      </LanguageProvider>
+    </ThemeProvider>
   </StrictMode>,
 )

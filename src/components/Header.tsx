@@ -11,18 +11,20 @@ import ListItemButton from '@mui/material/ListItemButton'
 import ListItemIcon from '@mui/material/ListItemIcon'
 import ListItemText from '@mui/material/ListItemText'
 import Divider from '@mui/material/Divider'
-import MenuIcon from '@mui/icons-material/Menu'
+import { List as ListIcon } from 'phosphor-react'
 import { House, Archive, Question } from 'phosphor-react'
-import LoginIcon from '@mui/icons-material/Login'
-import LogoutIcon from '@mui/icons-material/Logout'
+import { SignIn } from 'phosphor-react'
+import { SignOut } from 'phosphor-react'
 import useAuth from '../auth/AuthContext'
 import Avatar from '@mui/material/Avatar'
 import Tooltip from '@mui/material/Tooltip'
+import LoginDialog from './LoginDialog'
 
 export function Header() {
   const { t } = useLanguage()
   const { user, login, logout } = useAuth()
   const [drawerOpen, setDrawerOpen] = useState(false)
+  const [loginOpen, setLoginOpen] = useState(false)
   const location = useLocation()
   const path = location.pathname || '/'
   const onTopicDetail = path.startsWith('/topics/') && path !== '/topics' && path !== '/topics/add'
@@ -68,7 +70,7 @@ export function Header() {
           onClick={() => setDrawerOpen(true)}
           sx={{ borderRadius: '10px' }}
         >
-          <MenuIcon fontSize="small" />
+          <ListIcon size={18} />
         </IconButton>
         <Drawer anchor="right" open={drawerOpen} onClose={() => setDrawerOpen(false)}>
           <div style={{ width: 280 }}>
@@ -103,16 +105,16 @@ export function Header() {
             </ListItemButton>
             <Divider sx={{ my: 0.5 }} />
             {!user ? (
-              <ListItemButton onClick={async () => { await login(); setDrawerOpen(false) }}>
+              <ListItemButton onClick={() => { setLoginOpen(true); }}>
                 <ListItemIcon>
-                  <LoginIcon />
+                  <SignIn size={20} />
                 </ListItemIcon>
                 <ListItemText primary={t('nav.login') || '登入'} />
               </ListItemButton>
             ) : (
               <ListItemButton onClick={() => { logout(); setDrawerOpen(false) }}>
                 <ListItemIcon>
-                  <LogoutIcon />
+                  <SignOut size={20} />
                 </ListItemIcon>
                 <ListItemText primary={t('nav.logout') || '登出'} secondary={user.email || user.name} />
               </ListItemButton>
@@ -120,6 +122,7 @@ export function Header() {
             </List>
           </div>
         </Drawer>
+        <LoginDialog open={loginOpen} onClose={() => { setLoginOpen(false); setDrawerOpen(false) }} onLogin={login} />
       </div>
     </header>
   )

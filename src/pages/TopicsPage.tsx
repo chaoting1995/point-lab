@@ -68,13 +68,14 @@ export default function TopicsPage() {
                   {t('topics.list.subtitleA') || '探索你感興趣的主題'}
                 </Typography>
                 <Typography variant="body2" sx={{ color: 'text.secondary' }}>
-                  <span
-                    onClick={() => navigate('/topics/add')}
+                  <Box
+                    component="span"
                     role="link"
-                    style={{ color: 'var(--mui-palette-primary-main, #4f46e5)', fontWeight: 800, cursor: 'pointer' }}
+                    onClick={() => navigate('/topics/add')}
+                    sx={(theme)=>({ color: theme.palette.primary.main, fontWeight: 800, cursor: 'pointer' })}
                   >
                     {t('topics.list.ctaHighlight')}
-                  </span>
+                  </Box>
                   {t('topics.list.ctaTail')}
                 </Typography>
               </Box>

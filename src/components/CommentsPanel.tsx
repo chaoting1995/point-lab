@@ -8,6 +8,7 @@ import MenuItem from '@mui/material/MenuItem'
 import TextField from '@mui/material/TextField'
 import Typography from '@mui/material/Typography'
 import { ThumbsUp, ThumbsDown, CaretDown, PaperPlaneRight } from 'phosphor-react'
+// theme colors are accessed via sx={(t)=>...} or CSS vars like var(--mui-palette-*)
 import useLanguage from '../i18n/useLanguage'
 import { formatRelativeAgo } from '../utils/text'
 import { getJson, type ListResponse, withBase } from '../api/client'
@@ -120,35 +121,37 @@ export default function CommentsPanel({ open, onClose, pointId }: { open: boolea
       <Box sx={{ flex: 1, overflow: 'auto', pr: 1 }}>
         {loading && <Typography variant="body2" sx={{ color: 'text.secondary', textAlign: 'center', py: 1 }}>{t('common.loading') || '載入中…'}</Typography>}
         {items.map((c) => (
-          <Box key={c.id} sx={{ display: 'flex', gap: 1.5, py: 1, borderBottom: '1px solid', borderColor: 'divider' }}>
-            <Box sx={{ flex: 1 }}>
-              <div style={{ fontSize: 14 }}>
-                <b style={{ color: '#0f172a' }}>{c.author?.name || '匿名'}</b>
-                <span style={{ color: '#64748b', margin: 0, fontSize: 12 }}>
+          <Box key={c.id} sx={{ py: 1, borderBottom: '1px solid', borderColor: 'divider' }}>
+            <Box sx={{ display: 'flex', gap: 1.5 }}>
+              <Box sx={{ flex: 1 }}>
+              <Box sx={{ fontSize: 14 }}>
+                <Box component="b" sx={{ color: '#0f172a' }}>{c.author?.name || '匿名'}</Box>
+                <Box component="span" sx={{ color: (t)=>t.palette.text.secondary, m: 0, fontSize: 12 }}>
                   ・ {formatRelativeAgo(c.createdAt || new Date().toISOString(), locale)}
-                </span>
-                <span style={{ margin: '0', color: '#64748b' }}>・</span>
-                <button type="button" className="card-action" onClick={() => setReplyTo(c)}>
+                </Box>
+                <Box component="span" sx={{ m: 0, color: (t)=>t.palette.text.secondary }}>・</Box>
+                <Box component="button" type="button" className="card-action" onClick={() => setReplyTo(c)} sx={{ p: 0, background: 'transparent', border: 'none', color: (t)=>t.palette.primary.main }}>
                   {t('actions.reply') || '回覆'}
-                </button>
-              </div>
+                </Box>
+              </Box>
               <div style={{ fontSize: 14, color: '#111827', whiteSpace: 'pre-wrap', ...(expandedBody[c.id] ? {} : { display: '-webkit-box', WebkitLineClamp: 3, WebkitBoxOrient: 'vertical', overflow: 'hidden' }) }}>{c.content}</div>
               {c.content && c.content.length > 80 && (
-                <button
+                <Box
+                  component="button"
                   type="button"
                   className="card-action"
-                  style={{ color: expandedBody[c.id] ? 'var(--mui-palette-primary-main, #4f46e5)' : '#64748b' }}
+                  sx={{ color: (t)=> expandedBody[c.id] ? t.palette.primary.main : t.palette.text.secondary, p: 0, background: 'transparent', border: 'none' }}
                   onClick={() => setExpandedBody((prev) => ({ ...prev, [c.id]: !prev[c.id] }))}
                 >
                   {expandedBody[c.id]
                     ? (t('common.seeLess') || '查看更少')
                     : (t('common.seeMore') || '查看更多')}
-                </button>
+                </Box>
               )}
-              {/* 二級回覆展開 */}
+              {/* 二級回覆展開開關（仍置於第一列左區）*/}
               {(!replyTo && (c as any).childCount > 0) && (
                 <Box sx={{ mt: 0.5 }}>
-                  <button className="card-action" style={{ color: '#64748b', display: 'inline-flex', alignItems: 'center', gap: 4 }} onClick={async () => {
+                  <Box component="button" className="card-action" sx={{ color: (t)=>t.palette.text.secondary, display: 'inline-flex', alignItems: 'center', gap: 1, p: 0, background: 'transparent', border: 'none' }} onClick={async () => {
                     if (!expanded[c.id]) {
                       const resp = await getJson<ListResponse<CommentItem>>(`/api/points/${encodeURIComponent(pointId)}/comments?sort=old&page=1&size=10&parent=${encodeURIComponent(c.id)}`)
                       setExpanded(prev => ({ ...prev, [c.id]: { items: resp.items, page: 1, total: resp.total || resp.items.length } }))
@@ -159,132 +162,144 @@ export default function CommentsPanel({ open, onClose, pointId }: { open: boolea
                     <CaretDown size={14} /> {expanded[c.id]
                       ? (t('actions.hideReplies') || '收合回覆')
                       : ((t('actions.viewRepliesCount') || '{n} replies').replace('{n}', String((c as any).childCount ?? 0)))}
-                  </button>
+                  </Box>
                 </Box>
               )}
-              {expanded[c.id] && (
-                <Box sx={{ mt: 1, pl: 2, borderLeft: '2px solid #e2e8f0' }}>
-                  {expanded[c.id]!.items.map(rc => (
-                    <Box key={rc.id} sx={{ display: 'flex', gap: 1.5, py: 0.75 }}>
-                      <Box sx={{ flex: 1 }}>
-                        <div style={{ fontSize: 14 }}>
-                          <b style={{ color: '#0f172a' }}>{rc.author?.name || '匿名'}</b>
-                          <span style={{ color: '#64748b', marginLeft: 6, fontSize: 12 }}>・ {formatRelativeAgo(rc.createdAt || new Date().toISOString(), locale)}</span>
-                        </div>
-                        <div style={{ fontSize: 14, color: '#111827', whiteSpace: 'pre-wrap', ...(expandedBody[rc.id] ? {} : { display: '-webkit-box', WebkitLineClamp: 3, WebkitBoxOrient: 'vertical', overflow: 'hidden' }) }}>{rc.content}</div>
-                        {rc.content && rc.content.length > 80 && (
-                          <button
-                            type="button"
-                            className="card-action"
-                            style={{ color: expandedBody[rc.id] ? 'var(--mui-palette-primary-main, #4f46e5)' : '#64748b' }}
-                            onClick={() => setExpandedBody((prev) => ({ ...prev, [rc.id]: !prev[rc.id] }))}
-                          >
-                            {expandedBody[rc.id]
-                              ? (t('common.seeLess') || '查看更少')
-                              : (t('common.seeMore') || '查看更多')}
-                          </button>
-                        )}
-                      </Box>
-                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, minWidth: 72, alignSelf: 'flex-start' }}>
-                        <IconButton size="small" onClick={async () => {
-                          const current = votes[rc.id]
-                          const delta = current === 'up' ? -1 : (current === 'down' ? +2 : +1)
-                          await fetch(withBase(`/api/comments/${rc.id}/vote`), { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ delta }) })
-                          setVotes(prev => {
-                            const next = current === 'up' ? undefined : 'up'
-                            try { if (next) localStorage.setItem(`pl:cv:${rc.id}`, next); else localStorage.removeItem(`pl:cv:${rc.id}`) } catch {}
-                            return { ...prev, [rc.id]: next }
-                          })
-                          setExpanded(prev => ({ ...prev, [c.id]: { ...prev[c.id]!, items: prev[c.id]!.items.map(x => x.id===rc.id?{...x, upvotes: (x.upvotes||0)+delta}:x) } }))
-                        }}
-                        sx={{
-                          color: votes[rc.id]==='up' ? 'var(--mui-palette-primary-main, #4f46e5)' : undefined,
-                          '&:hover': { color: 'var(--mui-palette-primary-dark, #4338ca)' },
-                          '&:active': { color: 'var(--mui-palette-primary-dark, #4338ca)' },
-                          '&.Mui-disabled': { color: '#cbd5e1' },
-                        }}
-                        >
-                          <ThumbsUp size={18} weight={votes[rc.id]==='up' ? 'fill' : 'regular'} />
-                        </IconButton>
-                        <Typography variant="caption" sx={{ fontWeight: 700, minWidth: 16, textAlign: 'center' }}>{rc.upvotes || 0}</Typography>
-                        <IconButton size="small" onClick={async () => {
-                          const current = votes[rc.id]
-                          const delta = current === 'down' ? +1 : (current === 'up' ? -2 : -1)
-                          await fetch(withBase(`/api/comments/${rc.id}/vote`), { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ delta }) })
-                          setVotes(prev => {
-                            const next = current === 'down' ? undefined : 'down'
-                            try { if (next) localStorage.setItem(`pl:cv:${rc.id}`, next); else localStorage.removeItem(`pl:cv:${rc.id}`) } catch {}
-                            return { ...prev, [rc.id]: next }
-                          })
-                          setExpanded(prev => ({ ...prev, [c.id]: { ...prev[c.id]!, items: prev[c.id]!.items.map(x => x.id===rc.id?{...x, upvotes: (x.upvotes||0)+delta}:x) } }))
-                        }}
-                        sx={{
-                          color: votes[rc.id]==='down' ? 'var(--mui-palette-primary-main, #4f46e5)' : undefined,
-                          '&:hover': { color: 'var(--mui-palette-primary-dark, #4338ca)' },
-                          '&:active': { color: 'var(--mui-palette-primary-dark, #4338ca)' },
-                          '&.Mui-disabled': { color: '#cbd5e1' },
-                        }}
-                        >
-                          <ThumbsDown size={18} weight={votes[rc.id]==='down' ? 'fill' : 'regular'} />
-                        </IconButton>
-                      </Box>
-                    </Box>
-                  ))}
-                  {expanded[c.id]!.items.length < (expanded[c.id]!.total || 0) && (
-                    <Box sx={{ textAlign: 'center', py: 0.5 }}>
-                      <button className="btn btn-xs" onClick={async () => {
-                        const nextPage = expanded[c.id]!.page + 1
-                        const resp = await getJson<ListResponse<CommentItem>>(`/api/points/${encodeURIComponent(pointId)}/comments?sort=old&page=${nextPage}&size=10&parent=${encodeURIComponent(c.id)}`)
-                        setExpanded(prev => ({ ...prev, [c.id]: { items: [...prev[c.id]!.items, ...resp.items], page: nextPage, total: resp.total || prev[c.id]!.total } }))
-                      }}>{t('common.loadMore') || '查看更多評論'}</button>
-                    </Box>
-                  )}
-                </Box>
-              )}
-            </Box>
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, minWidth: 72, alignSelf: 'flex-start' }}>
-              <IconButton size="small" onClick={async () => {
-                const current = votes[c.id]
-                const delta = current === 'up' ? -1 : (current === 'down' ? +2 : +1)
+              </Box>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, minWidth: 72, alignSelf: 'flex-start' }}>
+                <IconButton size="small" onClick={async () => {
+                  const current = votes[c.id]
+                  if (current === 'up') return
+                const delta = !current ? +1 : +2
                 await fetch(withBase(`/api/comments/${c.id}/vote`), { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ delta }) })
                 setVotes(prev => {
-                  const next = current === 'up' ? undefined : 'up'
-                  try { if (next) localStorage.setItem(`pl:cv:${c.id}`, next); else localStorage.removeItem(`pl:cv:${c.id}`) } catch {}
+                  const next: 'up' = 'up'
+                  try { localStorage.setItem(`pl:cv:${c.id}`, next) } catch {}
                   return { ...prev, [c.id]: next }
                 })
                 setItems(prev => prev.map(it => it.id===c.id?{...it, upvotes: (it.upvotes||0)+delta}:it))
               }}
-              sx={{
-                color: votes[c.id]==='up' ? 'var(--mui-palette-primary-main, #4f46e5)' : undefined,
-                '&:hover': { color: 'var(--mui-palette-primary-dark, #4338ca)' },
-                '&:active': { color: 'var(--mui-palette-primary-dark, #4338ca)' },
-                '&.Mui-disabled': { color: '#cbd5e1' },
-              }}
+              sx={(t)=>({
+                color: votes[c.id]==='up' ? t.palette.primary.main : undefined,
+                '&:hover': { color: t.palette.primary.dark, backgroundColor: 'transparent' },
+                '&:active': { color: t.palette.primary.dark, backgroundColor: 'transparent' },
+                '&.Mui-disabled': { color: votes[c.id]==='up' ? t.palette.primary.main : t.palette.action.disabled },
+              })}
+              disabled={votes[c.id]==='up'}
               >
                 <ThumbsUp size={18} weight={votes[c.id]==='up' ? 'fill' : 'regular'} />
               </IconButton>
               <Typography variant="caption" sx={{ fontWeight: 700, minWidth: 16, textAlign: 'center' }}>{c.upvotes || 0}</Typography>
               <IconButton size="small" onClick={async () => {
                 const current = votes[c.id]
-                const delta = current === 'down' ? +1 : (current === 'up' ? -2 : -1)
+                if (current === 'down') return
+                const delta = !current ? -1 : -2
                 await fetch(withBase(`/api/comments/${c.id}/vote`), { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ delta }) })
                 setVotes(prev => {
-                  const next = current === 'down' ? undefined : 'down'
-                  try { if (next) localStorage.setItem(`pl:cv:${c.id}`, next); else localStorage.removeItem(`pl:cv:${c.id}`) } catch {}
+                  const next: 'down' = 'down'
+                  try { localStorage.setItem(`pl:cv:${c.id}`, next) } catch {}
                   return { ...prev, [c.id]: next }
                 })
                 setItems(prev => prev.map(it => it.id===c.id?{...it, upvotes: (it.upvotes||0)+delta}:it))
               }}
-              sx={{
-                color: votes[c.id]==='down' ? 'var(--mui-palette-primary-main, #4f46e5)' : undefined,
-                '&:hover': { color: 'var(--mui-palette-primary-dark, #4338ca)' },
-                '&:active': { color: 'var(--mui-palette-primary-dark, #4338ca)' },
-                '&.Mui-disabled': { color: '#cbd5e1' },
-              }}
+              sx={(t)=>({
+                color: votes[c.id]==='down' ? t.palette.primary.main : undefined,
+                '&:hover': { color: t.palette.primary.dark, backgroundColor: 'transparent' },
+                '&:active': { color: t.palette.primary.dark, backgroundColor: 'transparent' },
+                '&.Mui-disabled': { color: votes[c.id]==='down' ? t.palette.primary.main : t.palette.action.disabled },
+              })}
+              disabled={votes[c.id]==='down'}
               >
                 <ThumbsDown size={18} weight={votes[c.id]==='down' ? 'fill' : 'regular'} />
               </IconButton>
             </Box>
+            </Box>
+
+            {/* 第二列：二級回覆列表（寬度 90%，靠右） */}
+            {expanded[c.id] && (
+              <Box sx={(t)=>({ mt: 1, width: '90%', ml: 'auto', pl: 2, borderLeft: '2px solid', borderColor: t.palette.divider })}>
+                {expanded[c.id]!.items.map(rc => (
+                  <Box key={rc.id} sx={{ display: 'flex', gap: 1.5, py: 0.75 }}>
+                    <Box sx={{ flex: 1 }}>
+                      <Box sx={{ fontSize: 14 }}>
+                        <Box component="b" sx={{ color: '#0f172a' }}>{rc.author?.name || '匿名'}</Box>
+                        <Box component="span" sx={{ color: (t)=>t.palette.text.secondary, ml: 0.75, fontSize: 12 }}>・ {formatRelativeAgo(rc.createdAt || new Date().toISOString(), locale)}</Box>
+                      </Box>
+                      <div style={{ fontSize: 14, color: '#111827', whiteSpace: 'pre-wrap', ...(expandedBody[rc.id] ? {} : { display: '-webkit-box', WebkitLineClamp: 3, WebkitBoxOrient: 'vertical', overflow: 'hidden' }) }}>{rc.content}</div>
+                      {rc.content && rc.content.length > 80 && (
+                        <Box
+                          component="button"
+                          type="button"
+                          className="card-action"
+                          sx={{ color: (t)=> expandedBody[rc.id] ? t.palette.primary.main : t.palette.text.secondary, p: 0, background: 'transparent', border: 'none' }}
+                          onClick={() => setExpandedBody((prev) => ({ ...prev, [rc.id]: !prev[rc.id] }))}
+                        >
+                          {expandedBody[rc.id]
+                            ? (t('common.seeLess') || '查看更少')
+                            : (t('common.seeMore') || '查看更多')}
+                        </Box>
+                      )}
+                    </Box>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, minWidth: 72, alignSelf: 'flex-start' }}>
+                      <IconButton size="small" onClick={async () => {
+                        const current = votes[rc.id]
+                        if (current === 'up') return
+                        const delta = !current ? +1 : +2
+                        await fetch(withBase(`/api/comments/${rc.id}/vote`), { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ delta }) })
+                        setVotes(prev => {
+                          const next: 'up' = 'up'
+                          try { localStorage.setItem(`pl:cv:${rc.id}`, next) } catch {}
+                          return { ...prev, [rc.id]: next }
+                        })
+                        setExpanded(prev => ({ ...prev, [c.id]: { ...prev[c.id]!, items: prev[c.id]!.items.map(x => x.id===rc.id?{...x, upvotes: (x.upvotes||0)+delta}:x) } }))
+                      }}
+                      sx={(t)=>({
+                        color: votes[rc.id]==='up' ? t.palette.primary.main : undefined,
+                        '&:hover': { color: t.palette.primary.dark, backgroundColor: 'transparent' },
+                        '&:active': { color: t.palette.primary.dark, backgroundColor: 'transparent' },
+                        '&.Mui-disabled': { color: votes[rc.id]==='up' ? t.palette.primary.main : t.palette.action.disabled },
+                      })}
+                      disabled={votes[rc.id]==='up'}
+                      >
+                        <ThumbsUp size={18} weight={votes[rc.id]==='up' ? 'fill' : 'regular'} />
+                      </IconButton>
+                      <Typography variant="caption" sx={{ fontWeight: 700, minWidth: 16, textAlign: 'center' }}>{rc.upvotes || 0}</Typography>
+                      <IconButton size="small" onClick={async () => {
+                        const current = votes[rc.id]
+                        if (current === 'down') return
+                        const delta = !current ? -1 : -2
+                        await fetch(withBase(`/api/comments/${rc.id}/vote`), { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ delta }) })
+                        setVotes(prev => {
+                          const next: 'down' = 'down'
+                          try { localStorage.setItem(`pl:cv:${rc.id}`, next) } catch {}
+                          return { ...prev, [rc.id]: next }
+                        })
+                        setExpanded(prev => ({ ...prev, [c.id]: { ...prev[c.id]!, items: prev[c.id]!.items.map(x => x.id===rc.id?{...x, upvotes: (x.upvotes||0)+delta}:x) } }))
+                      }}
+                      sx={(t)=>({
+                        color: votes[rc.id]==='down' ? t.palette.primary.main : undefined,
+                        '&:hover': { color: t.palette.primary.dark, backgroundColor: 'transparent' },
+                        '&:active': { color: t.palette.primary.dark, backgroundColor: 'transparent' },
+                        '&.Mui-disabled': { color: votes[rc.id]==='down' ? t.palette.primary.main : t.palette.action.disabled },
+                      })}
+                      disabled={votes[rc.id]==='down'}
+                      >
+                        <ThumbsDown size={18} weight={votes[rc.id]==='down' ? 'fill' : 'regular'} />
+                      </IconButton>
+                    </Box>
+                  </Box>
+                ))}
+                {expanded[c.id]!.items.length < (expanded[c.id]!.total || 0) && (
+                  <Box sx={{ textAlign: 'center', py: 0.5 }}>
+                    <button className="btn btn-xs" onClick={async () => {
+                      const nextPage = expanded[c.id]!.page + 1
+                      const resp = await getJson<ListResponse<CommentItem>>(`/api/points/${encodeURIComponent(pointId)}/comments?sort=old&page=${nextPage}&size=10&parent=${encodeURIComponent(c.id)}`)
+                      setExpanded(prev => ({ ...prev, [c.id]: { items: [...prev[c.id]!.items, ...resp.items], page: nextPage, total: resp.total || prev[c.id]!.total } }))
+                    }}>{t('common.loadMore') || '查看更多評論'}</button>
+                  </Box>
+                )}
+              </Box>
+            )}
           </Box>
         ))}
 
@@ -306,7 +321,7 @@ export default function CommentsPanel({ open, onClose, pointId }: { open: boolea
             <button className="card-action" onClick={() => setReplyTo(null)}>{t('actions.cancel') || '取消'}</button>
           </Box>
         )}
-        <Box sx={{ display: 'flex', gap: 1 }}>
+        <Box sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
           <TextField
             value={content}
             onChange={(e)=>setContent(e.target.value)}
@@ -317,7 +332,17 @@ export default function CommentsPanel({ open, onClose, pointId }: { open: boolea
             maxRows={6}
             placeholder={t('actions.commentPlaceholder') || '寫下你的評論…'}
           />
-          <IconButton onClick={submit} aria-label="送出" style={{ color: 'var(--mui-palette-primary-main, #4f46e5)' }}>
+          <IconButton
+            onClick={submit}
+            aria-label="送出"
+            sx={(t)=>({
+              color: t.palette.primary.main,
+              '&:hover': { color: t.palette.primary.dark, backgroundColor: 'transparent' },
+              '&:active': { color: t.palette.primary.dark, backgroundColor: 'transparent' },
+              '&.Mui-disabled': { color: t.palette.action.disabled },
+              width: 40, height: 40, borderRadius: '50%'
+            })}
+          >
             <PaperPlaneRight size={22} weight="fill" />
           </IconButton>
         </Box>
