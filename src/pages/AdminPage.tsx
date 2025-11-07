@@ -29,6 +29,7 @@ import useConfirmDialog from '../hooks/useConfirmDialog'
 import ToggleButtonGroup from '@mui/material/ToggleButtonGroup'
 import ToggleButton from '@mui/material/ToggleButton'
 import Pagination from '@mui/material/Pagination'
+import TextField from '@mui/material/TextField'
 
 type AdminUser = { id: string; name?: string; email?: string; picture?: string; role?: string; topics?: string[]; points?: string[]; comments?: string[] }
 type Guest = { id: string; name?: string; posts_topic?: number; posts_point?: number; posts_comment?: number; created_at?: string; last_seen?: string }
@@ -47,6 +48,7 @@ export default function AdminPage() {
   const [reportsTotal, setReportsTotal] = useState<number>(0)
   const [guests, setGuests] = useState<Guest[]>([])
   const [guestsTotal, setGuestsTotal] = useState<number>(0)
+  const [guestsQuery, setGuestsQuery] = useState('')
   const [reportType, setReportType] = useState<'all'|'topic'|'point'|'comment'>('all')
   const [stats, setStats] = useState<{users:number;topics:number;points:number;comments:number;reports:number} | null>(null)
   const { confirm, ConfirmDialogEl } = useConfirmDialog()
@@ -91,11 +93,12 @@ export default function AdminPage() {
   // Guests fetch
   useEffect(() => {
     if (tab !== 'guests') return
-    fetch(withBase(`/api/admin/guests?page=${usersPage}&size=${pageSize}`), { credentials: 'include' })
+    const url = `/api/admin/guests?page=${usersPage}&size=${pageSize}&q=${encodeURIComponent(guestsQuery)}`
+    fetch(withBase(url), { credentials: 'include' })
       .then(r => r.ok ? r.json() : Promise.reject(r.status))
       .then(d => { setGuests(d.items||[]); setGuestsTotal(d.total||0) })
       .catch(()=> { setGuests([]); setGuestsTotal(0) })
-  }, [tab, usersPage])
+  }, [tab, usersPage, guestsQuery])
 
   if (!user || (user.role !== 'admin' && user.role !== 'superadmin')) {
     return (
@@ -168,13 +171,13 @@ export default function AdminPage() {
               <ListItemIcon><Users size={18} /></ListItemIcon>
               <ListItemText className="label" primary="用戶管理" />
             </ListItemButton>
-            <ListItemButton selected={tab==='reports'} onClick={()=> navigate('/admin/reports')}>
-              <ListItemIcon><Flag size={18} /></ListItemIcon>
-              <ListItemText className="label" primary="舉報管理" />
-            </ListItemButton>
             <ListItemButton selected={tab==='guests'} onClick={()=> navigate('/admin/guests')}>
               <ListItemIcon><UserCircle size={18} /></ListItemIcon>
               <ListItemText className="label" primary="訪客管理" />
+            </ListItemButton>
+            <ListItemButton selected={tab==='reports'} onClick={()=> navigate('/admin/reports')}>
+              <ListItemIcon><Flag size={18} /></ListItemIcon>
+              <ListItemText className="label" primary="舉報管理" />
             </ListItemButton>
           </List>
         </Box>
@@ -188,6 +191,15 @@ export default function AdminPage() {
           {tab==='users' && (
             <>
               <Typography sx={{ fontWeight: 800, mb: 1, fontSize: 34 }}>用戶列表</Typography>
+              <Box sx={{ display: 'flex', justifyContent: 'flex-end', mb: 1 }}>
+                <TextField
+                  size="small"
+                  placeholder="搜尋訪客ID或名稱"
+                  value={guestsQuery}
+                  onChange={(e)=> { setUsersPage(1); setGuestsQuery(e.target.value) }}
+                  sx={{ width: 280 }}
+                />
+              </Box>
               <TableContainer component={Paper} sx={{ borderRadius: '10px', minWidth: 840, overflowX: 'auto' }}>
                 <Table size="small" sx={{ minWidth: 840 }}>
                   <TableHead>
@@ -263,7 +275,7 @@ export default function AdminPage() {
                 <Table size="small" sx={{ minWidth: 840 }}>
                   <TableHead>
                     <TableRow>
-                      <TableCell sx={{ whiteSpace: 'nowrap' }}>Guest ID</TableCell>
+                      <TableCell sx={{ whiteSpace: 'nowrap' }}>訪客ID</TableCell>
                       <TableCell sx={{ whiteSpace: 'nowrap' }}>名稱</TableCell>
                       <TableCell sx={{ whiteSpace: 'nowrap' }}>主題數</TableCell>
                       <TableCell sx={{ whiteSpace: 'nowrap' }}>觀點數</TableCell>
@@ -393,13 +405,19 @@ function HomeStats({ stats, onLoad, onNavigate }: { stats: any, onLoad: (s:any)=
   }, [])
   const s = stats || { users: 0, guests: 0, topics: 0, points: 0, comments: 0, reports: 0 }
   return (
-    <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(6, 1fr)', gap: 2 }}>
-      <StatCard label="用戶數" value={s.users} onClick={()=> onNavigate('/admin/users')} />
-      <StatCard label="訪客數" value={s.guests||0} onClick={()=> onNavigate('/admin/users')} />
-      <StatCard label="主題數" value={s.topics} onClick={()=> onNavigate('/topics')} />
-      <StatCard label="觀點數" value={s.points} onClick={()=> onNavigate('/topics')} />
-      <StatCard label="評論數" value={s.comments} onClick={()=> onNavigate('/topics')} />
-      <StatCard label="舉報數" value={s.reports} onClick={()=> onNavigate('/admin/reports')} />
+    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+      <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 2 }}>
+        <StatCard label="用戶數" value={s.users} onClick={()=> onNavigate('/admin/users')} />
+        <StatCard label="訪客數" value={s.guests||0} onClick={()=> onNavigate('/admin/guests')} />
+      </Box>
+      <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 2 }}>
+        <StatCard label="主題數" value={s.topics} onClick={()=> onNavigate('/topics')} />
+        <StatCard label="觀點數" value={s.points} onClick={()=> onNavigate('/topics')} />
+        <StatCard label="評論數" value={s.comments} onClick={()=> onNavigate('/topics')} />
+      </Box>
+      <Box sx={{ display: 'grid', gridTemplateColumns: '1fr', gap: 2 }}>
+        <StatCard label="舉報數" value={s.reports} onClick={()=> onNavigate('/admin/reports')} />
+      </Box>
     </Box>
   )
 }

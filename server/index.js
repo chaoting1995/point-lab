@@ -664,10 +664,10 @@ app.get('/api/admin/guests', (req, res) => {
   const role = u ? (isSuper ? 'superadmin' : (u.role || 'user')) : 'user'
   if (role !== 'admin' && role !== 'superadmin') return res.status(403).json({ error: 'FORBIDDEN' })
   try {
-    const { page = '1', size = '20' } = req.query
+    const { page = '1', size = '20', q = '' } = req.query
     const p = Math.max(1, parseInt(page, 10) || 1)
     const s = Math.max(1, Math.min(100, parseInt(size, 10) || 20))
-    const { items, total } = repo.listGuests({ page: p, size: s })
+    const { items, total } = repo.listGuests({ page: p, size: s, q })
     res.json({ items, total, page: p, size: s })
   } catch { res.status(500).json({ error: 'READ_GUESTS_FAILED' }) }
 })

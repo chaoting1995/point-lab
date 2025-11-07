@@ -629,16 +629,23 @@ export const repo = {
     writeJson('users.json', users)
     return users[idx]
   },
-  listGuests({ page = 1, size = 20 } = {}) {
+  listGuests({ page = 1, size = 20, q = '' } = {}) {
     if (db) {
       try {
-        const total = db.prepare('select count(*) as c from guests').get().c
-        const items = db.prepare('select * from guests order by last_seen desc limit ? offset ?').all(size, (page - 1) * size)
+        let where = ''
+        let params = []
+        if (q && String(q).trim()) { where = 'where id like ? or name like ?'; const like = `%${String(q).trim()}%`; params = [like, like] }
+        const total = db.prepare(`select count(*) as c from guests ${where}`).get(...params).c
+        const items = db.prepare(`select * from guests ${where} order by last_seen desc limit ? offset ?`).all(...params, size, (page - 1) * size)
         return { items, total }
       } catch { return { items: [], total: 0 } }
     }
     try {
-      const all = readJson('guests.json')
+      let all = readJson('guests.json')
+      if (q && String(q).trim()) {
+        const qq = String(q).trim().toLowerCase()
+        all = all.filter(g => (g.id||'').toLowerCase().includes(qq) || (g.name||'').toLowerCase().includes(qq))
+      }
       const items = [...all].sort((a,b)=> new Date(b.last_seen||0) - new Date(a.last_seen||0)).slice((page-1)*size, (page-1)*size+size)
       return { items, total: all.length }
     } catch { return { items: [], total: 0 } }
