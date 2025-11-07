@@ -241,7 +241,7 @@ app.get('/api/topics/:slug', (req, res) => {
 
 app.post('/api/topics', (req, res) => {
   try {
-    const { name, description, mode } = req.body || {}
+    const { name, description, mode, guestId, authorName } = req.body || {}
     if (!name || String(name).trim().length < 1) {
       return res.status(400).json({ error: 'NAME_REQUIRED' })
     }
@@ -256,7 +256,10 @@ app.post('/api/topics', (req, res) => {
       description: description ? String(description).trim() : undefined,
       mode: mode === 'duel' ? 'duel' : 'open',
       createdBy: me?.id,
+      createdByGuest: me ? null : (guestId || null),
+      author: me ? undefined : (authorName ? { name: authorName, role: 'guest' } : undefined),
     }
+    try { if (!me && guestId) repo.upsertGuest(guestId, authorName) } catch {}
     repo.createTopic(rec)
     res.status(201).json({ data: { ...rec, createdAt: new Date().toISOString(), score: 0, count: 0 } })
   } catch (e) {
@@ -332,7 +335,7 @@ app.get('/api/points', listPoints)
 
 function createPoint(req, res) {
   try {
-    const { description, topicId, authorName, authorType, position } = req.body || {}
+    const { description, topicId, authorName, authorType, position, guestId } = req.body || {}
     if (!description || String(description).trim().length < 1) {
       return res.status(400).json({ error: 'DESCRIPTION_REQUIRED' })
     }
@@ -343,6 +346,7 @@ function createPoint(req, res) {
     const record = {
       id,
       userId: me?.id,
+      guestId: me ? null : (guestId || null),
       description: String(description).trim(),
       topicId: topicId || undefined,
       author: {
@@ -351,8 +355,9 @@ function createPoint(req, res) {
       },
       position: position === 'agree' || position === 'others' ? position : undefined,
     }
-    repo.createPoint(record)
-    res.status(201).json({ data: { ...record, createdAt: new Date().toISOString(), upvotes: 0, comments: 0, shares: 0, rank: 999 } })
+    if (!me && guestId) { try { repo.upsertGuest(guestId, authorName) } catch {} }
+    const created = repo.createPoint(record)
+    res.status(201).json({ data: { ...created, createdAt: created?.created_at || created?.createdAt || new Date().toISOString() } })
   } catch (e) {
     res.status(500).json({ error: 'CREATE_POINT_FAILED' })
   }
@@ -440,13 +445,14 @@ app.get('/api/points/:id/comments', (req, res) => {
 // Create comment
 app.post('/api/points/:id/comments', (req, res) => {
   try {
-    const { content, parentId, authorName, authorType } = req.body || {}
+    const { content, parentId, authorName, authorType, guestId } = req.body || {}
     if (!content || !String(content).trim()) return res.status(400).json({ error: 'CONTENT_REQUIRED' })
     const id = `c-${Date.now()}`
     const cookieMap = parseCookies(req)
     const token = cookieMap['pl_session'] || cookieMap['pl_session_dev']
     const me = token ? repo.getUserBySession(token) : null
-    const row = repo.createComment({ id, pointId: req.params.id, parentId, content: String(content).trim(), authorName: me?.name || authorName, authorType: me ? 'user' : (authorType || 'guest'), userId: me?.id })
+    if (!me && guestId) { try { repo.upsertGuest(guestId, authorName) } catch {} }
+    const row = repo.createComment({ id, pointId: req.params.id, parentId, content: String(content).trim(), authorName: me?.name || authorName, authorType: me ? 'user' : (authorType || 'guest'), userId: me?.id, guestId: me ? null : (guestId || null) })
     res.status(201).json({ data: { ...row, createdAt: row.created_at || row.createdAt } })
   } catch (e) {
     res.status(500).json({ error: 'CREATE_COMMENT_FAILED' })

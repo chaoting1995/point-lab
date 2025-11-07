@@ -16,6 +16,7 @@ import FormControlLabel from '@mui/material/FormControlLabel'
 import Switch from '@mui/material/Switch'
 import DuelTabs, { type DuelValue } from '../components/DuelTabs'
 import { addGuestItem } from '../utils/guestActivity'
+import { getOrCreateGuestId } from '../utils/guest'
 
 export default function PointAddPage() {
   const navigate = useNavigate()
@@ -173,6 +174,7 @@ export default function PointAddPage() {
                       authorName: (!!user && !useGuest) ? undefined : authorName.trim(),
                       authorType: (!!user && !useGuest) ? 'user' : 'guest',
                       position: topic?.mode === 'duel' ? positionSel || undefined : undefined,
+                      ...(!!user && !useGuest ? {} : { guestId: getOrCreateGuestId() }),
                     }),
                   })
                     if (!res.ok) throw new Error('發布失敗，請稍後再試')

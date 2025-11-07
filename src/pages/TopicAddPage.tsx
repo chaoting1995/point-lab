@@ -16,11 +16,14 @@ import FormControlLabel from '@mui/material/FormControlLabel'
 import Radio from '@mui/material/Radio'
 import PageHeader from '../components/PageHeader'
 import { withBase } from '../api/client'
+import { getOrCreateGuestId, getGuestName } from '../utils/guest'
+import useAuth from '../auth/AuthContext'
 import { addGuestItem } from '../utils/guestActivity'
 
 export default function TopicAddPage() {
   const navigate = useNavigate()
   const { t } = useLanguage()
+  const { user } = useAuth()
   const [name, setName] = useState('')
   const [description, setDescription] = useState('')
   const [mode, setMode] = useState<'open' | 'duel'>('open')
@@ -90,7 +93,7 @@ export default function TopicAddPage() {
                     const res = await fetch(withBase('/api/topics'), {
                       method: 'POST',
                       headers: { 'Content-Type': 'application/json' },
-                      body: JSON.stringify({ name: name.trim(), description: description.trim() || undefined, mode }),
+                      body: JSON.stringify({ name: name.trim(), description: description.trim() || undefined, mode, ...(user?{}:{ guestId: getOrCreateGuestId(), authorName: getGuestName() || undefined }) }),
                     })
                     if (!res.ok) {
                       // 盡量解析 JSON 錯誤碼，否則顯示友善訊息

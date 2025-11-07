@@ -184,7 +184,7 @@ export default function AdminPage() {
           {tab==='users' && (
             <>
               <Typography sx={{ fontWeight: 800, mb: 1, fontSize: 34 }}>用戶列表</Typography>
-              <TableContainer component={Paper} sx={{ borderRadius: '10px', minWidth: 840 }}>
+              <TableContainer component={Paper} sx={{ borderRadius: '10px', minWidth: 840, overflowX: 'auto' }}>
                 <Table size="small" sx={{ minWidth: 840 }}>
                   <TableHead>
                     <TableRow>
@@ -254,7 +254,7 @@ export default function AdminPage() {
           )}
           {tab==='reports' && (
             <>
-              <Typography sx={{ fontWeight: 800, mb: 1, fontSize: 34 }}>舉報管理</Typography>
+              <Typography sx={{ fontWeight: 800, mb: 1, fontSize: 34 }}>舉報列表</Typography>
               <Box sx={{ mb: 1 }}>
                 <ToggleButtonGroup
                   exclusive
@@ -285,7 +285,7 @@ export default function AdminPage() {
                   <ToggleButton value="comment">評論</ToggleButton>
                 </ToggleButtonGroup>
               </Box>
-              <TableContainer component={Paper} sx={{ borderRadius: '10px', minWidth: 860 }}>
+              <TableContainer component={Paper} sx={{ borderRadius: '10px', minWidth: 860, overflowX: 'auto' }}>
                 <Table size="small" sx={{ minWidth: 860 }}>
                   <TableHead>
                     <TableRow>

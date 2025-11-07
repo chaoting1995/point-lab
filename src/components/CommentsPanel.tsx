@@ -17,6 +17,7 @@ import usePromptDialog from '../hooks/usePromptDialog'
 import { getVoteState as getStoredVote, setVoteState as setStoredVote } from '../utils/votes'
 import Snackbar from '@mui/material/Snackbar'
 import Alert from '@mui/material/Alert'
+import { getOrCreateGuestId } from '../utils/guest'
 
 type SortKey = 'old' | 'new' | 'hot'
 
@@ -133,6 +134,7 @@ export default function CommentsPanel({ open, onClose, pointId }: { open: boolea
       parentId: parent ? parent.id : undefined,
       authorName: isMember ? undefined : (guestName?.trim() || undefined),
       authorType: isMember ? 'user' : 'guest',
+      ...(isMember ? {} : { guestId: getOrCreateGuestId() }),
     }
     const res = await fetch(withBase(`/api/points/${encodeURIComponent(pointId)}/comments`), { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) })
     if (res.ok) {

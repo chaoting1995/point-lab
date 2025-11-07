@@ -42,6 +42,7 @@ export function init() {
         slug text,
         mode text default 'open',
         created_by text,
+        created_by_guest text,
         score integer default 0,
         count integer default 0,
         created_at text not null
@@ -50,6 +51,7 @@ export function init() {
         id text primary key,
         topic_id text,
         user_id text,
+        guest_id text,
         description text not null,
         author_name text,
         author_type text,
@@ -69,6 +71,7 @@ export function init() {
         point_id text not null,
         parent_id text,
         user_id text,
+        guest_id text,
         author_name text,
         author_type text,
         content text not null,
@@ -111,6 +114,15 @@ export function init() {
         user_id text,
         reason text,
         created_at text not null
+      );
+      create table if not exists guests (
+        id text primary key,
+        name text,
+        posts_topic integer default 0,
+        posts_point integer default 0,
+        posts_comment integer default 0,
+        created_at text not null,
+        last_seen text not null
       );
     `)
     return true
@@ -182,20 +194,24 @@ export const repo = {
     const topics = readJson('topics.json')
     return topics.find(t => t.id === idOrSlug || t.slug === idOrSlug) || null
   },
-  createTopic({ id, name, description, mode, createdBy }) {
+  createTopic({ id, name, description, mode, createdBy, createdByGuest, author }) {
     if (db) {
       try { db.prepare('alter table topics add column created_by text').run() } catch {}
+      try { db.prepare('alter table topics add column created_by_guest text').run() } catch {}
       db.prepare('insert into topics (id,name,description,slug,mode,score,count,created_at) values (?,?,?,?,?,?,?,?)')
         .run(id, name, description, description ? null : null, mode, 0, 0, nowIso())
       if (createdBy) { try { db.prepare('update topics set created_by=? where id=?').run(createdBy, id) } catch {} }
+      if (createdByGuest) { try { db.prepare('update topics set created_by_guest=? where id=?').run(createdByGuest, id) } catch {} }
+      if (createdByGuest) this.incGuestCounter(createdByGuest, 'topic')
       if (createdBy) this.appendUserItem(createdBy, 'topics', id)
       return this.getTopic(id)
     }
     const topics = readJson('topics.json')
-    const rec = { id, name, description, slug: name, mode, score: 0, count: 0, createdAt: nowIso(), createdBy: createdBy || null }
+    const rec = { id, name, description, slug: name, mode, score: 0, count: 0, createdAt: nowIso(), createdBy: createdBy || null, createdByGuest: createdByGuest || null, author }
     topics.unshift(rec)
     writeJson('topics.json', topics)
     if (createdBy) this.appendUserItem(createdBy, 'topics', id)
+    if (createdByGuest) this.incGuestCounter(createdByGuest, 'topic')
     return rec
   },
   updateTopic(id, fields) {
@@ -277,19 +293,22 @@ export const repo = {
     if (db) {
       const tx = db.transaction((r) => {
         try { db.prepare('alter table points add column user_id text').run() } catch {}
-        db.prepare('insert into points (id,topic_id,user_id,description,author_name,author_type,position,upvotes,comments,shares,created_at) values (?,?,?,?,?,?,?,?,?,?,?)')
-          .run(r.id, r.topicId || null, r.userId || null, r.description, r.author?.name || null, r.author?.role || 'guest', r.position || null, 0, 0, 0, nowIso())
+        try { db.prepare('alter table points add column guest_id text').run() } catch {}
+        db.prepare('insert into points (id,topic_id,user_id,guest_id,description,author_name,author_type,position,upvotes,comments,shares,created_at) values (?,?,?,?,?,?,?,?,?,?,?,?)')
+          .run(r.id, r.topicId || null, r.userId || null, r.guestId || null, r.description, r.author?.name || null, r.author?.role || 'guest', r.position || null, 0, 0, 0, nowIso())
         if (r.topicId) db.prepare('update topics set count = coalesce(count,0)+1 where id=?').run(r.topicId)
       })
       tx(rec)
       if (rec.userId) this.appendUserItem(rec.userId, 'points', rec.id)
+      if (rec.guestId) this.incGuestCounter(rec.guestId, 'point')
       return this.getPoint(rec.id)
     }
     const points = readJson('points.json')
-    points.unshift({ ...rec, userId: rec.userId || null })
+    points.unshift({ ...rec, userId: rec.userId || null, guestId: rec.guestId || null })
     writeJson('points.json', points)
     if (rec.topicId) this.incrementTopicCount(rec.topicId, +1)
     if (rec.userId) this.appendUserItem(rec.userId, 'points', rec.id)
+    if (rec.guestId) this.incGuestCounter(rec.guestId, 'point')
     return rec
   },
   updatePoint(id, fields) {
@@ -393,21 +412,24 @@ export const repo = {
     const all = readJson('comments.json')
     return all.find(c=>c.id===id) || null
   },
-  createComment({ id, pointId, parentId, content, authorName, authorType, userId }) {
+  createComment({ id, pointId, parentId, content, authorName, authorType, userId, guestId }) {
     if (db) {
       try { db.prepare('alter table comments add column user_id text').run() } catch {}
-      db.prepare('insert into comments (id,point_id,parent_id,user_id,author_name,author_type,content,upvotes,created_at) values (?,?,?,?,?,?,?,0,?)')
-        .run(id, pointId, parentId || null, userId || null, authorName || null, authorType || 'guest', content, nowIso())
+      try { db.prepare('alter table comments add column guest_id text').run() } catch {}
+      db.prepare('insert into comments (id,point_id,parent_id,user_id,guest_id,author_name,author_type,content,upvotes,created_at) values (?,?,?,?,?,?,?,0,?)')
+        .run(id, pointId, parentId || null, userId || null, guestId || null, authorName || null, authorType || 'guest', content, nowIso())
       // bump point comments count
       db.prepare('update points set comments = coalesce(comments,0)+1 where id=?').run(pointId)
       if (userId) this.appendUserItem(userId, 'comments', id)
+      if (guestId) this.incGuestCounter(guestId, 'comment')
       return db.prepare('select * from comments where id=?').get(id)
     }
     const all = readJson('comments.json')
-    const rec = { id, pointId, parentId, userId: userId || null, content, upvotes: 0, author: { name: authorName || '匿名', role: authorType || 'guest' }, createdAt: nowIso() }
+    const rec = { id, pointId, parentId, userId: userId || null, guestId: guestId || null, content, upvotes: 0, author: { name: authorName || '匿名', role: authorType || 'guest' }, createdAt: nowIso() }
     all.push(rec)
     writeJson('comments.json', all)
     if (userId) this.appendUserItem(userId, 'comments', id)
+    if (guestId) this.incGuestCounter(guestId, 'comment')
     return rec
   },
   appendUserItem(userId, kind, itemId) {
