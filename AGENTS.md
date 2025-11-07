@@ -26,20 +26,20 @@
 - Topics：
   - `GET /api/topics?page&size&sort=new|hot|old`
   - `GET /api/topics/id/:id`
-  - `POST /api/topics`（name, description?, mode=open|duel）
+  - `POST /api/topics`（name, description?, mode=open|duel；若用戶已登入，後端會記錄 created_by=userId）
   - `PATCH /api/topics/:id`（name/description/mode）
   - `PATCH|POST /api/topics/:id/vote`（Body: { delta: 1|-1 }）
   - `DELETE /api/topics/:id`
 - Points：
   - `GET /api/points?topic=<id>&page&size&sort=new|hot|old|top`
   - `GET /api/points/:id`
-  - `POST /api/points`（description, topicId?, authorName?, authorType=guest|user, position?=agree|others）
+  - `POST /api/points`（description, topicId?, authorName?, authorType=guest|user, position?=agree|others；若用戶已登入，後端記錄 userId，authorType 覆寫為 user）
   - `PATCH|POST /api/points/:id/vote`（Body: { delta: 1|-1|±2 }；三態切換時可能為 ±2）
   - `PATCH /api/points/:id`（description/position）
   - `DELETE /api/points/:id`
   - Comments（新）：
     - `GET /api/points/:id/comments?sort=old|new|hot&page&size[&parent=<cid>]`（回傳 childCount 供一級顯示）
-    - `POST /api/points/:id/comments`（content, parentId?, authorName?, authorType?）
+    - `POST /api/points/:id/comments`（content, parentId?, authorName?, authorType?；若用戶已登入，後端記錄 userId，authorType 覆寫為 user）
     - `PATCH /api/comments/:id/vote`（Body: { delta: 1|-1|±2 }，允許為負數）
 - 備註：舊路由 `/api/hacks` 已移除。
 

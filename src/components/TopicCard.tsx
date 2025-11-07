@@ -12,6 +12,8 @@ import { useEffect, useState } from 'react'
 import useLanguage from '../i18n/useLanguage'
 import { formatRelativeAgo } from '../utils/text'
 import useConfirmDialog from '../hooks/useConfirmDialog'
+import usePromptDialog from '../hooks/usePromptDialog'
+import useAuth from '../auth/AuthContext'
 
 export default function TopicCard({ topic, onDeleted, showMeta = true, showVote = true }: { topic: Topic; onDeleted?: (id: string) => void; showMeta?: boolean; showVote?: boolean }) {
   const [score, setScore] = useState<number>(typeof topic.score === 'number' ? topic.score : 0)
@@ -20,7 +22,10 @@ export default function TopicCard({ topic, onDeleted, showMeta = true, showVote 
   const { locale, t } = useLanguage()
   const createdLabel = formatRelativeAgo(topic.createdAt || new Date().toISOString(), locale)
   const { confirm, ConfirmDialogEl } = useConfirmDialog()
+  const { prompt, PromptDialogEl } = usePromptDialog()
   const [confirming, setConfirming] = useState(false)
+  const { user } = useAuth()
+  const canManage = user?.role === 'admin' || user?.role === 'superadmin'
   async function remove() {
     if (deleting) return
     try {
@@ -88,8 +93,11 @@ export default function TopicCard({ topic, onDeleted, showMeta = true, showVote 
               {showMeta && (
                 <Typography component="div" variant="caption" sx={{ color: 'text.secondary', fontSize: 12, mt: 'auto' }}>
                   {topic.mode === 'duel' ? (t('topics.add.modeDuel') || '對立式主題') : (t('topics.add.modeOpen') || '開放式主題')} |
-                  {' '}{(typeof topic.count === 'number' ? topic.count : 0)} 個觀點 |
+                  {' '}{(t('common.counts.points') || '{n} 個觀點').replace('{n}', String(typeof topic.count === 'number' ? topic.count : 0))} |
                   {' '}{createdLabel}
+                  {' '}|{' '}
+                  <button type="button" className="card-action" onClick={async (e)=>{ e.preventDefault(); e.stopPropagation(); const reason = await prompt({ title: '確定舉報？', label: '舉報原因（可選）', placeholder: '請補充原因（可留空）', confirmText: '送出', cancelText: '取消' }); if (reason !== null) { fetch(withBase('/api/reports'), { method:'POST', headers:{ 'Content-Type':'application/json' }, body: JSON.stringify({ type: 'topic', targetId: topic.id, reason: (reason||'').trim() || undefined }) }) } }}>{t('actions.report') || '報告'}</button>
+                  {canManage && (<>
                   {' '}|{' '}
                   <button
                     type="button"
@@ -118,6 +126,7 @@ export default function TopicCard({ topic, onDeleted, showMeta = true, showVote 
                   >
                     {t('common.delete') || '刪除'}
                   </button>
+                  </>)}
                 </Typography>
               )}
               {/* dialog rendered outside CardActionArea to avoid click suppression */}
@@ -163,6 +172,7 @@ export default function TopicCard({ topic, onDeleted, showMeta = true, showVote 
         </CardContent>
       </CardActionArea>
       {ConfirmDialogEl}
+      {PromptDialogEl}
     </Card>
   )
 }

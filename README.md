@@ -50,14 +50,14 @@ Topic（主題）
 - 欄位：`id`、`name`、`description?`、`createdAt`、`score`、`count`、`mode`（`open`｜`duel`）
 - 列表：`GET /api/topics?page=1&size=30&sort=new|hot|old`
 - 讀取：`GET /api/topics/id/:id`（可接受 id 或舊 slug）
-- 建立：`POST /api/topics` 參數：`name`、`description?`、`mode`（預設 `open`）
+- 建立：`POST /api/topics` 參數：`name`、`description?`、`mode`（預設 `open`）。若用戶已登入，後端會記錄 `created_by=userId`，回傳物件帶 `createdBy`。
 - 投票：`PATCH /api/topics/:id/vote` Body：`{ delta: 1 | -1 }`
 - 刪除：`DELETE /api/topics/:id`
 
 Point（觀點）
-- 欄位：`id`、`description`、`createdAt`、`author{name,role}`、`topicId?`、`position?`（對立模式下 `agree｜others`）
+- 欄位：`id`、`description`、`createdAt`、`author{name,role}`、`topicId?`、`userId?`、`position?`（對立模式下 `agree｜others`）
 - 列表：`GET /api/points?topic=<topicId>&page=1&size=30&sort=new|hot|old`
-- 建立：`POST /api/points` 參數：`description`、`topicId?`、`authorName?`、`authorType=guest|user`、`position?`
+- 建立：`POST /api/points` 參數：`description`、`topicId?`、`authorName?`、`authorType=guest|user`、`position?`。若用戶已登入，後端會記錄 `userId`，並覆寫 `authorType='user'` 與作者名稱。
 - 投票：`PATCH /api/points/:id/vote` Body：`{ delta: 1 | -1 }`（三態切換會出現 ±2 的累計行為，後端最終以整數 upvotes 儲存並影響熱門排序）
 - 刪除：`DELETE /api/points/:id`（會同步將對應 Topic 的 `count - 1`）
 
@@ -66,9 +66,39 @@ Comments（評論）
 - 一級/二級列表：
   - `GET /api/points/:id/comments?sort=old|new|hot&page=1&size=10`（一級）
   - `GET /api/points/:id/comments?sort=old|new|hot&page=1&size=10&parent=<commentId>`（二級）
-  - 回傳一級評論含 `childCount` 供展開提示
-- 建立：`POST /api/points/:id/comments` Body：`{ content, parentId?, authorName?, authorType? }`
+ - 回傳一級評論含 `childCount` 供展開提示
+- 建立：`POST /api/points/:id/comments` Body：`{ content, parentId?, authorName?, authorType? }`。若用戶已登入，後端會記錄 `userId`，並覆寫為 `authorType='user'`。
 - 投票：`PATCH /api/comments/:id/vote` Body：`{ delta: 1 | -1 | ±2 }`（允許負數）
+
+其他 API
+
+- 公開使用者：`GET /api/users/:id` → `{ id, name, picture, bio }`
+  - 目前後台/管理 API（需 admin/superadmin）：
+    - `GET /api/admin/users`（用戶列表，含發布數量與讚數彙總）
+    - `PATCH /api/admin/users/:id/role`（變更角色：user|admin|superadmin）
+    - `GET /api/admin/reports?type=topic|point|comment`（舉報列表）
+    - `POST /api/reports`（新增舉報：`{ type, targetId, reason? }`）
+    - `GET /api/admin/stats`（總覽統計：users/topics/points/comments/reports）
+
+資料欄位補充
+- 登入狀態下發表的 Topic/Point/Comment 會寫入 `userId`；Topic 另保存 `createdBy`。
+
+## 前端互動與樣式調整（近期）
+
+- 舉報流程：Topic/Point/Comment 的「報告」都先彈出「確定舉報？」彈窗，含可選的原因輸入框；確認後送出 `POST /api/reports`（Body: `{ type, targetId, reason? }`）。
+- 評論標頭：一級評論顯示「{名稱}・{時間}・報告・回覆」。
+- 共享按鈕：移除全站「分享」按鈕與相關文案（提示已改為僅提到複製連結）。
+- 操作字重：卡片操作文本按鈕（報告/編輯/刪除 等）在 hover 時會加粗並變主色。
+- Avatar 彈窗問候：
+  - 超級管理者：三行顯示「尊榮的超級管理者 / {名稱} / 歡迎你！」
+  - 管理者：三行顯示「尊榮的網站管理者 / {名稱} / 歡迎你！」
+  - 會員：三行顯示「尊榮的會員 / {名稱} / 歡迎你！」
+- Admin 首頁卡片導向：
+  - 用戶數 → `/admin/users`
+  - 主題數 / 觀點數 / 評論數 → `/topics`
+  - 舉報數 → `/admin/reports`
+- Admin 未授權時顯示「登入卡片」（非彈窗），置中呈現 Google 登入按鈕。
+- /admin/reports 切換按鈕：採用共用按鈕樣式（`btn btn-sm`），選取態加上 `btn-primary`。
 
 ## 評論功能（前端互動規格）
 
@@ -91,6 +121,7 @@ Comments（評論）
   - 多行輸入：預設單行，輸入時自動增高（最多 6 行）
   - 送出按鈕：固定圓形（40x40）；icon 為主色填滿；hover/active 不出現底色
   - 訪客名稱：localStorage 無則顯示「訪客名稱」欄位，首次送出後保存名稱
+  - 超長單行自動換行（`word-break: break-word; overflow-wrap: anywhere`）；僅在實際被三行截斷時顯示「查看更多」。
 
 注意事項
 - 前端路由一律使用 `id`；後端仍容許以舊 `slug` 查找（避免舊連結 404）。

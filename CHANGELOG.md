@@ -27,3 +27,22 @@
 ## 2025-11-05
 - 核心頁面與元件：主題、主題詳情、新增/編輯流程、Header/Drawer。
 - 初版 i18n（繁/簡/英）涵蓋站內 UI 文案。
+## 2025-11-07
+
+- Auth/Session
+  - 前端 fetch 改為 `credentials: include`；所有 API 經 `withBase()`。
+- Avatar 點擊改為 Popover 使用者面板（問候語、會員中心、登出確認）。
+  - Avatar 彈窗問候語區分 超級管理者/管理者/會員（三行格式）。
+  - 未登入或無權進入 /admin 時，顯示登入卡片（非彈窗）。
+  - Admin 首頁統計卡片導向：用戶→/admin/users；主題/觀點/評論→/topics；舉報→/admin/reports。
+  - /admin/reports 使用共用按鈕樣式切換（btn btn-sm，選取為 btn-primary）。
+  - 前台移除所有「分享」按鈕；操作文字（報告/編輯/刪除）hover 加粗。
+  - 舉報流程加入確認彈窗與「原因」輸入框（Topic/Point/Comment 皆適用）。
+- Topics/Points/Comments 建立時，登入狀態會寫入用戶 ID
+  - topics.created_by、points.user_id、comments.user_id（SQLite 以 alter 方式補欄位；JSON 同步保存）。
+  - GET /api/topics 及 /api/topics/id/:id 回傳 `createdBy` 欄位（若存在）。
+  - GET /api/points 及 /api/points/:id 回傳 `userId` 與 `author` 正規化。
+  - 新增公開使用者 API：`GET /api/users/:id`。
+- 評論面板
+  - 加入強制換行，避免長字破版。
+  - 以實際高度判斷是否顯示「查看更多」，避免未截斷也顯示按鈕。

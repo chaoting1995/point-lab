@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import Dialog from '@mui/material/Dialog'
 import Drawer from '@mui/material/Drawer'
 import Box from '@mui/material/Box'
@@ -12,6 +12,8 @@ import { ThumbsUp, ThumbsDown, CaretDown, PaperPlaneRight } from 'phosphor-react
 import useLanguage from '../i18n/useLanguage'
 import { formatRelativeAgo } from '../utils/text'
 import { getJson, type ListResponse, withBase } from '../api/client'
+import useAuth from '../auth/AuthContext'
+import usePromptDialog from '../hooks/usePromptDialog'
 
 type SortKey = 'old' | 'new' | 'hot'
 
@@ -37,6 +39,7 @@ function useViewport() {
 
 export default function CommentsPanel({ open, onClose, pointId }: { open: boolean; onClose: () => void; pointId: string }) {
   const { t, locale } = useLanguage()
+  const { user } = useAuth()
   const width = useViewport()
   const isDrawer = width < 756
   const [sort, setSort] = useState<SortKey>('old')
@@ -51,6 +54,12 @@ export default function CommentsPanel({ open, onClose, pointId }: { open: boolea
   const [guestName, setGuestName] = useState<string>('')
   const [votes, setVotes] = useState<Record<string, 'up' | 'down' | undefined>>({})
   const [expandedBody, setExpandedBody] = useState<Record<string, boolean>>({})
+  const { prompt, PromptDialogEl } = usePromptDialog()
+  // 內容是否被截斷（用於決定是否顯示「查看更多」）
+  const contentRefs = useRef<Record<string, HTMLDivElement | null>>({})
+  const childContentRefs = useRef<Record<string, HTMLDivElement | null>>({})
+  const [overflow, setOverflow] = useState<Record<string, boolean>>({})
+  const [childOverflow, setChildOverflow] = useState<Record<string, boolean>>({})
 
   async function load(p = 1, append = false) {
     setLoading(true)
@@ -66,6 +75,19 @@ export default function CommentsPanel({ open, onClose, pointId }: { open: boolea
   }
 
   useEffect(() => { if (open) load(1, false) }, [open, sort])
+  // 計算哪些內容實際被三行截斷（決定是否顯示「查看更多」）
+  useEffect(() => {
+    const m: Record<string, boolean> = {}
+    for (const it of items) {
+      const el = contentRefs.current[it.id]
+      if (el && !expandedBody[it.id]) {
+        m[it.id] = (el.scrollHeight - 1) > el.clientHeight
+      } else {
+        m[it.id] = false
+      }
+    }
+    setOverflow(m)
+  }, [items, expandedBody])
   useEffect(() => { if (open) { try { const n = localStorage.getItem('pl:guestName'); if (n) setGuestName(n) } catch {} } }, [open])
   useEffect(() => {
     if (!open) return
@@ -79,10 +101,35 @@ export default function CommentsPanel({ open, onClose, pointId }: { open: boolea
     } catch {}
   }, [open, items])
 
+  // 計算子留言是否溢出
+  useEffect(() => {
+    const cm: Record<string, boolean> = {}
+    const cur = expanded
+    for (const key of Object.keys(cur)) {
+      const group = cur[key]
+      if (!group) continue
+      for (const it of group.items) {
+        const el = childContentRefs.current[it.id]
+        if (el && !expandedBody[it.id]) {
+          cm[it.id] = (el.scrollHeight - 1) > el.clientHeight
+        } else {
+          cm[it.id] = false
+        }
+      }
+    }
+    setChildOverflow(cm)
+  }, [expanded, expandedBody])
+
   async function submit() {
     if (!content.trim()) return
     const parent = replyTo
-    const body = { content: content.trim(), parentId: parent ? parent.id : undefined, authorName: guestName?.trim() || undefined, authorType: 'guest' }
+    const isMember = !!user
+    const body = {
+      content: content.trim(),
+      parentId: parent ? parent.id : undefined,
+      authorName: isMember ? undefined : (guestName?.trim() || undefined),
+      authorType: isMember ? 'user' : 'guest',
+    }
     const res = await fetch(withBase(`/api/points/${encodeURIComponent(pointId)}/comments`), { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) })
     if (res.ok) {
       const created = await res.json().catch(() => null)
@@ -130,12 +177,16 @@ export default function CommentsPanel({ open, onClose, pointId }: { open: boolea
                   ・ {formatRelativeAgo(c.createdAt || new Date().toISOString(), locale)}
                 </Box>
                 <Box component="span" sx={{ m: 0, color: (t)=>t.palette.text.secondary }}>・</Box>
+                <Box component="button" type="button" className="card-action" onClick={async (e)=>{ e.preventDefault(); e.stopPropagation(); const reason = await prompt({ title: '確定舉報？', label: '舉報原因（可選）', placeholder: '請補充原因（可留空）', confirmText: '送出', cancelText: '取消' }); if (reason !== null) { fetch(withBase('/api/reports'), { method:'POST', headers:{ 'Content-Type':'application/json' }, body: JSON.stringify({ type: 'comment', targetId: c.id, reason: (reason||'').trim() || undefined }) }) } }} sx={{ p: 0, background: 'transparent', border: 'none', color: (t)=>t.palette.primary.main }}>
+                  {t('actions.report') || '報告'}
+                </Box>
+                <Box component="span" sx={{ m: 0, color: (t)=>t.palette.text.secondary }}>・</Box>
                 <Box component="button" type="button" className="card-action" onClick={() => setReplyTo(c)} sx={{ p: 0, background: 'transparent', border: 'none', color: (t)=>t.palette.primary.main }}>
                   {t('actions.reply') || '回覆'}
                 </Box>
               </Box>
-              <div style={{ fontSize: 14, color: '#111827', whiteSpace: 'pre-wrap', ...(expandedBody[c.id] ? {} : { display: '-webkit-box', WebkitLineClamp: 3, WebkitBoxOrient: 'vertical', overflow: 'hidden' }) }}>{c.content}</div>
-              {c.content && c.content.length > 80 && (
+              <div ref={(el)=>{ contentRefs.current[c.id]=el }} style={{ fontSize: 14, color: '#111827', whiteSpace: 'pre-wrap', wordBreak: 'break-word', overflowWrap: 'anywhere', ...(expandedBody[c.id] ? {} : { display: '-webkit-box', WebkitLineClamp: 3, WebkitBoxOrient: 'vertical', overflow: 'hidden' }) }}>{c.content}</div>
+              {overflow[c.id] && !expandedBody[c.id] && (
                 <Box
                   component="button"
                   type="button"
@@ -222,11 +273,15 @@ export default function CommentsPanel({ open, onClose, pointId }: { open: boolea
                   <Box key={rc.id} sx={{ display: 'flex', gap: 1.5, py: 0.75 }}>
                     <Box sx={{ flex: 1 }}>
                       <Box sx={{ fontSize: 14 }}>
-                        <Box component="b" sx={{ color: '#0f172a' }}>{rc.author?.name || '匿名'}</Box>
+                        { (rc as any).author?.id ? (
+                          <a href={`/users/${encodeURIComponent((rc as any).author.id)}`} className="card-action" style={{ fontWeight: 700, color: '#0f172a', textDecoration: 'none' }}>{rc.author?.name || '匿名'}</a>
+                        ) : (
+                          <Box component="b" sx={{ color: '#0f172a' }}>{rc.author?.name || '匿名'}</Box>
+                        )}
                         <Box component="span" sx={{ color: (t)=>t.palette.text.secondary, ml: 0.75, fontSize: 12 }}>・ {formatRelativeAgo(rc.createdAt || new Date().toISOString(), locale)}</Box>
                       </Box>
-                      <div style={{ fontSize: 14, color: '#111827', whiteSpace: 'pre-wrap', ...(expandedBody[rc.id] ? {} : { display: '-webkit-box', WebkitLineClamp: 3, WebkitBoxOrient: 'vertical', overflow: 'hidden' }) }}>{rc.content}</div>
-                      {rc.content && rc.content.length > 80 && (
+                      <div ref={(el)=>{ childContentRefs.current[rc.id]=el }} style={{ fontSize: 14, color: '#111827', whiteSpace: 'pre-wrap', wordBreak: 'break-word', overflowWrap: 'anywhere', ...(expandedBody[rc.id] ? {} : { display: '-webkit-box', WebkitLineClamp: 3, WebkitBoxOrient: 'vertical', overflow: 'hidden' }) }}>{rc.content}</div>
+                      {childOverflow[rc.id] && !expandedBody[rc.id] && (
                         <Box
                           component="button"
                           type="button"
@@ -310,7 +365,7 @@ export default function CommentsPanel({ open, onClose, pointId }: { open: boolea
         )}
       </Box>
 
-      <Box sx={{ pt: 1, position: 'sticky', bottom: 0, bgcolor: 'background.paper' }}>
+      <Box sx={{ pt: 1, mt: 'auto', bgcolor: 'background.paper' }}>
         {replyTo && (
           <Box sx={{ mb: 0.5, fontSize: 12, color: 'text.secondary' }}>
             {t('actions.replying') || '正在回覆'}{' '}
@@ -321,7 +376,7 @@ export default function CommentsPanel({ open, onClose, pointId }: { open: boolea
             <button className="card-action" onClick={() => setReplyTo(null)}>{t('actions.cancel') || '取消'}</button>
           </Box>
         )}
-        <Box sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
+        <Box sx={{ display: 'flex', gap: 1, alignItems: 'flex-end' }}>
           <TextField
             value={content}
             onChange={(e)=>setContent(e.target.value)}
@@ -340,27 +395,41 @@ export default function CommentsPanel({ open, onClose, pointId }: { open: boolea
               '&:hover': { color: t.palette.primary.dark, backgroundColor: 'transparent' },
               '&:active': { color: t.palette.primary.dark, backgroundColor: 'transparent' },
               '&.Mui-disabled': { color: t.palette.action.disabled },
-              width: 40, height: 40, borderRadius: '50%'
+              width: 40, height: 40, borderRadius: '50%', alignSelf: 'flex-end'
             })}
           >
             <PaperPlaneRight size={22} weight="fill" />
           </IconButton>
         </Box>
-        {!guestName && (
+        {!user && !guestName && (
           <Box sx={{ mt: 0.5 }}>
             <TextField value={guestName} onChange={(e)=>setGuestName(e.target.value)} fullWidth size="small" label={t('points.add.nameLabel') || '訪客名稱'} placeholder={t('points.add.namePlaceholder') || '你的名稱'} />
           </Box>
         )}
       </Box>
+    {PromptDialogEl}
     </Box>
   )
 
   return isDrawer ? (
-    <Drawer anchor="bottom" open={open} onClose={onClose} PaperProps={{ sx: { height: '75vh', borderTopLeftRadius: 12, borderTopRightRadius: 12 } }}>
+    <Drawer
+      anchor="bottom"
+      open={open}
+      onClose={onClose}
+      onClick={(e)=> e.stopPropagation()}
+      PaperProps={{ sx: { height: '75vh', borderTopLeftRadius: 12, borderTopRightRadius: 12 } }}
+      ModalProps={{ keepMounted: true }}
+    >
       {container}
     </Drawer>
   ) : (
-    <Dialog open={open} onClose={onClose} fullWidth PaperProps={{ sx: { maxWidth: 576, borderRadius: '10px' } }}>
+    <Dialog
+      open={open}
+      onClose={onClose}
+      fullWidth
+      onClick={(e)=> e.stopPropagation()}
+      PaperProps={{ sx: { maxWidth: 576, height: '75vh', display: 'flex', borderRadius: '10px' } }}
+    >
       {container}
     </Dialog>
   )

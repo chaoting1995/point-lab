@@ -14,6 +14,9 @@ import PointAddPage from './pages/PointAddPage'
 import TopicEditPage from './pages/TopicEditPage'
 import PointEditPage from './pages/PointEditPage'
 import GuidePage from './pages/GuidePage'
+import AuthCallback from './pages/AuthCallback'
+import UserProfilePage from './pages/UserProfilePage'
+import AdminPage from './pages/AdminPage'
 
 const theme = createTheme({
   palette: {
@@ -31,16 +34,21 @@ createRoot(document.getElementById('root')!).render(
       <LanguageProvider>
         <AuthProvider>
           <BrowserRouter>
-            <Routes>
-              <Route path="/" element={<App />} />
-              <Route path="/topics" element={<TopicsPage />} />
-              <Route path="/topics/:id" element={<TopicDetailPage />} />
-              <Route path="/topics/add" element={<TopicAddPage />} />
-              <Route path="/topics/edit/:id" element={<TopicEditPage />} />
-              <Route path="/points/add" element={<PointAddPage />} />
-              <Route path="/points/edit/:id" element={<PointEditPage />} />
-              <Route path="/guide" element={<GuidePage />} />
-            </Routes>
+          <Routes>
+            <Route path="/" element={<App />} />
+            <Route path="/topics" element={<TopicsPage />} />
+            <Route path="/topics/:id" element={<TopicDetailPage />} />
+            <Route path="/topics/add" element={<TopicAddPage />} />
+            <Route path="/topics/edit/:id" element={<TopicEditPage />} />
+            <Route path="/points/add" element={<PointAddPage />} />
+            <Route path="/points/edit/:id" element={<PointEditPage />} />
+            <Route path="/guide" element={<GuidePage />} />
+            <Route path="/auth/callback" element={<AuthCallback />} />
+            <Route path="/users/:id" element={<UserProfilePage />} />
+            <Route path="/admin" element={<AdminPage />} />
+            <Route path="/admin/users" element={<AdminPage />} />
+            <Route path="/admin/reports" element={<AdminPage />} />
+          </Routes>
           </BrowserRouter>
         </AuthProvider>
       </LanguageProvider>

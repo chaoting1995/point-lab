@@ -3,6 +3,7 @@ export type Point = {
   description: string
   createdAt?: string
   topicId?: string
+  userId?: string
   position?: 'agree' | 'others'
   author?: {
     name: string

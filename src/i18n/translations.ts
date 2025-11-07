@@ -120,6 +120,7 @@ export type AppTranslations = {
       descPlaceholder?: string
       nameLabel?: string
       namePlaceholder?: string
+      useGuest?: string
       stanceAgree?: string
       stanceOther?: string
       stanceLabel?: string
@@ -136,6 +137,21 @@ export type AppTranslations = {
     card1: { title: string; body: string }
     card2: { title: string; body: string }
     card3: { title: string; body: string }
+  }
+  user?: {
+    pointsTitle?: string
+    noPoints?: string
+    totalsLabel?: string
+    pointLikes?: string // {n}
+    topicLikes?: string // {n}
+    milestonesTitle?: string
+    milestoneTopic?: string
+    milestonePoint?: string
+    milestoneComment?: string
+    viewAsGuest?: string
+    viewAsMe?: string
+    profileCenter?: string
+    adminConsole?: string
   }
   nav?: {
     home: string
@@ -160,6 +176,7 @@ export type AppTranslations = {
     delete?: string
     counts?: {
       comments?: string // use {n}
+      points?: string // use {n}
     }
     time?: {
       justNow: string
@@ -202,13 +219,13 @@ const baseZhHant: AppTranslations = {
     new: '最新',
     top: 'Top 50 榜單',
     old: '最早',
-    hint: '點選卡片就能複製連結、分享給夥伴一起挑戰。',
+    hint: '點選卡片就能複製連結，邀請夥伴一起挑戰。',
   },
   actions: {
     upvote: '我也要試',
     upvoted: '已收藏',
     comments: '評論',
-    share: '分享',
+    share: '',
     report: '報告',
     copy: '複製連結',
     copied: '已複製',
@@ -276,6 +293,7 @@ const baseZhHant: AppTranslations = {
       descPlaceholder: '寫下你的觀點…',
       nameLabel: '訪客名稱',
       namePlaceholder: '例如：小明',
+      useGuest: '使用訪客身份',
       stanceAgree: '讚同',
       stanceOther: '其他',
       stanceLabel: '選擇立場',
@@ -293,8 +311,8 @@ const baseZhHant: AppTranslations = {
     guide: '指南',
   },
   auth: {
-    loginTitle: '登入或註冊',
-    loginDesc: '登入後，可參與排名、競賽',
+    loginTitle: '登入',
+    loginDesc: '登入後，可累積數據、參與排名',
     signInWithGoogle: '使用 Google 登入',
   },
   common: {
@@ -307,6 +325,7 @@ const baseZhHant: AppTranslations = {
     delete: '刪除',
     counts: {
       comments: '{n} 則評論',
+      points: '{n} 個觀點',
     },
     time: {
       justNow: '剛剛',
@@ -340,6 +359,21 @@ const baseZhHant: AppTranslations = {
         '好的表達，得像餵小孩子吃飯：一次一口，每次一小口。\n' +
         '內容太多，就試著拆成多個觀點表達吧！',
     },
+  },
+  user: {
+    pointsTitle: '發布過的觀點',
+    noPoints: '還沒有發布過任何觀點！',
+    totalsLabel: '你的總計：',
+    pointLikes: '觀點總計讚數：{n}',
+    topicLikes: '主題總計讚數：{n}',
+    milestonesTitle: '里程碑',
+    milestoneTopic: '新增第一個主題',
+    milestonePoint: '新增第一則觀點',
+    milestoneComment: '新增第一則評論',
+    viewAsGuest: '訪客視角',
+    viewAsMe: '我的視角',
+    profileCenter: '會員中心',
+    adminConsole: '管理後台',
   },
 }
 
@@ -429,6 +463,21 @@ export const translations: Record<Locale, AppTranslations> = {
           'If there’s too much content, try splitting it into multiple points.',
       },
     },
+    user: {
+      pointsTitle: 'Posted Points',
+      noPoints: 'No points posted yet!',
+      totalsLabel: 'Your totals:',
+      pointLikes: 'Point likes total: {n}',
+      topicLikes: 'Topic likes total: {n}',
+      milestonesTitle: 'Milestones',
+      milestoneTopic: 'Create your first topic',
+      milestonePoint: 'Post your first point',
+      milestoneComment: 'Post your first comment',
+      viewAsGuest: 'View as guest',
+      viewAsMe: 'View as me',
+      profileCenter: 'Profile Center',
+      adminConsole: 'Admin Console',
+    },
     topics: {
       add: {
         title: 'Create Topic',
@@ -465,6 +514,7 @@ export const translations: Record<Locale, AppTranslations> = {
         descPlaceholder: 'Write your point…',
         nameLabel: 'Guest name',
         namePlaceholder: 'e.g. Alex',
+        useGuest: 'Post as guest',
         stanceAgree: 'Agree',
         stanceOther: 'Other',
         stanceLabel: 'Choose a position',
@@ -482,8 +532,8 @@ export const translations: Record<Locale, AppTranslations> = {
       guide: 'Guide',
     },
     auth: {
-      loginTitle: 'Sign in or register',
-      loginDesc: 'Sign in to join ranking and competitions.',
+      loginTitle: 'Sign in',
+      loginDesc: 'Sign in to track stats and join rankings.',
       signInWithGoogle: 'Sign in with Google',
     },
     common: {
@@ -496,6 +546,7 @@ export const translations: Record<Locale, AppTranslations> = {
       delete: 'Delete',
       counts: {
         comments: '{n} comments',
+        points: '{n} points',
       },
       time: {
         justNow: 'a few seconds ago',

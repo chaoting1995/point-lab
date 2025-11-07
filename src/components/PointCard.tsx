@@ -9,8 +9,10 @@ import type { Point } from '../data/points'
 import useLanguage from '../i18n/useLanguage'
 import { formatRelativeAgo } from '../utils/text'
 import useConfirmDialog from '../hooks/useConfirmDialog'
+import usePromptDialog from '../hooks/usePromptDialog'
 import { withBase } from '../api/client'
 import CommentsPanel from './CommentsPanel'
+import useAuth from '../auth/AuthContext'
 
 export default function PointCard({ point, onDeleted }: { point: Point; onDeleted?: (id: string) => void }) {
   const { t, locale } = useLanguage()
@@ -21,6 +23,9 @@ export default function PointCard({ point, onDeleted }: { point: Point; onDelete
   const descRef = useRef<HTMLParagraphElement | null>(null)
   const [deleting, setDeleting] = useState(false)
   const { confirm, ConfirmDialogEl } = useConfirmDialog()
+  const { prompt, PromptDialogEl } = usePromptDialog()
+  const { user } = useAuth()
+  const canManage = user?.role === 'admin' || user?.role === 'superadmin'
   const [commentsOpen, setCommentsOpen] = useState(false)
   const bgColor = point.position === 'agree'
     ? 'rgba(16, 185, 129, 0.08)'
@@ -158,7 +163,13 @@ export default function PointCard({ point, onDeleted }: { point: Point; onDelete
               </Box>
             )}
             <Typography component="div" variant="caption" sx={{ color: 'text.secondary', fontSize: 12, mt: 'auto' }}>
-              {authorName} | {createdLabel} | <button type="button" className="card-action" onClick={() => setCommentsOpen(true)}>{(t('common.counts.comments') || '{n} 則評論').replace('{n}', String(point.comments ?? 0))}</button> | {t('actions.report') || '報告'} | {t('actions.share')}
+              {point.userId ? (
+                <a href={`/users/${encodeURIComponent(point.userId)}`} className="card-action" style={{ fontWeight: 700, textDecoration: 'none' }}>{authorName}</a>
+              ) : (
+                authorName
+              )}
+              {' '}| {createdLabel} | <button type="button" className="card-action" onClick={(e) => { e.preventDefault(); e.stopPropagation(); setCommentsOpen(true) }}>{(t('common.counts.comments') || '{n} 則評論').replace('{n}', String(point.comments ?? 0))}</button> | <button type="button" className="card-action" onClick={async (e)=>{ e.preventDefault(); e.stopPropagation(); const reason = await prompt({ title: '確定舉報？', label: '舉報原因（可選）', placeholder: '請補充原因（可留空）', confirmText: '送出', cancelText: '取消' }); if (reason !== null) { fetch(withBase('/api/reports'), { method:'POST', headers:{ 'Content-Type':'application/json' }, body: JSON.stringify({ type: 'point', targetId: point.id, reason: (reason||'').trim() || undefined }) }) } }}>{t('actions.report') || '報告'}</button>
+              {canManage && (<>
               {' '}|{' '}
               <button
                 type="button"
@@ -185,26 +196,50 @@ export default function PointCard({ point, onDeleted }: { point: Point; onDelete
               >
                 {t('common.delete') || '刪除'}
               </button>
+              </>)}
             </Typography>
             {ConfirmDialogEl}
           </Box>
 
           {/* 右欄：投票垂直區 */}
           <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 0.5 }}>
-            <IconButton size="small" aria-label="讚" onClick={() => voteDir('up')} disabled={busy || voteState==='up'} sx={(t)=>({ borderRadius: '10px', color: voteState==='up' ? t.palette.primary.main : undefined, '&:hover': { color: t.palette.primary.dark, backgroundColor: 'transparent' }, '&:active': { color: t.palette.primary.dark, backgroundColor: 'transparent' }, '&.Mui-disabled': { color: voteState==='up' ? t.palette.primary.main : t.palette.action.disabled } })}>
+            <span role="presentation" onMouseDown={(e)=>e.stopPropagation()} onClick={(e)=>e.stopPropagation()} onTouchStart={(e)=>e.stopPropagation()} style={{ display: 'inline-flex' }}>
+            <IconButton
+              size="small"
+              aria-label="讚"
+              onClick={(e) => { e.stopPropagation(); voteDir('up') }}
+              onMouseDown={(e) => e.stopPropagation()}
+              onMouseUp={(e) => e.stopPropagation()}
+              onTouchStart={(e) => e.stopPropagation()}
+              disabled={busy || voteState==='up'}
+              sx={(t)=>({ borderRadius: '10px', color: voteState==='up' ? t.palette.primary.main : undefined, '&:hover': { color: t.palette.primary.dark, backgroundColor: 'transparent' }, '&:active': { color: t.palette.primary.dark, backgroundColor: 'transparent' }, '&.Mui-disabled': { color: voteState==='up' ? t.palette.primary.main : t.palette.action.disabled } })}
+            >
               <ThumbsUp size={18} weight={voteState==='up' ? 'fill' : 'regular'} />
             </IconButton>
+            </span>
             <Typography variant="subtitle2" sx={{ minWidth: 16, textAlign: 'center', fontWeight: 800 }}>
               {score}
             </Typography>
-            <IconButton size="small" aria-label="倒讚" onClick={() => voteDir('down')} disabled={busy || voteState==='down'} sx={(t)=>({ borderRadius: '10px', color: voteState==='down' ? t.palette.primary.main : undefined, '&:hover': { color: t.palette.primary.dark, backgroundColor: 'transparent' }, '&:active': { color: t.palette.primary.dark, backgroundColor: 'transparent' }, '&.Mui-disabled': { color: voteState==='down' ? t.palette.primary.main : t.palette.action.disabled } })}>
+            <span role="presentation" onMouseDown={(e)=>e.stopPropagation()} onClick={(e)=>e.stopPropagation()} onTouchStart={(e)=>e.stopPropagation()} style={{ display: 'inline-flex' }}>
+            <IconButton
+              size="small"
+              aria-label="倒讚"
+              onClick={(e) => { e.stopPropagation(); voteDir('down') }}
+              onMouseDown={(e) => e.stopPropagation()}
+              onMouseUp={(e) => e.stopPropagation()}
+              onTouchStart={(e) => e.stopPropagation()}
+              disabled={busy || voteState==='down'}
+              sx={(t)=>({ borderRadius: '10px', color: voteState==='down' ? t.palette.primary.main : undefined, '&:hover': { color: t.palette.primary.dark, backgroundColor: 'transparent' }, '&:active': { color: t.palette.primary.dark, backgroundColor: 'transparent' }, '&.Mui-disabled': { color: voteState==='down' ? t.palette.primary.main : t.palette.action.disabled } })}
+            >
               <ThumbsDown size={18} weight={voteState==='down' ? 'fill' : 'regular'} />
             </IconButton>
+            </span>
           </Box>
         </Box>
       </CardContent>
     </Card>
     <CommentsPanel open={commentsOpen} onClose={() => setCommentsOpen(false)} pointId={point.id} />
+    {PromptDialogEl}
     </>
   )
 }

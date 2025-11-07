@@ -1,7 +1,6 @@
 import { useState } from 'react'
-import LanguageToggle from '../components/LanguageToggle'
 import useLanguage from '../i18n/useLanguage'
-import { Link, useLocation } from 'react-router-dom'
+import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { Plus } from 'phosphor-react'
 import PrimaryCtaButton from '../components/PrimaryCtaButton'
 import IconButton from '@mui/material/IconButton'
@@ -11,20 +10,28 @@ import ListItemButton from '@mui/material/ListItemButton'
 import ListItemIcon from '@mui/material/ListItemIcon'
 import ListItemText from '@mui/material/ListItemText'
 import Divider from '@mui/material/Divider'
+import Box from '@mui/material/Box'
 import { List as ListIcon } from 'phosphor-react'
-import { House, Archive, Question } from 'phosphor-react'
+import { House, Archive, Question, Globe } from 'phosphor-react'
 import { SignIn } from 'phosphor-react'
 import { SignOut } from 'phosphor-react'
 import useAuth from '../auth/AuthContext'
 import Avatar from '@mui/material/Avatar'
 import Tooltip from '@mui/material/Tooltip'
 import LoginDialog from './LoginDialog'
+import Popover from '@mui/material/Popover'
+import Button from '@mui/material/Button'
+import Typography from '@mui/material/Typography'
+import useConfirmDialog from '../hooks/useConfirmDialog'
 
 export function Header() {
-  const { t } = useLanguage()
+  const { t, locale, toggleLocale } = useLanguage()
   const { user, login, logout } = useAuth()
   const [drawerOpen, setDrawerOpen] = useState(false)
   const [loginOpen, setLoginOpen] = useState(false)
+  const [userMenuAnchor, setUserMenuAnchor] = useState<null | HTMLElement>(null)
+  const navigate = useNavigate()
+  const { confirm, ConfirmDialogEl } = useConfirmDialog()
   const location = useLocation()
   const path = location.pathname || '/'
   const onTopicDetail = path.startsWith('/topics/') && path !== '/topics' && path !== '/topics/add'
@@ -58,11 +65,86 @@ export function Header() {
           </PrimaryCtaButton>
         )}
         {user && (
-          <Tooltip title={user.email || user.name || ''}>
-            <Avatar sx={{ width: 28, height: 28 }} src={user.picture} alt={user.name || 'user'}>
-              {(user.name || 'U').slice(0, 1)}
-            </Avatar>
-          </Tooltip>
+          <>
+            <Tooltip title={user.email || user.name || ''}>
+              <button
+                aria-label="使用者選單"
+                onClick={(e)=> { try { (e.currentTarget as HTMLButtonElement).blur() } catch {}; setUserMenuAnchor(e.currentTarget as unknown as HTMLElement) }}
+                style={{ border: 'none', background: 'transparent', padding: 0, margin: 0, display: 'inline-flex', cursor: 'pointer' }}
+              >
+                <Avatar sx={{ width: 28, height: 28 }} src={user.picture} alt={user.name || 'user'}>
+                  {(user.name || 'U').slice(0, 1)}
+                </Avatar>
+              </button>
+            </Tooltip>
+            <Popover
+              open={!!userMenuAnchor}
+              anchorEl={userMenuAnchor}
+              onClose={() => { setUserMenuAnchor(null); try { (document.activeElement as HTMLElement)?.blur() } catch {} }}
+              disableAutoFocus
+              disableEnforceFocus
+              disableRestoreFocus
+              anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
+              transformOrigin={{ vertical: 'top', horizontal: 'right' }}
+              PaperProps={{ sx: { borderRadius: 3, width: 320, p: 2, mt: '10px' } }}
+            >
+              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+                <Typography variant="body2" color="text.secondary" sx={{ textAlign: 'center' }}>{user.email}</Typography>
+                <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 1 }}>
+                  <Avatar sx={{ width: 64, height: 64 }} src={user.picture} alt={user.name || 'user'}>
+                    {(user.name || 'U').slice(0, 1)}
+                  </Avatar>
+                  <Typography variant="h6" sx={{ m: 0, fontWeight: 800, textAlign: 'center', width: '100%' }}>
+                    {user.role === 'superadmin' ? (
+                      <>
+                        尊榮的超級管理者
+                        <br />
+                        {user.name || ''}
+                        <br />
+                        歡迎你！
+                      </>
+                    ) : (user.role === 'admin' ? (
+                      <>
+                        尊榮的網站管理者
+                        <br />
+                        {user.name || ''}
+                        <br />
+                        歡迎你！
+                      </>
+                    ) : (
+                      <>
+                        尊榮的會員
+                        <br />
+                        {user.name || '用戶'}
+                        <br />
+                        歡迎你！
+                      </>
+                    ))}
+                  </Typography>
+                </Box>
+                <Box sx={{ display: 'flex', justifyContent: 'center', mt: 1, gap: 1 }}>
+                  <Button variant="outlined" size="small" onClick={()=> { setUserMenuAnchor(null); if (user?.id) navigate(`/users/${encodeURIComponent(user.id)}`) }}>
+                    {t('user.profileCenter') || '會員中心'}
+                  </Button>
+                  {(user as any)?.role && ((user as any).role==='admin' || (user as any).role==='superadmin') && (
+                    <Button variant="contained" size="small" onClick={()=> { setUserMenuAnchor(null); navigate('/admin') }}>
+                      {t('user.adminConsole') || '管理後台'}
+                    </Button>
+                  )}
+                </Box>
+                <Divider sx={{ my: 1 }} />
+                <Button color="inherit" sx={{ alignSelf: 'center' }} onClick={async () => {
+                  const ok = await confirm({ title: '確認登出？' })
+                  if (ok) {
+                    setUserMenuAnchor(null)
+                    logout()
+                  }
+                }}>
+                  {t('nav.logout') || '登出'}
+                </Button>
+              </Box>
+            </Popover>
+          </>
         )}
         <IconButton
           aria-label="主選單"
@@ -75,6 +157,19 @@ export function Header() {
         <Drawer anchor="right" open={drawerOpen} onClose={() => setDrawerOpen(false)}>
           <div style={{ width: 280 }}>
             <List sx={{ py: 1, '& .MuiListItemIcon-root': { minWidth: 32 } }}>
+            {user && (
+              <>
+                <ListItemButton disableRipple disableTouchRipple sx={{ cursor: 'default' }}>
+                  <ListItemIcon>
+                    <Avatar sx={{ width: 28, height: 28 }} src={user.picture} alt={user.name || 'user'}>
+                      {(user.name || 'U').slice(0, 1)}
+                    </Avatar>
+                  </ListItemIcon>
+                  <ListItemText primary={user.name || '用戶'} secondary={user.email || ''} />
+                </ListItemButton>
+                <Divider sx={{ my: 0.5 }} />
+              </>
+            )}
             <ListItemButton component={Link} to="/" onClick={() => setDrawerOpen(false)}>
               <ListItemIcon>
                 <House size={18} />
@@ -94,14 +189,12 @@ export function Header() {
               <ListItemText primary={t('nav.guide') || '指南'} />
             </ListItemButton>
             <Divider sx={{ my: 0.5 }} />
-            {/* 語系切換移入選單 */}
-            <ListItemButton disableRipple disableTouchRipple sx={{ cursor: 'default' }}>
-              <ListItemText primary={t('languageToggle.ariaLabel')} />
-            </ListItemButton>
-            <ListItemButton disableGutters>
-              <div style={{ padding: '0 16px' }}>
-                <LanguageToggle />
-              </div>
+            {/* 語系切換：單行 + 點擊切換 */}
+            <ListItemButton onClick={() => toggleLocale()} sx={{ display: 'flex', alignItems: 'center' }}>
+              <ListItemIcon>
+                <Globe size={18} />
+              </ListItemIcon>
+              <ListItemText primary={`${t('languageToggle.ariaLabel')}：${locale==='zh-Hant' ? (t('languageToggle.traditional')||'繁') : (locale==='zh-Hans' ? (t('languageToggle.simplified')||'简') : (t('languageToggle.english')||'EN'))}`} />
             </ListItemButton>
             <Divider sx={{ my: 0.5 }} />
             {!user ? (
@@ -112,7 +205,13 @@ export function Header() {
                 <ListItemText primary={t('nav.login') || '登入'} />
               </ListItemButton>
             ) : (
-              <ListItemButton onClick={() => { logout(); setDrawerOpen(false) }}>
+              <ListItemButton onClick={async () => {
+                const ok = await confirm({ title: '確認登出？' })
+                if (ok) {
+                  logout()
+                }
+                setDrawerOpen(false)
+              }}>
                 <ListItemIcon>
                   <SignOut size={20} />
                 </ListItemIcon>
@@ -123,6 +222,7 @@ export function Header() {
           </div>
         </Drawer>
         <LoginDialog open={loginOpen} onClose={() => { setLoginOpen(false); setDrawerOpen(false) }} onLogin={login} />
+        {ConfirmDialogEl}
       </div>
     </header>
   )

@@ -60,4 +60,12 @@ img, svg, video, canvas {
 }
 .card-action:hover {
   color: var(--mui-palette-primary-main, #4f46e5);
+  font-weight: 800;
+}
+
+/* Admin layout: avoid global centering */
+.admin__inner {
+  width: 100%;
+  max-width: none;
+  margin: 0;
 }

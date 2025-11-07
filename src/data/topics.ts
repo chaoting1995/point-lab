@@ -8,6 +8,7 @@ export type Topic = {
   score?: number // 可為負數
   createdAt?: string
   mode?: 'open' | 'duel'
+  createdBy?: string
 }
 
 export const topics: Topic[] = []
