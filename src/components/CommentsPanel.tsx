@@ -14,6 +14,8 @@ import { formatRelativeAgo } from '../utils/text'
 import { getJson, type ListResponse, withBase } from '../api/client'
 import useAuth from '../auth/AuthContext'
 import usePromptDialog from '../hooks/usePromptDialog'
+import Snackbar from '@mui/material/Snackbar'
+import Alert from '@mui/material/Alert'
 
 type SortKey = 'old' | 'new' | 'hot'
 
@@ -55,6 +57,7 @@ export default function CommentsPanel({ open, onClose, pointId }: { open: boolea
   const [votes, setVotes] = useState<Record<string, 'up' | 'down' | undefined>>({})
   const [expandedBody, setExpandedBody] = useState<Record<string, boolean>>({})
   const { prompt, PromptDialogEl } = usePromptDialog()
+  const [snack, setSnack] = useState<{open:boolean; msg:string}>({ open: false, msg: '' })
   // 內容是否被截斷（用於決定是否顯示「查看更多」）
   const contentRefs = useRef<Record<string, HTMLDivElement | null>>({})
   const childContentRefs = useRef<Record<string, HTMLDivElement | null>>({})
@@ -177,7 +180,7 @@ export default function CommentsPanel({ open, onClose, pointId }: { open: boolea
                   ・ {formatRelativeAgo(c.createdAt || new Date().toISOString(), locale)}
                 </Box>
                 <Box component="span" sx={{ m: 0, color: (t)=>t.palette.text.secondary }}>・</Box>
-                <Box component="button" type="button" className="card-action" onClick={async (e)=>{ e.preventDefault(); e.stopPropagation(); const reason = await prompt({ title: '確定舉報？', label: '舉報原因（可選）', placeholder: '請補充原因（可留空）', confirmText: '送出', cancelText: '取消' }); if (reason !== null) { fetch(withBase('/api/reports'), { method:'POST', headers:{ 'Content-Type':'application/json' }, body: JSON.stringify({ type: 'comment', targetId: c.id, reason: (reason||'').trim() || undefined }) }) } }} sx={{ p: 0, background: 'transparent', border: 'none', color: (t)=>t.palette.primary.main }}>
+                <Box component="button" type="button" className="card-action" onClick={async (e)=>{ e.preventDefault(); e.stopPropagation(); const reason = await prompt({ title: '確定舉報？', label: '舉報原因（可選）', placeholder: '請補充原因（可留空）', confirmText: '送出', cancelText: '取消' }); if (reason !== null) { try { const r = await fetch(withBase('/api/reports'), { method:'POST', headers:{ 'Content-Type':'application/json' }, body: JSON.stringify({ type: 'comment', targetId: c.id, reason: (reason||'').trim() || undefined }) }); if (r.ok) setSnack({ open: true, msg: '已送出舉報' }) } catch {} } }} sx={{ p: 0, background: 'transparent', border: 'none', color: (t)=>t.palette.primary.main }}>
                   {t('actions.report') || '報告'}
                 </Box>
                 <Box component="span" sx={{ m: 0, color: (t)=>t.palette.text.secondary }}>・</Box>
@@ -408,6 +411,9 @@ export default function CommentsPanel({ open, onClose, pointId }: { open: boolea
         )}
       </Box>
     {PromptDialogEl}
+    <Snackbar open={snack.open} autoHideDuration={2000} onClose={()=> setSnack({ open:false, msg:'' })} anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}>
+      <Alert onClose={()=> setSnack({ open:false, msg:'' })} severity="success" sx={{ width: '100%' }}>{snack.msg || '已送出'}</Alert>
+    </Snackbar>
     </Box>
   )
 

@@ -10,6 +10,8 @@ import useLanguage from '../i18n/useLanguage'
 import { formatRelativeAgo } from '../utils/text'
 import useConfirmDialog from '../hooks/useConfirmDialog'
 import usePromptDialog from '../hooks/usePromptDialog'
+import Snackbar from '@mui/material/Snackbar'
+import Alert from '@mui/material/Alert'
 import { withBase } from '../api/client'
 import CommentsPanel from './CommentsPanel'
 import useAuth from '../auth/AuthContext'
@@ -27,6 +29,7 @@ export default function PointCard({ point, onDeleted }: { point: Point; onDelete
   const { user } = useAuth()
   const canManage = user?.role === 'admin' || user?.role === 'superadmin'
   const [commentsOpen, setCommentsOpen] = useState(false)
+  const [snack, setSnack] = useState<{open:boolean; msg:string}>({ open: false, msg: '' })
   const bgColor = point.position === 'agree'
     ? 'rgba(16, 185, 129, 0.08)'
     : point.position === 'others'
@@ -168,7 +171,7 @@ export default function PointCard({ point, onDeleted }: { point: Point; onDelete
               ) : (
                 authorName
               )}
-              {' '}| {createdLabel} | <button type="button" className="card-action" onClick={(e) => { e.preventDefault(); e.stopPropagation(); setCommentsOpen(true) }}>{(t('common.counts.comments') || '{n} 則評論').replace('{n}', String(point.comments ?? 0))}</button> | <button type="button" className="card-action" onClick={async (e)=>{ e.preventDefault(); e.stopPropagation(); const reason = await prompt({ title: '確定舉報？', label: '舉報原因（可選）', placeholder: '請補充原因（可留空）', confirmText: '送出', cancelText: '取消' }); if (reason !== null) { fetch(withBase('/api/reports'), { method:'POST', headers:{ 'Content-Type':'application/json' }, body: JSON.stringify({ type: 'point', targetId: point.id, reason: (reason||'').trim() || undefined }) }) } }}>{t('actions.report') || '報告'}</button>
+              {' '}| {createdLabel} | <button type="button" className="card-action" onClick={(e) => { e.preventDefault(); e.stopPropagation(); setCommentsOpen(true) }}>{(t('common.counts.comments') || '{n} 則評論').replace('{n}', String(point.comments ?? 0))}</button> | <button type="button" className="card-action" onClick={async (e)=>{ e.preventDefault(); e.stopPropagation(); const reason = await prompt({ title: '確定舉報？', label: '舉報原因（可選）', placeholder: '請補充原因（可留空）', confirmText: '送出', cancelText: '取消' }); if (reason !== null) { try { const r = await fetch(withBase('/api/reports'), { method:'POST', headers:{ 'Content-Type':'application/json' }, body: JSON.stringify({ type: 'point', targetId: point.id, reason: (reason||'').trim() || undefined }) }); if (r.ok) setSnack({ open: true, msg: '已送出舉報' }) } catch {} } }}>{t('actions.report') || '報告'}</button>
               {canManage && (<>
               {' '}|{' '}
               <button
@@ -239,6 +242,9 @@ export default function PointCard({ point, onDeleted }: { point: Point; onDelete
       </CardContent>
     </Card>
     <CommentsPanel open={commentsOpen} onClose={() => setCommentsOpen(false)} pointId={point.id} />
+    <Snackbar open={snack.open} autoHideDuration={2000} onClose={()=> setSnack({ open:false, msg:'' })} anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}>
+      <Alert onClose={()=> setSnack({ open:false, msg:'' })} severity="success" sx={{ width: '100%' }}>{snack.msg || '已送出'}</Alert>
+    </Snackbar>
     {PromptDialogEl}
     </>
   )
