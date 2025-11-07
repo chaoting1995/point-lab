@@ -43,8 +43,8 @@ export default function PointCard({ point, onDeleted }: { point: Point; onDelete
     if (busy) return
     setBusy(true)
     const current = voteState
-    if (current === dir) { setBusy(false); return }
-    const { next, delta } = setStoredVote('point', point.id, dir)
+    const target = current === dir ? undefined : dir
+    const { next, delta } = setStoredVote('point', point.id, target)
     try {
       setScore((s)=> (s||0)+delta)
       const res = await fetch(withBase(`/api/points/${point.id}/vote`), { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ delta }) })
@@ -214,7 +214,7 @@ export default function PointCard({ point, onDeleted }: { point: Point; onDelete
               onMouseDown={(e) => e.stopPropagation()}
               onMouseUp={(e) => e.stopPropagation()}
               onTouchStart={(e) => e.stopPropagation()}
-              disabled={busy || voteState==='up'}
+              disabled={busy}
               sx={(t)=>({ borderRadius: '10px', color: voteState==='up' ? t.palette.primary.main : undefined, '&:hover': { color: t.palette.primary.dark, backgroundColor: 'transparent' }, '&:active': { color: t.palette.primary.dark, backgroundColor: 'transparent' }, '&.Mui-disabled': { color: voteState==='up' ? t.palette.primary.main : t.palette.action.disabled } })}
             >
               <ThumbsUp size={18} weight={voteState==='up' ? 'fill' : 'regular'} />
@@ -231,7 +231,7 @@ export default function PointCard({ point, onDeleted }: { point: Point; onDelete
               onMouseDown={(e) => e.stopPropagation()}
               onMouseUp={(e) => e.stopPropagation()}
               onTouchStart={(e) => e.stopPropagation()}
-              disabled={busy || voteState==='down'}
+              disabled={busy}
               sx={(t)=>({ borderRadius: '10px', color: voteState==='down' ? t.palette.primary.main : undefined, '&:hover': { color: t.palette.primary.dark, backgroundColor: 'transparent' }, '&:active': { color: t.palette.primary.dark, backgroundColor: 'transparent' }, '&.Mui-disabled': { color: voteState==='down' ? t.palette.primary.main : t.palette.action.disabled } })}
             >
               <ThumbsDown size={18} weight={voteState==='down' ? 'fill' : 'regular'} />

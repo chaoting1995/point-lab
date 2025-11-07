@@ -50,8 +50,8 @@ export default function TopicCard({ topic, onDeleted, showMeta = true, showVote 
   async function voteDir(dir: 'up'|'down') {
     if (busy) return
     const current = voteState
-    if (current === dir) return
-    const { next, delta } = setStoredVote('topic', topic.id, dir)
+    const target = current === dir ? undefined : dir
+    const { next, delta } = setStoredVote('topic', topic.id, target)
     if (delta === 0) return
     try {
       setBusy(true)
@@ -62,7 +62,6 @@ export default function TopicCard({ topic, onDeleted, showMeta = true, showVote 
       setVoteState(next)
     } catch {
       setScore((s)=> s-delta)
-      // revert local store
       setStoredVote('topic', topic.id, current)
     } finally { setBusy(false) }
   }
@@ -150,7 +149,7 @@ export default function TopicCard({ topic, onDeleted, showMeta = true, showVote 
               <IconButton
                 size="small"
                 aria-label="讚"
-                disabled={busy || voteState==='up'}
+              disabled={busy}
                 disableRipple
                 onMouseDown={(e) => { e.preventDefault(); e.stopPropagation() }}
                 onClick={(e) => { e.preventDefault(); e.stopPropagation(); voteDir('up') }}
@@ -164,7 +163,7 @@ export default function TopicCard({ topic, onDeleted, showMeta = true, showVote 
               <IconButton
                 size="small"
                 aria-label="倒讚"
-                disabled={busy || voteState==='down'}
+              disabled={busy}
                 disableRipple
                 onMouseDown={(e) => { e.preventDefault(); e.stopPropagation() }}
                 onClick={(e) => { e.preventDefault(); e.stopPropagation(); voteDir('down') }}

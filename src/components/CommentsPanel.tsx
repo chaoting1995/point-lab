@@ -227,15 +227,12 @@ export default function CommentsPanel({ open, onClose, pointId }: { open: boolea
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, minWidth: 72, alignSelf: 'flex-start' }}>
                 <IconButton size="small" onClick={async () => {
                   const current = votes[c.id]
-                  if (current === 'up') return
-                const delta = !current ? +1 : +2
-                await fetch(withBase(`/api/comments/${c.id}/vote`), { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ delta }) })
-                setVotes(prev => {
-                  const next: 'up' = 'up'
-                  try { setStoredVote('comment', c.id, next) } catch {}
-                  return { ...prev, [c.id]: next }
-                })
-                setItems(prev => prev.map(it => it.id===c.id?{...it, upvotes: (it.upvotes||0)+delta}:it))
+                  const target = current==='up' ? undefined : 'up'
+                  const { next, delta } = setStoredVote('comment', c.id, target)
+                  if (delta === 0) return
+                  await fetch(withBase(`/api/comments/${c.id}/vote`), { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ delta }) })
+                  setVotes(prev => ({ ...prev, [c.id]: next }))
+                  setItems(prev => prev.map(it => it.id===c.id?{...it, upvotes: (it.upvotes||0)+delta}:it))
               }}
               sx={(t)=>({
                 color: votes[c.id]==='up' ? t.palette.primary.main : undefined,
@@ -243,21 +240,18 @@ export default function CommentsPanel({ open, onClose, pointId }: { open: boolea
                 '&:active': { color: t.palette.primary.dark, backgroundColor: 'transparent' },
                 '&.Mui-disabled': { color: votes[c.id]==='up' ? t.palette.primary.main : t.palette.action.disabled },
               })}
-              disabled={votes[c.id]==='up'}
+              disabled={false}
               >
                 <ThumbsUp size={18} weight={votes[c.id]==='up' ? 'fill' : 'regular'} />
               </IconButton>
               <Typography variant="caption" sx={{ fontWeight: 700, minWidth: 16, textAlign: 'center' }}>{c.upvotes || 0}</Typography>
               <IconButton size="small" onClick={async () => {
                 const current = votes[c.id]
-                if (current === 'down') return
-                const delta = !current ? -1 : -2
+                const target = current==='down' ? undefined : 'down'
+                const { next, delta } = setStoredVote('comment', c.id, target)
+                if (delta === 0) return
                 await fetch(withBase(`/api/comments/${c.id}/vote`), { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ delta }) })
-                setVotes(prev => {
-                  const next: 'down' = 'down'
-                  try { setStoredVote('comment', c.id, next) } catch {}
-                  return { ...prev, [c.id]: next }
-                })
+                setVotes(prev => ({ ...prev, [c.id]: next }))
                 setItems(prev => prev.map(it => it.id===c.id?{...it, upvotes: (it.upvotes||0)+delta}:it))
               }}
               sx={(t)=>({
@@ -266,7 +260,7 @@ export default function CommentsPanel({ open, onClose, pointId }: { open: boolea
                 '&:active': { color: t.palette.primary.dark, backgroundColor: 'transparent' },
                 '&.Mui-disabled': { color: votes[c.id]==='down' ? t.palette.primary.main : t.palette.action.disabled },
               })}
-              disabled={votes[c.id]==='down'}
+              disabled={false}
               >
                 <ThumbsDown size={18} weight={votes[c.id]==='down' ? 'fill' : 'regular'} />
               </IconButton>
@@ -305,14 +299,11 @@ export default function CommentsPanel({ open, onClose, pointId }: { open: boolea
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, minWidth: 72, alignSelf: 'flex-start' }}>
                       <IconButton size="small" onClick={async () => {
                         const current = votes[rc.id]
-                        if (current === 'up') return
-                        const delta = !current ? +1 : +2
+                        const target = current==='up' ? undefined : 'up'
+                        const { next, delta } = setStoredVote('comment', rc.id, target)
+                        if (delta === 0) return
                         await fetch(withBase(`/api/comments/${rc.id}/vote`), { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ delta }) })
-                        setVotes(prev => {
-                          const next: 'up' = 'up'
-                          try { setStoredVote('comment', rc.id, next) } catch {}
-                          return { ...prev, [rc.id]: next }
-                        })
+                        setVotes(prev => ({ ...prev, [rc.id]: next }))
                         setExpanded(prev => ({ ...prev, [c.id]: { ...prev[c.id]!, items: prev[c.id]!.items.map(x => x.id===rc.id?{...x, upvotes: (x.upvotes||0)+delta}:x) } }))
                       }}
                       sx={(t)=>({
@@ -328,14 +319,11 @@ export default function CommentsPanel({ open, onClose, pointId }: { open: boolea
                       <Typography variant="caption" sx={{ fontWeight: 700, minWidth: 16, textAlign: 'center' }}>{rc.upvotes || 0}</Typography>
                       <IconButton size="small" onClick={async () => {
                         const current = votes[rc.id]
-                        if (current === 'down') return
-                        const delta = !current ? -1 : -2
+                        const target = current==='down' ? undefined : 'down'
+                        const { next, delta } = setStoredVote('comment', rc.id, target)
+                        if (delta === 0) return
                         await fetch(withBase(`/api/comments/${rc.id}/vote`), { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ delta }) })
-                        setVotes(prev => {
-                          const next: 'down' = 'down'
-                          try { setStoredVote('comment', rc.id, next) } catch {}
-                          return { ...prev, [rc.id]: next }
-                        })
+                        setVotes(prev => ({ ...prev, [rc.id]: next }))
                         setExpanded(prev => ({ ...prev, [c.id]: { ...prev[c.id]!, items: prev[c.id]!.items.map(x => x.id===rc.id?{...x, upvotes: (x.upvotes||0)+delta}:x) } }))
                       }}
                       sx={(t)=>({
