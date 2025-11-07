@@ -74,14 +74,15 @@ Comments（評論）
 
 - 公開使用者：`GET /api/users/:id` → `{ id, name, picture, bio }`
   - 目前後台/管理 API（需 admin/superadmin）：
-    - `GET /api/admin/users`（用戶列表，含發布數量與讚數彙總）
+    - `GET /api/admin/users?page&size`（用戶列表，含發布數量與讚數彙總；伺服器分頁，回傳 `{ items,total,page,size }`）
     - `PATCH /api/admin/users/:id/role`（變更角色：user|admin|superadmin）
-    - `GET /api/admin/reports?type=topic|point|comment`（舉報列表）
+    - `GET /api/admin/reports[?type=topic|point|comment]&page&size`（舉報列表；伺服器分頁，回傳 `{ items,total,page,size }`）
     - `POST /api/reports`（新增舉報：`{ type, targetId, reason? }`）
-    - `GET /api/admin/stats`（總覽統計：users/topics/points/comments/reports）
+    - `GET /api/admin/stats`（總覽統計：users/guests/topics/points/comments/reports）
 
 資料欄位補充
 - 登入狀態下發表的 Topic/Point/Comment 會寫入 `userId`；Topic 另保存 `createdBy`。
+- 訪客身份：會建立 `pl:guest:id`，未登入/訪客發布時，後端會記錄 `topics.created_by_guest`、`points.guest_id`、`comments.guest_id`；`/api/admin/stats` 回傳 `guests` 總數。
 
 ## 前端互動與樣式調整（近期）
 
@@ -95,6 +96,7 @@ Comments（評論）
   - 會員：三行顯示「尊榮的會員 / {名稱} / 歡迎你！」
 - Admin 首頁卡片導向：
   - 用戶數 → `/admin/users`
+  - 訪客數 → `/admin/users`（暫共用入口）
   - 主題數 / 觀點數 / 評論數 → `/topics`
   - 舉報數 → `/admin/reports`
 - Admin 未授權時顯示「登入卡片」（非彈窗），置中呈現 Google 登入按鈕。

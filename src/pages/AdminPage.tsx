@@ -15,8 +15,7 @@ import { useEffect, useState } from 'react'
 import useAuth from '../auth/AuthContext'
 import { withBase } from '../api/client'
 import useLanguage from '../i18n/useLanguage'
-import Button from '@mui/material/Button'
-import GoogleLogo from '../components/icons/GoogleLogo'
+import GoogleLoginButton from '../components/GoogleLoginButton'
 import Divider from '@mui/material/Divider'
 import TableContainer from '@mui/material/TableContainer'
 import Table from '@mui/material/Table'
@@ -91,22 +90,9 @@ export default function AdminPage() {
         <main className="admin__inner" style={{ display: 'flex' }}>
           <Box sx={{ flex: 1, p: 2, display: 'flex', alignItems: 'center', justifyContent: 'center', marginTop: '96px' }}>
             <Paper elevation={0} sx={{ p: 3, borderRadius: '10px', border: '1px solid', borderColor: 'divider', textAlign: 'center', maxWidth: 360 }}>
-              <Typography variant="h6" sx={{ fontWeight: 800, mb: 0.5 }}>登入</Typography>
-              <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>登入後，可累積數據、參與排名</Typography>
-              <Button
-                onClick={async () => { await login() }}
-                startIcon={<GoogleLogo size={16} />}
-                sx={(theme)=>({
-                  textTransform: 'none', fontWeight: 700, borderRadius: 999, px: 2, py: 1,
-                  border: '1px solid', borderColor: theme.palette.primary.main + '20',
-                  backgroundColor: theme.palette.primary.main + '0A', color: theme.palette.text.primary,
-                  boxShadow: '0 4px 12px rgba(0,0,0,0.06)',
-                  '&:hover': { backgroundColor: theme.palette.primary.main + '14', borderColor: theme.palette.primary.main + '33', boxShadow: '0 6px 18px rgba(0,0,0,0.10)' },
-                  '&:active': { backgroundColor: theme.palette.primary.main + '1F' },
-                })}
-              >
-                使用 Google 登入
-              </Button>
+              <Typography variant="h6" sx={{ fontWeight: 800, mb: 0.5 }}>{t('auth.loginTitle') || '登入'}</Typography>
+              <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>{t('auth.loginDesc') || '登入後，可累積數據、參與排名'}</Typography>
+              <GoogleLoginButton onClick={async () => { await login() }} />
             </Paper>
           </Box>
         </main>

@@ -38,6 +38,9 @@
   - /admin/reports 使用共用按鈕樣式切換（btn btn-sm，選取為 btn-primary）。
   - 前台移除所有「分享」按鈕；操作文字（報告/編輯/刪除）hover 加粗。
   - 舉報流程加入確認彈窗與「原因」輸入框（Topic/Point/Comment 皆適用）。
+  - 伺服器分頁：/api/admin/users 與 /api/admin/reports 支援 `page/size`，前端採用 Pagination。
+  - Admin 首頁新增「訪客數」統計；時間顯示改為 24h 絕對時間。
+  - 訪客身份（guestId）：未登入/訪客發布主題/觀點/評論時，後端記錄 guest 欄位並 upsert guests 表；前端建立 `pl:guest:id`。
 - Topics/Points/Comments 建立時，登入狀態會寫入用戶 ID
   - topics.created_by、points.user_id、comments.user_id（SQLite 以 alter 方式補欄位；JSON 同步保存）。
   - GET /api/topics 及 /api/topics/id/:id 回傳 `createdBy` 欄位（若存在）。
