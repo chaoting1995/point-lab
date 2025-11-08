@@ -103,7 +103,7 @@ Comments（評論）
 - 列表底部 CTA 使用 `PrimaryCtaButton` + caret-right，置中且保留上下間距；首頁為「前往主題箱」，會員中心為「新增觀點」。
 
 ### 表單 / 登入
-- Google 登入按鈕在打開 Google 之前顯示貼頂 `LinearProgress`，並將 `pathname+search+hash` 存到 `sessionStorage.pl:back_after_login`；`/auth/callback` 成功後導回原頁。
+- Google 登入按鈕在打開 Google 之前顯示貼頂 `LinearProgress`，並將 `pathname+search+hash` 存到 `sessionStorage.pl:back_after_login`；`/auth/callback` 成功後導回原頁。為避免 Safari/iOS 阻擋第三方 Cookie，後端登入 API 會在 JSON 內附帶 `sessionToken`，前端會存入 `localStorage`，並於後續 API 請求加上 `Authorization: Bearer <token>` 作為備援。
 - `/topics/add`、`/points/add` 提交期間顯示貼頂 `LinearProgress`、CTA 內 `ClipLoader`，欄位逐一 disabled 並降低透明度；錯誤時顯示 Alert。
 - 新增主題成功後直接導向 `/points/add?topic=<id>`，不再留下成功視窗。
 - 新增觀點頁的 TopicCard 行為：
@@ -153,7 +153,7 @@ Comments（評論）
 - 前端與後端一律使用 `id`；不再支援 `slug`。
 - 對立（duel）模式：新增觀點頁提供「選擇立場」按鈕組（讚同/其他）；詳頁左右分欄顯示兩邊觀點。
 - 多語系：UI 文案支援 繁/簡/英；使用者輸入內容不自動翻譯。
-- Google 登入：點擊登入按鈕時會顯示貼頂 `LinearProgress` 並 disable 按鈕，登入前會把目前 URL 儲存到 `sessionStorage.pl:back_after_login`，`/auth/callback` 成功後會導回原頁。
+- Google 登入：點擊登入按鈕時會顯示貼頂 `LinearProgress` 並 disable 按鈕，登入前會把目前 URL 儲存到 `sessionStorage.pl:back_after_login`，`/auth/callback` 成功後會導回原頁；為避免裝置封鎖第三方 Cookie，登入 API 會額外回傳 `sessionToken`，前端會寫入 `localStorage` 並在所有 API 請求加上 `Authorization: Bearer <token>` 做備援。
 - 新增主題/觀點：送出期間顯示貼頂 `LinearProgress`、CTA 內使用 `ClipLoader`，同時鎖定所有表單；新增主題成功後立即跳轉到 `/points/add?topic=<id>`，新增觀點頁若主題觀點數為 0 會顯示「這個主題空空如也...」提示。
 
 ## 部署建議
@@ -182,6 +182,16 @@ Fly.io（後端）
 - 部署：`flyctl deploy`
 - 設環境變數：`flyctl secrets set ALLOWED_ORIGINS="https://pointlab.com,https://www.pointlab.com"`
 - 健檢：`curl https://api.pointlab.com/api/health`
+
+## SEO 與搜尋引擎設定
+
+- Head metadata：`index.html` 已設定 `lang="zh-Hant"`、canonical、描述、OG/Twitter 標籤與 `WebSite` JSON-LD，部署時請維持標題/描述同步最新文案。
+- Robots 與 Sitemap：預設提供 `public/robots.txt` 與 `public/sitemap.xml`，部署後可由 `https://point-lab.pages.dev/robots.txt` 與 `/sitemap.xml` 取得。若新增主要頁面請記得更新 sitemap。
+- Google Search Console：
+  1. 於 [GSC](https://search.google.com/search-console) 建立 `網址前置字串` 資產（例：`https://point-lab.pages.dev/`）。
+  2. 驗證方式建議使用 HTML 檔案：將 Google 提供的 `googleXXXX.html` 放進 `public/`（目前使用 `public/googled6b3c7e411c63b61.html`），部署後即可驗證。
+  3. 在 GSC 的「Sitemaps」提交 `https://point-lab.pages.dev/sitemap.xml`，並視需要對新頁面使用「網址檢查 → 請求建立索引」。
+  4. 若後續改網域或新增語言版本，請重新調整 canonical、sitemap 與驗證檔。
 
 ## 資料庫（SQLite）與資料匯入
 

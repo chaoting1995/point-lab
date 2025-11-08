@@ -13,7 +13,7 @@ import RadioGroup from '@mui/material/RadioGroup'
 import FormControlLabel from '@mui/material/FormControlLabel'
 import Radio from '@mui/material/Radio'
 import PageHeader from '../components/PageHeader'
-import { withBase } from '../api/client'
+import { withAuthHeaders, withBase } from '../api/client'
 import { getOrCreateGuestId, getGuestName } from '../utils/guest'
 import useAuth from '../auth/AuthContext'
 import { addGuestItem } from '../utils/guestActivity'
@@ -109,7 +109,8 @@ export default function TopicAddPage() {
                     setError(null)
                     const res = await fetch(withBase('/api/topics'), {
                       method: 'POST',
-                      headers: { 'Content-Type': 'application/json' },
+                      headers: withAuthHeaders({ 'Content-Type': 'application/json' }),
+                      credentials: 'include',
                       body: JSON.stringify({ name: name.trim(), description: description.trim() || undefined, mode, ...(user?{}:{ guestId: getOrCreateGuestId(), authorName: getGuestName() || undefined }) }),
                     })
                     if (!res.ok) {

@@ -5,7 +5,7 @@ import Avatar from '@mui/material/Avatar'
 import Typography from '@mui/material/Typography'
 import { useParams } from 'react-router-dom'
 import { useEffect, useMemo, useState, useRef, useCallback } from 'react'
-import { withBase, getJson, type ListResponse } from '../api/client'
+import { withAuthHeaders, withBase, getJson, type ListResponse } from '../api/client'
 import useLanguage from '../i18n/useLanguage'
 import useAuth from '../auth/AuthContext'
 import SortTabs from '../components/SortTabs'
@@ -410,7 +410,7 @@ export default function UserProfilePage() {
                   <Button variant="contained" sx={(t)=>({ borderRadius: '10px', minWidth: 96, bgcolor: t.palette.primary.main, '&:hover': { bgcolor: t.palette.primary.dark } })}
                     onClick={async ()=>{
                     try {
-                      const r = await fetch(withBase('/api/me'), { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, credentials: 'include', body: JSON.stringify({ name: nameDraft, bio: bioDraft }) })
+                      const r = await fetch(withBase('/api/me'), { method: 'PATCH', headers: withAuthHeaders({ 'Content-Type': 'application/json' }), credentials: 'include', body: JSON.stringify({ name: nameDraft, bio: bioDraft }) })
                       if (!r.ok) throw new Error('儲存失敗')
                       const d = await r.json()
                       setUser((u)=> u ? { ...u, name: d.data.name, bio: d.data.bio } : u)

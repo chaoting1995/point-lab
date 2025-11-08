@@ -9,7 +9,7 @@ import Alert from '@mui/material/Alert'
 import Snackbar from '@mui/material/Snackbar'
 import PageHeader from '../components/PageHeader'
 import type { Topic } from '../data/topics'
-import { getJson, type ItemResponse, withBase } from '../api/client'
+import { getJson, type ItemResponse, withAuthHeaders, withBase } from '../api/client'
 
 export default function TopicEditPage() {
   const navigate = useNavigate()
@@ -77,7 +77,8 @@ export default function TopicEditPage() {
                   setError(null)
                   const res = await fetch(withBase(`/api/topics/${id}`), {
                     method: 'PATCH',
-                    headers: { 'Content-Type': 'application/json' },
+                    headers: withAuthHeaders({ 'Content-Type': 'application/json' }),
+                    credentials: 'include',
                     body: JSON.stringify({ name: name.trim(), description: description.trim() || undefined }),
                   })
                   if (!res.ok) throw new Error('儲存失敗')

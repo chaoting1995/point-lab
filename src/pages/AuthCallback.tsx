@@ -1,5 +1,5 @@
 import { useEffect } from 'react'
-import { withBase } from '../api/client'
+import { persistSessionToken, withAuthHeaders, withBase } from '../api/client'
 
 export default function AuthCallback() {
   useEffect(() => {
@@ -40,10 +40,17 @@ export default function AuthCallback() {
           alert('登入失敗，請把 Console 顯示的訊息貼給我。')
           return
         }
+        try {
+          const parsed = text ? JSON.parse(text) : null
+          const token = parsed?.data?.sessionToken || parsed?.sessionToken
+          if (token) persistSessionToken(token)
+        } catch {
+          // 若 JSON 格式不符，忽略，後續請求仍可依賴 Cookie
+        }
         shouldRedirect = true
         // 非阻塞地嘗試觸發 /api/me，用於暖身 Session（導頁中斷時忽略）
         try {
-          fetch(withBase('/api/me'), { credentials: 'include' })
+          fetch(withBase('/api/me'), { credentials: 'include', headers: withAuthHeaders({}) })
             .then(()=>{})
             .catch(()=>{})
         } catch {/* ignore */}

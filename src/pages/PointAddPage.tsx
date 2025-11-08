@@ -14,7 +14,7 @@ import Snackbar from '@mui/material/Snackbar'
 import PageHeader from '../components/PageHeader'
 import TopicCard from '../components/TopicCard'
 import type { Topic } from '../data/topics'
-import { getJson, type ItemResponse, type ListResponse, withBase } from '../api/client'
+import { getJson, type ItemResponse, type ListResponse, withAuthHeaders, withBase } from '../api/client'
 import useAuth from '../auth/AuthContext'
 import DuelTabs, { type DuelValue } from '../components/DuelTabs'
 import PrimaryCtaButton from '../components/PrimaryCtaButton'
@@ -99,7 +99,7 @@ export default function PointAddPage() {
       setError(null)
       const res = await fetch(withBase('/api/points'), {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: withAuthHeaders({ 'Content-Type': 'application/json' }),
         body: JSON.stringify({
           description: description.trim(),
           topicId: topicId || undefined,

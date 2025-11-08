@@ -13,7 +13,7 @@ import usePromptDialog from '../hooks/usePromptDialog'
 import Snackbar from '@mui/material/Snackbar'
 import Alert from '@mui/material/Alert'
 import { getVoteState as getStoredVote, setVoteState as setStoredVote } from '../utils/votes'
-import { withBase } from '../api/client'
+import { withAuthHeaders, withBase } from '../api/client'
 import CommentsPanel from './CommentsPanel'
 import useAuth from '../auth/AuthContext'
 import { useNavigate } from 'react-router-dom'
@@ -56,7 +56,8 @@ export default function PointCard({ point, onDeleted }: { point: Point; onDelete
     try {
       const res = await fetch(withBase(`/api/points/${point.id}/vote`), {
         method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
+        headers: withAuthHeaders({ 'Content-Type': 'application/json' }),
+        credentials: 'include',
         body: JSON.stringify({ delta: deltaToSend }),
       })
       if (!res.ok) throw new Error('VOTE_FAILED')
@@ -96,7 +97,7 @@ export default function PointCard({ point, onDeleted }: { point: Point; onDelete
     if (deleting) return
     try {
       setDeleting(true)
-      const res = await fetch(withBase(`/api/points/${point.id}`), { method: 'DELETE' })
+      const res = await fetch(withBase(`/api/points/${point.id}`), { method: 'DELETE', headers: withAuthHeaders({}), credentials: 'include' })
       if (!res.ok && res.status !== 204) throw new Error('DELETE_FAILED')
       onDeleted?.(point.id)
     } catch {
@@ -202,7 +203,7 @@ export default function PointCard({ point, onDeleted }: { point: Point; onDelete
               ) : (
                 authorName
               )}
-              {' '}| {createdLabel} | <button type="button" className="card-action" onClick={(e) => { e.preventDefault(); e.stopPropagation(); setCommentsOpen(true) }}>{(t('common.counts.comments')).replace('{n}', String(point.comments ?? 0))}</button> | <button type="button" className="card-action" onClick={async (e)=>{ e.preventDefault(); e.stopPropagation(); const reason = await prompt({ title: '確定舉報？', label: '舉報原因（可選）', placeholder: '請補充原因（可留空）', confirmText: '送出', cancelText: '取消' }); if (reason !== null) { try { const r = await fetch(withBase('/api/reports'), { method:'POST', headers:{ 'Content-Type':'application/json' }, body: JSON.stringify({ type: 'point', targetId: point.id, reason: (reason||'').trim() || undefined }) }); if (r.ok) setSnack({ open: true, msg: '已送出舉報' }) } catch {} } }}>{t('actions.report')}</button>
+            {' '}| {createdLabel} | <button type="button" className="card-action" onClick={(e) => { e.preventDefault(); e.stopPropagation(); setCommentsOpen(true) }}>{(t('common.counts.comments')).replace('{n}', String(point.comments ?? 0))}</button> | <button type="button" className="card-action" onClick={async (e)=>{ e.preventDefault(); e.stopPropagation(); const reason = await prompt({ title: '確定舉報？', label: '舉報原因（可選）', placeholder: '請補充原因（可留空）', confirmText: '送出', cancelText: '取消' }); if (reason !== null) { try { const r = await fetch(withBase('/api/reports'), { method:'POST', headers: withAuthHeaders({ 'Content-Type':'application/json' }), credentials: 'include', body: JSON.stringify({ type: 'point', targetId: point.id, reason: (reason||'').trim() || undefined }) }); if (r.ok) setSnack({ open: true, msg: '已送出舉報' }) } catch {} } }}>{t('actions.report')}</button>
               {canManage && (<>
               {' '}|{' '}
               <button

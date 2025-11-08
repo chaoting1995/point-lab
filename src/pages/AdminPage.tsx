@@ -8,12 +8,11 @@ import Typography from '@mui/material/Typography'
 import { House, Users, Flag } from 'phosphor-react'
 import Select from '@mui/material/Select'
 import MenuItem from '@mui/material/MenuItem'
-import { getJson } from '../api/client'
+import { getJson, withAuthHeaders, withBase } from '../api/client'
 import Avatar from '@mui/material/Avatar'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { useEffect, useState, type MouseEvent } from 'react'
 import useAuth from '../auth/AuthContext'
-import { withBase } from '../api/client'
 import useLanguage from '../i18n/useLanguage'
 import GoogleLoginButton from '../components/GoogleLoginButton'
 // 圖表：近 28 天新增觀點數（使用 MUI X Charts）
@@ -90,14 +89,14 @@ export default function AdminPage() {
       try {
         if (usersRoleFilter === 'guest') {
           const url = `/api/admin/guests?page=${usersPage}&size=${pageSize}&q=${encodeURIComponent(userQuery)}`
-          const resp = await fetch(withBase(url), { credentials: 'include' })
+          const resp = await fetch(withBase(url), { credentials: 'include', headers: withAuthHeaders({}) })
           if (!resp.ok) throw new Error('GUESTS_FAILED')
           const d = await resp.json()
           const guestRows = mapGuestRows(d.items || [])
           setUsers(guestRows)
           setUsersTotal(d.total || guestRows.length)
         } else if (usersRoleFilter === 'member') {
-          const resp = await fetch(withBase(`/api/admin/users?page=${usersPage}&size=${pageSize}`), { credentials: 'include' })
+          const resp = await fetch(withBase(`/api/admin/users?page=${usersPage}&size=${pageSize}`), { credentials: 'include', headers: withAuthHeaders({}) })
           if (!resp.ok) throw new Error('USERS_FAILED')
           const d = await resp.json()
           const rows = mapMemberRows(d.items || [])
@@ -105,8 +104,8 @@ export default function AdminPage() {
           setUsersTotal(d.total || rows.length)
         } else {
           const [membersResp, guestsResp] = await Promise.all([
-            fetch(withBase(`/api/admin/users?page=${usersPage}&size=${pageSize}`), { credentials: 'include' }),
-            fetch(withBase(`/api/admin/guests?page=${usersPage}&size=${pageSize}&q=${encodeURIComponent(userQuery)}`), { credentials: 'include' }),
+            fetch(withBase(`/api/admin/users?page=${usersPage}&size=${pageSize}`), { credentials: 'include', headers: withAuthHeaders({}) }),
+            fetch(withBase(`/api/admin/guests?page=${usersPage}&size=${pageSize}&q=${encodeURIComponent(userQuery)}`), { credentials: 'include', headers: withAuthHeaders({}) }),
           ])
           if (!membersResp.ok || !guestsResp.ok) throw new Error('ALL_FAILED')
           const membersJson = await membersResp.json()
@@ -343,7 +342,7 @@ export default function AdminPage() {
                               const role = e.target.value as string
                               const ok = await confirm({ title: '確認切換角色？' })
                               if (!ok) return
-                              await fetch(withBase(`/api/admin/users/${encodeURIComponent(u.id)}/role`), { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ role }) })
+                              await fetch(withBase(`/api/admin/users/${encodeURIComponent(u.id)}/role`), { method: 'PATCH', headers: withAuthHeaders({ 'Content-Type': 'application/json' }), body: JSON.stringify({ role }) })
                               setUsers(prev => prev.map(x => x.id===u.id ? ({ ...x, role }) as any : x))
                               }}
                               sx={{ minWidth: 140, fontSize: 14, '& .MuiSelect-select': { py: 0.5 } }}
@@ -368,7 +367,7 @@ export default function AdminPage() {
                                 e.preventDefault()
                                 const ok = await confirm({ title: '確定刪除此用戶？', body: '用戶的內容將標記為無主，無法復原。' })
                                 if (!ok) return
-                                const resp = await fetch(withBase(`/api/admin/users/${encodeURIComponent(u.id)}`), { method: 'DELETE' })
+                                const resp = await fetch(withBase(`/api/admin/users/${encodeURIComponent(u.id)}`), { method: 'DELETE', headers: withAuthHeaders({}) })
                                 if (!resp.ok && resp.status !== 204) return
                                 setUsers((prev) => prev.filter((x) => x.id !== u.id))
                                 setUsersTotal((prev) => Math.max(0, prev - 1))
@@ -490,10 +489,10 @@ function HomeStats({ stats, onLoad, onNavigate }: { stats: any, onLoad: (s:any)=
   const [points28, setPoints28] = useState<Array<{ date: string; count: number }>>([])
   useEffect(() => {
     (async () => {
-      try { const r = await fetch(withBase('/api/admin/stats'), { credentials: 'include' }); if (r.ok) { const d = await r.json(); onLoad(d.data) } } catch {}
+      try { const r = await fetch(withBase('/api/admin/stats'), { credentials: 'include', headers: withAuthHeaders({}) }); if (r.ok) { const d = await r.json(); onLoad(d.data) } } catch {}
     })()
     ;(async () => {
-      try { const r = await fetch(withBase('/api/admin/stats/points-28d'), { credentials: 'include' }); if (r.ok) { const d = await r.json(); setPoints28(d.data||[]) } } catch {}
+      try { const r = await fetch(withBase('/api/admin/stats/points-28d'), { credentials: 'include', headers: withAuthHeaders({}) }); if (r.ok) { const d = await r.json(); setPoints28(d.data||[]) } } catch {}
     })()
   }, [])
   const s = stats || { users: 0, guests: 0, topics: 0, points: 0, comments: 0, reports: 0, dauUsers: 0, dauGuests: 0, dauTotal: 0, mauUsers: 0, mauGuests: 0, mauTotal: 0 }

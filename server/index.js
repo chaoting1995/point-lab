@@ -88,6 +88,17 @@ function parseCookies(req) {
   })
   return out
 }
+function getAuthContext(req) {
+  const cookieMap = parseCookies(req)
+  let bearer = null
+  const authHeader = req.headers?.authorization
+  if (typeof authHeader === 'string') {
+    const trimmed = authHeader.trim()
+    if (trimmed.toLowerCase().startsWith('bearer ')) bearer = trimmed.slice(7).trim()
+  }
+  const token = bearer || cookieMap['pl_session'] || cookieMap['pl_session_dev'] || null
+  return { token, cookieMap }
+}
 function isSecureReq(req) {
   const xfProto = String(req.headers['x-forwarded-proto'] || '')
   const proto = xfProto || (req.protocol || '')
@@ -259,8 +270,7 @@ app.post('/api/topics', (req, res) => {
     }
     const id = `t-${Date.now()}`
     // 若有登入，用戶即為創建者
-    const cookieMap = parseCookies(req)
-    const token = cookieMap['pl_session'] || cookieMap['pl_session_dev']
+    const { token } = getAuthContext(req)
     const me = token ? repo.getUserBySession(token) : null
     const rec = {
       id,
@@ -352,8 +362,7 @@ function createPoint(req, res) {
       return res.status(400).json({ error: 'DESCRIPTION_REQUIRED' })
     }
     const id = `point-${Date.now()}`
-    const cookieMap = parseCookies(req)
-    const token = cookieMap['pl_session'] || cookieMap['pl_session_dev']
+    const { token } = getAuthContext(req)
     const me = token ? repo.getUserBySession(token) : null
     const record = {
       id,
@@ -460,8 +469,7 @@ app.post('/api/points/:id/comments', (req, res) => {
     const { content, parentId, authorName, authorType, guestId } = req.body || {}
     if (!content || !String(content).trim()) return res.status(400).json({ error: 'CONTENT_REQUIRED' })
     const id = `c-${Date.now()}`
-    const cookieMap = parseCookies(req)
-    const token = cookieMap['pl_session'] || cookieMap['pl_session_dev']
+    const { token } = getAuthContext(req)
     const me = token ? repo.getUserBySession(token) : null
     if (!me && guestId) { try { repo.upsertGuest(guestId, authorName) } catch {} }
     const row = repo.createComment({ id, pointId: req.params.id, parentId, content: String(content).trim(), authorName: me?.name || authorName, authorType: me ? 'user' : (authorType || 'guest'), userId: me?.id, guestId: me ? null : (guestId || null) })
@@ -492,7 +500,7 @@ app.post('/api/auth/login', async (req, res) => {
     const u = repo.upsertGoogleUser({ sub: payload.sub, email: payload.email, email_verified: payload.email_verified, name: payload.name, picture: payload.picture })
     const s = repo.createSession(u.id)
     setSessionCookie(req, res, s.token)
-    res.json({ data: { id: u.id, email: u.email, name: u.name, picture: u.picture } })
+    res.json({ data: { id: u.id, email: u.email, name: u.name, picture: u.picture, sessionToken: s.token } })
   } catch (e) {
     console.error('[auth/login] failed', e)
     // 回傳簡短錯誤碼便於開發期偵錯
@@ -502,7 +510,7 @@ app.post('/api/auth/login', async (req, res) => {
 
 app.post('/api/auth/logout', (req, res) => {
   try {
-    const token = parseCookies(req)['pl_session']
+    const { token } = getAuthContext(req)
     const all = String(req.query.all || '').toLowerCase() === '1'
     if (token) {
       if (all) {
@@ -524,8 +532,7 @@ app.post('/api/auth/logout', (req, res) => {
 
 app.get('/api/me', (req, res) => {
   try {
-    const cookieMap = parseCookies(req)
-    const token = cookieMap['pl_session'] || cookieMap['pl_session_dev']
+    const { token, cookieMap } = getAuthContext(req)
     // 開發期診斷：觀察收到的 Cookie 與 token（不含敏感資訊外洩）
     try {
       if (process.env.NODE_ENV !== 'production') {
@@ -574,8 +581,7 @@ app.post('/api/reports', (req, res) => {
   try {
     const { type, targetId, reason } = req.body || {}
     if (!type || !targetId) return res.status(400).json({ error: 'INVALID_INPUT' })
-    const cookieMap = parseCookies(req)
-    const token = cookieMap['pl_session'] || cookieMap['pl_session_dev']
+    const { token } = getAuthContext(req)
     const me = token ? repo.getUserBySession(token) : null
     const id = `r-${Date.now()}`
     const row = repo.addReport({ id, type, targetId, userId: me?.id, reason })
@@ -584,8 +590,7 @@ app.post('/api/reports', (req, res) => {
 })
 
 app.get('/api/admin/reports', (req, res) => {
-  const cookieMap = parseCookies(req)
-  const token = cookieMap['pl_session'] || cookieMap['pl_session_dev']
+  const { token } = getAuthContext(req)
   const u = token ? repo.getUserBySession(token) : null
   const isSuper = u && ((u.id === 'u-1762500221827') || (u.email === 'chaoting666@gmail.com'))
   const role = u ? (isSuper ? 'superadmin' : (u.role || 'user')) : 'user'
@@ -623,8 +628,7 @@ app.get('/api/admin/reports', (req, res) => {
 
 // Admin: set role
 app.patch('/api/admin/users/:id/role', (req, res) => {
-  const cookieMap = parseCookies(req)
-  const token = cookieMap['pl_session'] || cookieMap['pl_session_dev']
+  const { token } = getAuthContext(req)
   const u = token ? repo.getUserBySession(token) : null
   const isSuper = u && ((u.id === 'u-1762500221827') || (u.email === 'chaoting666@gmail.com'))
   const role = u ? (isSuper ? 'superadmin' : (u.role || 'user')) : 'user'
@@ -640,8 +644,7 @@ app.patch('/api/admin/users/:id/role', (req, res) => {
 
 // Admin: delete user
 app.delete('/api/admin/users/:id', (req, res) => {
-  const cookieMap = parseCookies(req)
-  const token = cookieMap['pl_session'] || cookieMap['pl_session_dev']
+  const { token } = getAuthContext(req)
   const u = token ? repo.getUserBySession(token) : null
   const isSuper = u && ((u.id === 'u-1762500221827') || (u.email === 'chaoting666@gmail.com'))
   if (!isSuper) return res.status(403).json({ error: 'FORBIDDEN' })
@@ -656,8 +659,7 @@ app.delete('/api/admin/users/:id', (req, res) => {
 
 // Admin APIs (basic)
 app.get('/api/admin/users', (req, res) => {
-  const cookieMap = parseCookies(req)
-  const token = cookieMap['pl_session'] || cookieMap['pl_session_dev']
+  const { token } = getAuthContext(req)
   const u = token ? repo.getUserBySession(token) : null
   const isSuper = u && ((u.id === 'u-1762500221827') || (u.email === 'chaoting666@gmail.com'))
   const role = u ? (isSuper ? 'superadmin' : (u.role || 'user')) : 'user'
@@ -680,8 +682,7 @@ app.get('/api/admin/users', (req, res) => {
 })
 
 app.get('/api/admin/stats', (req, res) => {
-  const cookieMap = parseCookies(req)
-  const token = cookieMap['pl_session'] || cookieMap['pl_session_dev']
+  const { token } = getAuthContext(req)
   const u = token ? repo.getUserBySession(token) : null
   const isSuper = u && ((u.id === 'u-1762500221827') || (u.email === 'chaoting666@gmail.com'))
   const role = u ? (isSuper ? 'superadmin' : (u.role || 'user')) : 'user'
@@ -694,8 +695,7 @@ app.get('/api/admin/stats', (req, res) => {
 
 // Admin: points daily counts (28d)
 app.get('/api/admin/stats/points-28d', (req, res) => {
-  const cookieMap = parseCookies(req)
-  const token = cookieMap['pl_session'] || cookieMap['pl_session_dev']
+  const { token } = getAuthContext(req)
   const u = token ? repo.getUserBySession(token) : null
   const isSuper = u && ((u.id === 'u-1762500221827') || (u.email === 'chaoting666@gmail.com'))
   const role = u ? (isSuper ? 'superadmin' : (u.role || 'user')) : 'user'
@@ -708,8 +708,7 @@ app.get('/api/admin/stats/points-28d', (req, res) => {
 
 // Admin: guests list
 app.get('/api/admin/guests', (req, res) => {
-  const cookieMap = parseCookies(req)
-  const token = cookieMap['pl_session'] || cookieMap['pl_session_dev']
+  const { token } = getAuthContext(req)
   const u = token ? repo.getUserBySession(token) : null
   const isSuper = u && ((u.id === 'u-1762500221827') || (u.email === 'chaoting666@gmail.com'))
   const role = u ? (isSuper ? 'superadmin' : (u.role || 'user')) : 'user'
@@ -748,7 +747,7 @@ app.post('/api/auth/register', (req, res) => {
     if (!u) return res.status(500).json({ error: 'CREATE_USER_FAILED' })
     const s = repo.createSession(u.id)
     setSessionCookie(req, res, s.token)
-    res.status(201).json({ data: { id: u.id, email: u.email, name: u.name } })
+    res.status(201).json({ data: { id: u.id, email: u.email, name: u.name, sessionToken: s.token } })
   } catch { res.status(500).json({ error: 'REGISTER_FAILED' }) }
 })
 
@@ -760,13 +759,13 @@ app.post('/api/auth/login-password', (req, res) => {
     if (!u || u.provider !== 'local' || !verifyPassword(String(password), u.password_hash)) return res.status(401).json({ error: 'BAD_CREDENTIALS' })
     const s = repo.createSession(u.id)
     setSessionCookie(req, res, s.token)
-    res.json({ data: { id: u.id, email: u.email, name: u.name } })
+    res.json({ data: { id: u.id, email: u.email, name: u.name, sessionToken: s.token } })
   } catch { res.status(500).json({ error: 'LOGIN_FAILED' }) }
 })
 
 app.patch('/api/me', (req, res) => {
   try {
-    const token = parseCookies(req)['pl_session']
+    const { token } = getAuthContext(req)
     const u = token ? repo.getUserBySession(token) : null
     if (!u) return res.status(401).json({ error: 'UNAUTHORIZED' })
     const { name, bio } = req.body || {}

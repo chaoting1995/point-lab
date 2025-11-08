@@ -1,5 +1,5 @@
 import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from 'react'
-import { withBase } from '../api/client'
+import { clearSessionToken, withAuthHeaders, withBase } from '../api/client'
 
 type User = {
   id?: string
@@ -32,7 +32,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         if (aborted) return
         if (delays[i]) await sleep(delays[i])
         try {
-          const r = await fetch(withBase('/api/me'), { credentials: 'include' })
+          const r = await fetch(withBase('/api/me'), { credentials: 'include', headers: withAuthHeaders({}) })
           if (!r.ok) continue
           const data = await r.json()
           if (!aborted && data?.data) {
@@ -77,7 +77,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   const logout = () => {
-    fetch(withBase('/api/auth/logout'), { method: 'POST', credentials: 'include' }).finally(() => setUser(null))
+    fetch(withBase('/api/auth/logout'), { method: 'POST', credentials: 'include', headers: withAuthHeaders({}) })
+      .finally(() => {
+        clearSessionToken()
+        setUser(null)
+      })
   }
 
   const value = useMemo(() => ({ user, login, logout }), [user])

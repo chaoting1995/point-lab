@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom'
-import { withBase } from '../api/client'
+import { withAuthHeaders, withBase } from '../api/client'
 import type { Topic } from '../data/topics'
 import Card from '@mui/material/Card'
 import CardContent from '@mui/material/CardContent'
@@ -34,7 +34,7 @@ export default function TopicCard({ topic, onDeleted, showMeta = true, showVote 
     if (deleting) return
     try {
       setDeleting(true)
-      const res = await fetch(withBase(`/api/topics/${topic.id}`), { method: 'DELETE' })
+      const res = await fetch(withBase(`/api/topics/${topic.id}`), { method: 'DELETE', headers: withAuthHeaders({}), credentials: 'include' })
       if (!res.ok && res.status !== 204) throw new Error('DELETE_FAILED')
       onDeleted?.(topic.id)
     } catch {
@@ -56,7 +56,7 @@ export default function TopicCard({ topic, onDeleted, showMeta = true, showVote 
     try {
       setBusy(true)
       setScore((s)=> s+delta)
-      const res = await fetch(withBase(`/api/topics/${topic.id}/vote`), { method:'PATCH', headers:{ 'Content-Type':'application/json' }, body: JSON.stringify({ delta }) })
+      const res = await fetch(withBase(`/api/topics/${topic.id}/vote`), { method:'PATCH', headers: withAuthHeaders({ 'Content-Type':'application/json' }), credentials: 'include', body: JSON.stringify({ delta }) })
       if (!res.ok) throw new Error('VOTE_FAILED')
       const data = await res.json(); setScore(typeof data?.data?.score==='number'? data.data.score : 0)
       setVoteState(next)
@@ -101,7 +101,7 @@ export default function TopicCard({ topic, onDeleted, showMeta = true, showVote 
                   {' '}{(t('common.counts.points')).replace('{n}', String(typeof topic.count === 'number' ? topic.count : 0))} |
                   {' '}{createdLabel}
                   {' '}|{' '}
-                  <button type="button" className="card-action" onClick={async (e)=>{ e.preventDefault(); e.stopPropagation(); const reason = await prompt({ title: '確定舉報？', label: '舉報原因（可選）', placeholder: '請補充原因（可留空）', confirmText: '送出', cancelText: '取消' }); if (reason !== null) { try { const r = await fetch(withBase('/api/reports'), { method:'POST', headers:{ 'Content-Type':'application/json' }, body: JSON.stringify({ type: 'topic', targetId: topic.id, reason: (reason||'').trim() || undefined }) }); if (r.ok) setSnack({ open: true, msg: '已送出舉報' }) } catch {} } }}>{t('actions.report')}</button>
+                  <button type="button" className="card-action" onClick={async (e)=>{ e.preventDefault(); e.stopPropagation(); const reason = await prompt({ title: '確定舉報？', label: '舉報原因（可選）', placeholder: '請補充原因（可留空）', confirmText: '送出', cancelText: '取消' }); if (reason !== null) { try { const r = await fetch(withBase('/api/reports'), { method:'POST', headers: withAuthHeaders({ 'Content-Type':'application/json' }), credentials: 'include', body: JSON.stringify({ type: 'topic', targetId: topic.id, reason: (reason||'').trim() || undefined }) }); if (r.ok) setSnack({ open: true, msg: '已送出舉報' }) } catch {} } }}>{t('actions.report')}</button>
                   {canManage && (<>
                   {' '}|{' '}
                   <button

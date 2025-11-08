@@ -11,7 +11,7 @@ import { ThumbsUp, ThumbsDown, CaretDown, PaperPlaneRight } from 'phosphor-react
 // theme colors are accessed via sx={(t)=>...} or CSS vars like var(--mui-palette-*)
 import useLanguage from '../i18n/useLanguage'
 import { formatRelativeAgo } from '../utils/text'
-import { getJson, type ListResponse, withBase } from '../api/client'
+import { getJson, type ListResponse, withAuthHeaders, withBase } from '../api/client'
 import useAuth from '../auth/AuthContext'
 import usePromptDialog from '../hooks/usePromptDialog'
 import { getVoteState as getStoredVote, setVoteState as setStoredVote } from '../utils/votes'
@@ -136,7 +136,7 @@ export default function CommentsPanel({ open, onClose, pointId }: { open: boolea
       authorType: isMember ? 'user' : 'guest',
       ...(isMember ? {} : { guestId: getOrCreateGuestId() }),
     }
-    const res = await fetch(withBase(`/api/points/${encodeURIComponent(pointId)}/comments`), { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) })
+    const res = await fetch(withBase(`/api/points/${encodeURIComponent(pointId)}/comments`), { method: 'POST', headers: withAuthHeaders({ 'Content-Type': 'application/json' }), credentials: 'include', body: JSON.stringify(body) })
     if (res.ok) {
       const created = await res.json().catch(() => null)
       const createdItem = created?.data as CommentItem | undefined
@@ -184,7 +184,7 @@ export default function CommentsPanel({ open, onClose, pointId }: { open: boolea
                   ・ {formatRelativeAgo(c.createdAt || new Date().toISOString(), locale)}
                 </Box>
                 <Box component="span" sx={{ m: 0, color: (t)=>t.palette.text.secondary }}>・</Box>
-                <Box component="button" type="button" className="card-action" onClick={async (e)=>{ e.preventDefault(); e.stopPropagation(); const reason = await prompt({ title: '確定舉報？', label: '舉報原因（可選）', placeholder: '請補充原因（可留空）', confirmText: '送出', cancelText: '取消' }); if (reason !== null) { try { const r = await fetch(withBase('/api/reports'), { method:'POST', headers:{ 'Content-Type':'application/json' }, body: JSON.stringify({ type: 'comment', targetId: c.id, reason: (reason||'').trim() || undefined }) }); if (r.ok) setSnack({ open: true, msg: '已送出舉報' }) } catch {} } }} sx={{ p: 0, background: 'transparent', border: 'none', color: (t)=>t.palette.primary.main }}>
+                <Box component="button" type="button" className="card-action" onClick={async (e)=>{ e.preventDefault(); e.stopPropagation(); const reason = await prompt({ title: '確定舉報？', label: '舉報原因（可選）', placeholder: '請補充原因（可留空）', confirmText: '送出', cancelText: '取消' }); if (reason !== null) { try { const r = await fetch(withBase('/api/reports'), { method:'POST', headers: withAuthHeaders({ 'Content-Type':'application/json' }), credentials: 'include', body: JSON.stringify({ type: 'comment', targetId: c.id, reason: (reason||'').trim() || undefined }) }); if (r.ok) setSnack({ open: true, msg: '已送出舉報' }) } catch {} } }} sx={{ p: 0, background: 'transparent', border: 'none', color: (t)=>t.palette.primary.main }}>
                   {t('actions.report')}
                 </Box>
                 <Box component="span" sx={{ m: 0, color: (t)=>t.palette.text.secondary }}>・</Box>
@@ -230,7 +230,7 @@ export default function CommentsPanel({ open, onClose, pointId }: { open: boolea
                   const target = current==='up' ? undefined : 'up'
                   const { next, delta } = setStoredVote('comment', c.id, target)
                   if (delta === 0) return
-                  await fetch(withBase(`/api/comments/${c.id}/vote`), { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ delta }) })
+                  await fetch(withBase(`/api/comments/${c.id}/vote`), { method: 'PATCH', headers: withAuthHeaders({ 'Content-Type': 'application/json' }), credentials: 'include', body: JSON.stringify({ delta }) })
                   setVotes(prev => ({ ...prev, [c.id]: next }))
                   setItems(prev => prev.map(it => it.id===c.id?{...it, upvotes: (it.upvotes||0)+delta}:it))
               }}
@@ -250,7 +250,7 @@ export default function CommentsPanel({ open, onClose, pointId }: { open: boolea
                 const target = current==='down' ? undefined : 'down'
                 const { next, delta } = setStoredVote('comment', c.id, target)
                 if (delta === 0) return
-                await fetch(withBase(`/api/comments/${c.id}/vote`), { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ delta }) })
+                await fetch(withBase(`/api/comments/${c.id}/vote`), { method: 'PATCH', headers: withAuthHeaders({ 'Content-Type': 'application/json' }), credentials: 'include', body: JSON.stringify({ delta }) })
                 setVotes(prev => ({ ...prev, [c.id]: next }))
                 setItems(prev => prev.map(it => it.id===c.id?{...it, upvotes: (it.upvotes||0)+delta}:it))
               }}
@@ -302,7 +302,7 @@ export default function CommentsPanel({ open, onClose, pointId }: { open: boolea
                         const target = current==='up' ? undefined : 'up'
                         const { next, delta } = setStoredVote('comment', rc.id, target)
                         if (delta === 0) return
-                        await fetch(withBase(`/api/comments/${rc.id}/vote`), { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ delta }) })
+                        await fetch(withBase(`/api/comments/${rc.id}/vote`), { method: 'PATCH', headers: withAuthHeaders({ 'Content-Type': 'application/json' }), credentials: 'include', body: JSON.stringify({ delta }) })
                         setVotes(prev => ({ ...prev, [rc.id]: next }))
                         setExpanded(prev => ({ ...prev, [c.id]: { ...prev[c.id]!, items: prev[c.id]!.items.map(x => x.id===rc.id?{...x, upvotes: (x.upvotes||0)+delta}:x) } }))
                       }}
@@ -322,7 +322,7 @@ export default function CommentsPanel({ open, onClose, pointId }: { open: boolea
                         const target = current==='down' ? undefined : 'down'
                         const { next, delta } = setStoredVote('comment', rc.id, target)
                         if (delta === 0) return
-                        await fetch(withBase(`/api/comments/${rc.id}/vote`), { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ delta }) })
+                        await fetch(withBase(`/api/comments/${rc.id}/vote`), { method: 'PATCH', headers: withAuthHeaders({ 'Content-Type': 'application/json' }), credentials: 'include', body: JSON.stringify({ delta }) })
                         setVotes(prev => ({ ...prev, [rc.id]: next }))
                         setExpanded(prev => ({ ...prev, [c.id]: { ...prev[c.id]!, items: prev[c.id]!.items.map(x => x.id===rc.id?{...x, upvotes: (x.upvotes||0)+delta}:x) } }))
                       }}
