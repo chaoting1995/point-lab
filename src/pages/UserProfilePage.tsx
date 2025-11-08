@@ -237,7 +237,7 @@ export default function UserProfilePage() {
                 <Typography sx={{ m: 0, mb: 1, fontSize: 16, color: '#0f172a' }}>{user.bio}</Typography>
               )}
               {me?.email && me?.email === user.email && (
-                <Box sx={{ mb: 1, display: 'flex', gap: 1 }}>
+                <Box sx={{ mb: 1, display: 'flex', flexDirection: 'column', gap: 1, alignItems: 'flex-start' }}>
                   <PrimaryCtaButton size="sm" onClick={()=> setViewAsGuest(v=>!v)} iconLeft={viewAsGuest ? <UserCircle size={16} weight="bold" /> : <Eye size={16} weight="bold" />}>
                     {viewAsGuest ? (t('user.viewAsMe')) : (t('user.viewAsGuest'))}
                   </PrimaryCtaButton>

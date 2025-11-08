@@ -44,6 +44,7 @@
 ## 2025-11-09
 - 後端：`repo.deleteTopic` 在 JSON fallback 中會同步刪除隸屬觀點與其評論，避免殘留孤兒資料。
 - 後端：`repo.getStats` 對每張表的 count 查詢加入安全降級，缺表/欄位時不再整體歸零，`/api/stats/overview` 能正確回傳正式站數據。
+- 前端：會員中心將「編輯個人資料」按鈕移至「訪客視角」下方，保持按鈕階層清楚。
 - 登入流 UX：Google 登入按鈕點擊時顯示貼頂 `LinearProgress` 並 disable；登入前把 `pathname+search+hash` 寫入 `sessionStorage.pl:back_after_login`，`/auth/callback` 成功後移除並導回原頁。
 - 新增主題/觀點頁：送出期間顯示貼頂 `LinearProgress` 與 CTA 內 `ClipLoader`，鎖定所有欄位；新增主題成功後直接導向 `/points/add?topic=<id>`，新增觀點頁若主題觀點數為 0 會顯示提示文案。
 - 首頁 CTA：觀點列表下方的「前往主題箱」採用 `PrimaryCtaButton` + caret-right icon，置中並與列表拉開間距。
