@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState, useCallback } from 'react'
 import Card from '@mui/material/Card'
 import CardContent from '@mui/material/CardContent'
 import Typography from '@mui/material/Typography'
@@ -16,11 +16,12 @@ import { getVoteState as getStoredVote, setVoteState as setStoredVote } from '..
 import { withBase } from '../api/client'
 import CommentsPanel from './CommentsPanel'
 import useAuth from '../auth/AuthContext'
+import { useNavigate } from 'react-router-dom'
 
 export default function PointCard({ point, onDeleted }: { point: Point; onDeleted?: (id: string) => void }) {
   const { t, locale } = useLanguage()
+  const navigate = useNavigate()
   const [score, setScore] = useState<number>(point.upvotes ?? 0)
-  const [busy, setBusy] = useState(false)
   const [expanded, setExpanded] = useState(false)
   const [showToggle, setShowToggle] = useState(false)
   const descRef = useRef<HTMLParagraphElement | null>(null)
@@ -39,26 +40,50 @@ export default function PointCard({ point, onDeleted }: { point: Point; onDelete
 
   const [voteState, setVoteState] = useState<'up'|'down'|undefined>(undefined)
   useEffect(() => { try { setVoteState(getStoredVote('point', point.id)) } catch {} }, [point.id])
-  async function voteDir(dir:'up'|'down') {
-    if (busy) return
-    setBusy(true)
-    const current = voteState
-    const target = current === dir ? undefined : dir
-    const { next, delta } = setStoredVote('point', point.id, target)
+  const pendingDeltaRef = useRef(0)
+  const pendingTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const baseVoteRef = useRef<'up' | 'down' | undefined>(undefined)
+
+  useEffect(() => {
+    baseVoteRef.current = voteState
+  }, [voteState])
+
+  const flushVote = useCallback(async () => {
+    const deltaToSend = pendingDeltaRef.current
+    if (!deltaToSend) return
+    pendingDeltaRef.current = 0
+    pendingTimerRef.current = null
     try {
-      setScore((s)=> (s||0)+delta)
-      const res = await fetch(withBase(`/api/points/${point.id}/vote`), { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ delta }) })
+      const res = await fetch(withBase(`/api/points/${point.id}/vote`), {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ delta: deltaToSend }),
+      })
       if (!res.ok) throw new Error('VOTE_FAILED')
-      const data = await res.json().catch(()=>null)
+      const data = await res.json().catch(() => null)
       const serverScore = typeof data?.data?.upvotes === 'number' ? data.data.upvotes : undefined
       if (typeof serverScore === 'number') setScore(serverScore)
-      setVoteState(next)
+      baseVoteRef.current = voteState
     } catch {
-      setScore((s)=> (s||0)-delta)
-      setStoredVote('point', point.id, current)
-    } finally {
-      setBusy(false)
+      setScore((s) => (s || 0) - deltaToSend)
+      const revertState = baseVoteRef.current
+      setVoteState(revertState)
+      setStoredVote('point', point.id, revertState)
     }
+  }, [point.id, voteState])
+
+  useEffect(() => () => { if (pendingTimerRef.current) clearTimeout(pendingTimerRef.current) }, [])
+
+  function voteDir(dir: 'up' | 'down') {
+    const current = voteState
+    if (pendingDeltaRef.current === 0) baseVoteRef.current = current
+    const target = current === dir ? undefined : dir
+    const { next, delta } = setStoredVote('point', point.id, target)
+    setVoteState(next)
+    setScore((s) => (s || 0) + delta)
+    pendingDeltaRef.current += delta
+    if (pendingTimerRef.current) clearTimeout(pendingTimerRef.current)
+    pendingTimerRef.current = setTimeout(() => { flushVote().catch(()=>{}) }, 250)
   }
 
   const createdLabel = useMemo(() => {
@@ -105,10 +130,15 @@ export default function PointCard({ point, onDeleted }: { point: Point; onDelete
     setShowToggle(full > twoLineHeight + 1)
   }, [point.description])
 
+  const goTopic = () => {
+    if (point.topicId) navigate(`/topics/${encodeURIComponent(point.topicId)}`)
+  }
+
   return (
     <>
     <Card
       elevation={0}
+      onClick={goTopic}
       sx={{
         borderRadius: '10px',
         border: '1px solid',
@@ -121,6 +151,7 @@ export default function PointCard({ point, onDeleted }: { point: Point; onDelete
         bgcolor: bgColor,
         boxShadow: '0 1px 4px rgba(15,35,95,0.06)',
         transition: 'box-shadow .2s ease',
+        cursor: point.topicId ? 'pointer' : 'default',
         '&:hover': { boxShadow: '0 4px 14px rgba(15,35,95,0.12)' },
       }}
     >
@@ -214,7 +245,7 @@ export default function PointCard({ point, onDeleted }: { point: Point; onDelete
               onMouseDown={(e) => e.stopPropagation()}
               onMouseUp={(e) => e.stopPropagation()}
               onTouchStart={(e) => e.stopPropagation()}
-              disabled={busy}
+              disabled={false}
               sx={(t)=>({ borderRadius: '10px', color: voteState==='up' ? t.palette.primary.main : undefined, '&:hover': { color: t.palette.primary.dark, backgroundColor: 'transparent' }, '&:active': { color: t.palette.primary.dark, backgroundColor: 'transparent' }, '&.Mui-disabled': { color: voteState==='up' ? t.palette.primary.main : t.palette.action.disabled } })}
             >
               <ThumbsUp size={18} weight={voteState==='up' ? 'fill' : 'regular'} />
@@ -231,7 +262,7 @@ export default function PointCard({ point, onDeleted }: { point: Point; onDelete
               onMouseDown={(e) => e.stopPropagation()}
               onMouseUp={(e) => e.stopPropagation()}
               onTouchStart={(e) => e.stopPropagation()}
-              disabled={busy}
+              disabled={false}
               sx={(t)=>({ borderRadius: '10px', color: voteState==='down' ? t.palette.primary.main : undefined, '&:hover': { color: t.palette.primary.dark, backgroundColor: 'transparent' }, '&:active': { color: t.palette.primary.dark, backgroundColor: 'transparent' }, '&.Mui-disabled': { color: voteState==='down' ? t.palette.primary.main : t.palette.action.disabled } })}
             >
               <ThumbsDown size={18} weight={voteState==='down' ? 'fill' : 'regular'} />

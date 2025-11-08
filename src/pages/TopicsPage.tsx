@@ -5,7 +5,7 @@ import Box from '@mui/material/Box'
 import Typography from '@mui/material/Typography'
 import type { Topic } from '../data/topics'
 import { getJson, type ListResponse } from '../api/client'
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState, useCallback } from 'react'
 import { Plus } from 'phosphor-react'
 import PrimaryCtaButton from '../components/PrimaryCtaButton'
 import TopicCard from '../components/TopicCard'
@@ -21,38 +21,63 @@ export default function TopicsPage() {
   const [items, setItems] = useState<Topic[]>([])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [hasMore, setHasMore] = useState(false)
+  const [hasMore, setHasMore] = useState(true)
   const [total, setTotal] = useState<number | undefined>(undefined)
+  const [page, setPage] = useState(1)
+  const [initialLoaded, setInitialLoaded] = useState(false)
   const sentinelRef = useRef<HTMLDivElement | null>(null)
+  const observerRef = useRef<IntersectionObserver | null>(null)
+  const PAGE_SIZE = 20
 
-  async function fetchFirstPage(currentSort: SortKey) {
-    setLoading(true)
-    setError(null)
-    try {
-      const resp = await getJson<ListResponse<Topic>>(`/api/topics?page=1&size=30&sort=${currentSort}`)
-      setItems(resp.items || [])
-      setTotal((resp as any).total)
-      setHasMore(((resp.items || []).length || 0) === 30)
-    } catch (e) {
-      setError(e instanceof Error ? e.message : 'Load failed')
-    } finally {
-      setLoading(false)
-    }
-  }
+  const loadPage = useCallback(
+    async (nextPage: number, append: boolean) => {
+      setLoading(true)
+      setError(null)
+      try {
+        const resp = await getJson<ListResponse<Topic>>(`/api/topics?page=${nextPage}&size=${PAGE_SIZE}&sort=${sort}`)
+        const list = resp.items || []
+        setItems((prev) => (append ? [...prev, ...list] : list))
+        setPage(nextPage)
+        setTotal(resp.total)
+        if (typeof resp.total === 'number') {
+          setHasMore(nextPage * PAGE_SIZE < resp.total)
+        } else {
+          setHasMore(list.length === PAGE_SIZE)
+        }
+        setInitialLoaded(true)
+      } catch (e) {
+        setError(e instanceof Error ? e.message : 'Load failed')
+      } finally {
+        setLoading(false)
+      }
+    },
+    [sort],
+  )
 
-  // simple first-page fetch to ensure visible content
   useEffect(() => {
-    let aborted = false
-    ;(async () => {
-      if (aborted) return
-      await fetchFirstPage(sort)
-    })()
-    return () => { aborted = true }
-  }, [sort])
+    setItems([])
+    setInitialLoaded(false)
+    setHasMore(true)
+    setPage(1)
+    loadPage(1, false)
+  }, [sort, loadPage])
 
   const handleSortChange = (v: SortKey) => {
     setSort(v)
   }
+
+  useEffect(() => {
+    if (!initialLoaded || !hasMore || loading) return
+    if (observerRef.current) observerRef.current.disconnect()
+    observerRef.current = new IntersectionObserver((entries) => {
+      if (entries[0]?.isIntersecting) {
+        observerRef.current?.disconnect()
+        loadPage(page + 1, true)
+      }
+    })
+    if (sentinelRef.current) observerRef.current.observe(sentinelRef.current)
+    return () => observerRef.current?.disconnect()
+  }, [initialLoaded, hasMore, loading, loadPage, page])
 
   // 保持簡潔：改用純 CSS sticky，避免 JS 介入造成抖動
 
@@ -84,46 +109,46 @@ export default function TopicsPage() {
             align="center"
           />
           <SortTabs value={sort} onChange={handleSortChange} />
-          {loading && (
-            <Box sx={{ mt: 1.5, display: 'flex', flexDirection: 'column', gap: 2 }}>
-              {Array.from({ length: 6 }).map((_, i) => (
-                <TopicCardSkeleton key={i} />
-              ))}
-            </Box>
-          )}
           {error && <p className="text-rose-500">{error}</p>}
-          {!error && !loading && (
-            <Box sx={{ mt: 1.5, display: 'flex', flexDirection: 'column', gap: 2 }}>
-              {items.map((t) => (
-                <TopicCard
-                  key={t.id}
-                  topic={t}
-                  onDeleted={async () => { await fetchFirstPage(sort) }}
-                />
-              ))}
-              {hasMore && <div ref={sentinelRef} />}
-              {!hasMore && !loading && items.length > 0 && (
-                <>
-                  <p className="text-center text-slate-400" style={{ fontSize: 12 }}>{t('common.allLoaded')}</p>
-                  <Box sx={{ mt: 1, display: 'flex', justifyContent: 'center' }}>
-                    <PrimaryCtaButton to="/topics/add" size="md" iconLeft={<Plus size={16} weight="bold" />}>
-                      {t('topics.list.add')}
-                    </PrimaryCtaButton>
-                  </Box>
-                </>
-              )}
-              {!loading && items.length === 0 && (total === 0 || total === undefined) && (
-                <>
-                  <p className="text-center text-slate-400" style={{ fontSize: 14 }}>{t('topics.list.empty')}</p>
-                  <Box sx={{ mt: 1, display: 'flex', justifyContent: 'center' }}>
-                    <PrimaryCtaButton to="/topics/add" size="md" iconLeft={<Plus size={16} weight="bold" />}>
-                      {t('topics.list.add')}
-                    </PrimaryCtaButton>
-                  </Box>
-                </>
-              )}
-            </Box>
-          )}
+          <Box sx={{ mt: 1.5, display: 'flex', flexDirection: 'column', gap: 2 }}>
+            {!initialLoaded && (
+              Array.from({ length: 6 }).map((_, i) => <TopicCardSkeleton key={`topic-skel-${i}`} />)
+            )}
+            {initialLoaded && items.map((t) => (
+              <TopicCard
+                key={t.id}
+                topic={t}
+                onDeleted={async () => { loadPage(1, false) }}
+              />
+            ))}
+            {initialLoaded && <div ref={sentinelRef} style={{ height: 32 }} />}
+            {initialLoaded && !hasMore && items.length > 0 && (
+              <>
+                <p className="text-center text-slate-400" style={{ fontSize: 12 }}>{t('common.allLoaded')}</p>
+                <Box sx={{ mt: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 0.5 }}>
+                  <PrimaryCtaButton to="/topics/add" size="md" iconLeft={<Plus size={16} weight="bold" />}>
+                    {t('topics.list.add')}
+                  </PrimaryCtaButton>
+                  <Typography variant="body2" sx={{ color: 'text.secondary', fontSize: 13 }}>
+                    {t('topics.list.ctaNote') || '無需註冊，網友會為最好的觀點按讚'}
+                  </Typography>
+                </Box>
+              </>
+            )}
+            {initialLoaded && !loading && items.length === 0 && (total === 0 || total === undefined) && (
+              <>
+                <p className="text-center text-slate-400" style={{ fontSize: 14 }}>{t('topics.list.empty')}</p>
+                <Box sx={{ mt: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 0.5 }}>
+                  <PrimaryCtaButton to="/topics/add" size="md" iconLeft={<Plus size={16} weight="bold" />}>
+                    {t('topics.list.add')}
+                  </PrimaryCtaButton>
+                  <Typography variant="body2" sx={{ color: 'text.secondary', fontSize: 13 }}>
+                    {t('topics.list.ctaNote') || '無需註冊，網友會為最好的觀點按讚'}
+                  </Typography>
+                </Box>
+              </>
+            )}
+          </Box>
         </div>
       </main>
     </div>

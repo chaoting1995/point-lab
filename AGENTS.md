@@ -24,6 +24,7 @@
 ## API 速覽（穩定介面）
 - 健診：`GET /api/health`
 - 診斷（開發）：`GET /api/_diag` → `{ sqlite, dbPath, topicsDb, pointsDb, topicsJson, pointsJson }`
+- 數據概覽：`GET /api/stats/overview` → `{ topics, points, comments, visits }`（visits 取近 30 天造訪總人次）
 - Topics：
   - `GET /api/topics?page&size&sort=new|hot|old`
   - `GET /api/topics/id/:id`（僅支援 id；slug 已移除）
@@ -49,8 +50,8 @@
 - 一次性匯入：`npm run migrate:json` 將 `topics.json / points.json` 匯入 SQLite。
 - 移除欄位（SQLite）：`POINTLAB_DB_PATH=/path/to/pointlab.db npm run migrate:drop-slug`（移除 `topics.slug`）。
 - 種子資料：
-  - 從正式站匯入到 SQLite：`POINTLAB_DB_PATH=server/pointlab.db npm run seed:from-prod`
-  - 快速補 JSON（fallback 用）：`node server/scripts/seed-json-from-prod.js`
+  - 從正式站匯入到 SQLite：`POINTLAB_DB_PATH=server/pointlab.db npm run seed:from-prod`（會同步 topics / points / comments）
+  - 快速補 JSON（fallback 用）：`node server/scripts/seed-json-from-prod.js`（會寫入 `topics.json`/`points.json`/`comments.json`）
 
 ## 主要目錄與檔案
 - 後端：
@@ -128,6 +129,11 @@
 - 評論輸入：預設單行，自動增高（max 6）；送出按鈕固定圓形 40×40。
 - 長文截斷：預設 3 行；顯示「See more/查看更多」與「See less/查看更少」。
 - 回覆行為：送出二級留言後，自動展開該父留言並把新留言插在頂部。
+- 登入體驗：`GoogleLoginButton` 會先顯示貼齊頁頂的 `LinearProgress` 並 disable 按鈕；登入前會把目前 `pathname+search+hash` 存進 `sessionStorage.pl:back_after_login`，`/auth/callback` 成功後移除並導回原頁。
+- 表單 loading 規範：
+  - `/points/add`、`/topics/add` 送出時顯示貼頂 `LinearProgress` 並鎖定所有輸入；CTA 內改用 `react-spinners/ClipLoader`。
+  - 新增觀點頁：若帶入的主題 `count` 為 0，TopicCard 下方顯示「這個主題空空如也，為主題添加第一個觀點吧！」提醒用戶。
+  - 新增主題頁：發布成功後直接導向 `/points/add?topic=<id>`，頁面不再停留且無額外 CTA。
 
 ## 工作流程（建議）
 

@@ -73,6 +73,7 @@ Comments（評論）
 其他 API
 
 - 公開使用者：`GET /api/users/:id` → `{ id, name, picture, bio }`
+- 數據概覽：`GET /api/stats/overview` → `{ topics, points, comments, visits }`（visits 為近 30 天造訪總人次）
 - 目前後台/管理 API（需 admin/superadmin）：
     - `GET /api/admin/users?page&size`（用戶列表，含發布數量與讚數彙總；伺服器分頁，回傳 `{ items,total,page,size }`）
     - `PATCH /api/admin/users/:id/role`（變更角色：user|admin|superadmin）
@@ -137,6 +138,8 @@ Comments（評論）
 - 前端與後端一律使用 `id`；不再支援 `slug`。
 - 對立（duel）模式：新增觀點頁提供「選擇立場」按鈕組（讚同/其他）；詳頁左右分欄顯示兩邊觀點。
 - 多語系：UI 文案支援 繁/簡/英；使用者輸入內容不自動翻譯。
+- Google 登入：點擊登入按鈕時會顯示貼頂 `LinearProgress` 並 disable 按鈕，登入前會把目前 URL 儲存到 `sessionStorage.pl:back_after_login`，`/auth/callback` 成功後會導回原頁。
+- 新增主題/觀點：送出期間顯示貼頂 `LinearProgress`、CTA 內使用 `ClipLoader`，同時鎖定所有表單；新增主題成功後立即跳轉到 `/points/add?topic=<id>`，新增觀點頁若主題觀點數為 0 會顯示「這個主題空空如也...」提示。
 
 ## 部署建議
 
@@ -196,7 +199,7 @@ flyctl ssh console -C 'sh -lc "cd /app && POINTLAB_DB_PATH=/app/data/pointlab.db
 
 ### 從正式站匯入資料到本機（種子）
 
-若本機的 SQLite 沒有資料，可直接從正式站 API 匯入主題與觀點：
+若本機的 SQLite 沒有資料，可直接從正式站 API 匯入主題、觀點與評論：
 
 ```
 POINTLAB_DB_PATH=server/pointlab.db npm run seed:from-prod
@@ -218,7 +221,7 @@ POINTLAB_DB_PATH=server/pointlab.db node server/scripts/seed-from-prod.js https:
 node server/scripts/seed-json-from-prod.js
 ```
 
-輸出：`server/data/topics.json`、`server/data/points.json`。之後在 JSON 模式下 `/admin` 也能看到正確數據。
+輸出：`server/data/topics.json`、`server/data/points.json`、`server/data/comments.json`。之後在 JSON 模式下 `/admin` 也能看到正確數據。
 
 ### 診斷端點（資料層）
 

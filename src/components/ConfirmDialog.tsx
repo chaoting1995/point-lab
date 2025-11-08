@@ -1,11 +1,14 @@
 import Dialog from '@mui/material/Dialog'
 import DialogTitle from '@mui/material/DialogTitle'
 import DialogActions from '@mui/material/DialogActions'
+import DialogContent from '@mui/material/DialogContent'
+import Typography from '@mui/material/Typography'
 import Button from '@mui/material/Button'
 
 export type ConfirmDialogProps = {
   open: boolean
   title?: string
+  body?: string
   confirmText?: string
   cancelText?: string
   onCancel: () => void
@@ -15,6 +18,7 @@ export type ConfirmDialogProps = {
 export default function ConfirmDialog({
   open,
   title = '確定刪除？',
+  body,
   confirmText = '確認',
   cancelText = '取消',
   onCancel,
@@ -34,6 +38,13 @@ export default function ConfirmDialog({
       }}
     >
       <DialogTitle sx={{ textAlign: 'center', fontWeight: 800 }}>{title}</DialogTitle>
+      {body && (
+        <DialogContent sx={{ pt: 0, pb: 1, px: 3 }}>
+          <Typography variant="body2" color="text.secondary" sx={{ textAlign: 'center', whiteSpace: 'pre-wrap' }}>
+            {body}
+          </Typography>
+        </DialogContent>
+      )}
       <DialogActions sx={{ justifyContent: 'center', pb: 2, gap: 1 }}>
         <Button
           onClick={onCancel}

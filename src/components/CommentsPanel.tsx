@@ -17,7 +17,7 @@ import usePromptDialog from '../hooks/usePromptDialog'
 import { getVoteState as getStoredVote, setVoteState as setStoredVote } from '../utils/votes'
 import Snackbar from '@mui/material/Snackbar'
 import Alert from '@mui/material/Alert'
-import { getOrCreateGuestId } from '../utils/guest'
+import { getOrCreateGuestId, saveGuestName } from '../utils/guest'
 
 type SortKey = 'old' | 'new' | 'hot'
 
@@ -93,7 +93,7 @@ export default function CommentsPanel({ open, onClose, pointId }: { open: boolea
     }
     setOverflow(m)
   }, [items, expandedBody])
-  useEffect(() => { if (open) { try { const n = localStorage.getItem('pl:guestName'); if (n) setGuestName(n) } catch {} } }, [open])
+  useEffect(() => { if (open) { try { const raw = localStorage.getItem('pl:guest'); if (raw) { const n = (JSON.parse(raw)||{}).name; if (n) setGuestName(n) } } catch {} } }, [open])
   useEffect(() => {
     if (!open) return
     try {
@@ -142,7 +142,7 @@ export default function CommentsPanel({ open, onClose, pointId }: { open: boolea
       const createdItem = created?.data as CommentItem | undefined
       try { if (!user) { const id = createdItem?.id; if (id) { const mod = await import('../utils/guestActivity'); (mod as any).addGuestItem?.('comment', id) } } } catch {}
       setContent('')
-      if (guestName?.trim()) { try { localStorage.setItem('pl:guestName', guestName.trim()) } catch {} }
+      if (guestName?.trim()) { try { saveGuestName(guestName.trim()) } catch {} }
       // 若是針對某一則一級評論的回覆，確保該父層展開並立即看到新留言
       if (parent && createdItem) {
         setExpanded((prev) => {

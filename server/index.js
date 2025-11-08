@@ -59,6 +59,25 @@ app.get('/api/_diag', (req, res) => {
   }
 })
 
+// Public stats overview (topics/points/comments/visits)
+app.get('/api/stats/overview', (req, res) => {
+  try {
+    if (typeof repo.getStats !== 'function') {
+      return res.json({ data: { topics: 0, points: 0, comments: 0, visits: 0 } })
+    }
+    const stats = repo.getStats() || {}
+    const payload = {
+      topics: stats.topics || 0,
+      points: stats.points || 0,
+      comments: stats.comments || 0,
+      visits: stats.mauTotal || stats.dauTotal || 0,
+    }
+    res.json({ data: payload })
+  } catch {
+    res.status(500).json({ error: 'STATS_OVERVIEW_FAILED' })
+  }
+})
+
 // Cookie helpers
 function parseCookies(req) {
   const out = {}
@@ -617,6 +636,22 @@ app.patch('/api/admin/users/:id/role', (req, res) => {
     if (!ok) return res.status(404).json({ error: 'NOT_FOUND' })
     res.json({ ok: true })
   } catch { res.status(500).json({ error: 'SET_ROLE_FAILED' }) }
+})
+
+// Admin: delete user
+app.delete('/api/admin/users/:id', (req, res) => {
+  const cookieMap = parseCookies(req)
+  const token = cookieMap['pl_session'] || cookieMap['pl_session_dev']
+  const u = token ? repo.getUserBySession(token) : null
+  const isSuper = u && ((u.id === 'u-1762500221827') || (u.email === 'chaoting666@gmail.com'))
+  if (!isSuper) return res.status(403).json({ error: 'FORBIDDEN' })
+  try {
+    const ok = repo.deleteUser(req.params.id)
+    if (!ok) return res.status(404).json({ error: 'NOT_FOUND' })
+    res.status(204).end()
+  } catch (e) {
+    res.status(500).json({ error: 'DELETE_USER_FAILED' })
+  }
 })
 
 // Admin APIs (basic)

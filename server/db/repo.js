@@ -158,6 +158,60 @@ export const repo = {
     }
     return out
   },
+  upsertGuest(id, name) {
+    const now = nowIso()
+    if (db) {
+      try { db.prepare("alter table guests add column name text").run() } catch {}
+      try { db.prepare("alter table guests add column posts_topic integer default 0").run() } catch {}
+      try { db.prepare("alter table guests add column posts_point integer default 0").run() } catch {}
+      try { db.prepare("alter table guests add column posts_comment integer default 0").run() } catch {}
+      try { db.prepare("alter table guests add column last_seen text").run() } catch {}
+      const exist = db.prepare('select id from guests where id=?').get(id)
+      if (exist) db.prepare('update guests set name=coalesce(?,name), last_seen=? where id=?').run(name || null, now, id)
+      else db.prepare('insert into guests (id,name,posts_topic,posts_point,posts_comment,created_at,last_seen) values (?,?,?,?,?,?,?)').run(id, name || null, 0, 0, 0, now, now)
+      // Mirror to users as a guest user（email 空、role=guest）
+      try { db.prepare("alter table users add column role text default 'user'").run() } catch {}
+      const u = db.prepare('select id from users where id=?').get(id)
+      if (!u) {
+        db.prepare('insert into users (id,provider,provider_user_id,email,email_verified,name,picture,bio,topics_json,points_json,comments_json,password_hash,created_at,last_login,role) values (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)')
+          .run(id, 'guest', id, null, 0, name || null, null, null, '[]','[]','[]', null, now, now, 'guest')
+      } else {
+        db.prepare('update users set name=coalesce(?,name), role=coalesce(role,?) where id=?').run(name || null, 'guest', id)
+      }
+      return
+    }
+    // JSON fallback
+    const guests = readJson('guests.json')
+    const gi = guests.findIndex(g=>g.id===id)
+    if (gi===-1) guests.push({ id, name: name || null, posts_topic: 0, posts_point: 0, posts_comment: 0, created_at: now, last_seen: now })
+    else { guests[gi].name = name || guests[gi].name; guests[gi].last_seen = now }
+    writeJson('guests.json', guests)
+    const users = readJson('users.json')
+    if (!users.some(u=>u.id===id)) users.push({ id, provider: 'guest', provider_user_id: id, email: null, email_verified: false, name: name || null, picture: null, bio: null, topics: [], points: [], comments: [], password_hash: null, created_at: now, last_login: now, role: 'guest' })
+    writeJson('users.json', users)
+  },
+  incGuestCounter(id, kind) {
+    const now = nowIso()
+    if (db) {
+      try { db.prepare("alter table guests add column posts_topic integer default 0").run() } catch {}
+      try { db.prepare("alter table guests add column posts_point integer default 0").run() } catch {}
+      try { db.prepare("alter table guests add column posts_comment integer default 0").run() } catch {}
+      try { db.prepare('update guests set last_seen=? where id=?').run(now, id) } catch {}
+      const col = kind==='topic' ? 'posts_topic' : (kind==='point' ? 'posts_point' : 'posts_comment')
+      try { db.prepare(`update guests set ${col} = coalesce(${col},0)+1 where id=?`).run(id) } catch {}
+      return
+    }
+    const guests = readJson('guests.json')
+    const gi = guests.findIndex(g=>g.id===id)
+    if (gi!==-1) {
+      const g = guests[gi]
+      if (kind==='topic') g.posts_topic = (g.posts_topic||0)+1
+      else if (kind==='point') g.posts_point = (g.posts_point||0)+1
+      else g.posts_comment = (g.posts_comment||0)+1
+      g.last_seen = now
+      writeJson('guests.json', guests)
+    }
+  },
   ensureUserActivityColumns() {
     if (!db) return
     try { db.prepare('alter table users add column topics_json text').run() } catch {}
@@ -386,6 +440,48 @@ export const repo = {
     hacks.splice(idx, 1)
     writeJson('points.json', hacks)
     if (topicId) this.incrementTopicCount(topicId, -1)
+    return true
+  },
+  deleteUser(id) {
+    if (db) {
+      const tx = db.transaction((uid) => {
+        db.prepare('update topics set created_by=null where created_by=?').run(uid)
+        db.prepare('update points set user_id=null, author_name=coalesce(author_name, "匿名"), author_type=coalesce(author_type, "guest") where user_id=?').run(uid)
+        db.prepare('update comments set user_id=null, author_name=coalesce(author_name, "匿名"), author_type=coalesce(author_type, "guest") where user_id=?').run(uid)
+        db.prepare('delete from sessions where user_id=?').run(uid)
+        db.prepare('delete from users where id=?').run(uid)
+      })
+      tx(id)
+      return true
+    }
+    const users = readJson('users.json')
+    const idx = users.findIndex(u => u.id === id)
+    if (idx === -1) return false
+    users.splice(idx, 1)
+    writeJson('users.json', users)
+    const topics = readJson('topics.json')
+    topics.forEach(t => { if (t.createdBy === id || t.created_by === id) { t.createdBy = null; t.created_by = null } })
+    writeJson('topics.json', topics)
+    const points = readJson('points.json')
+    points.forEach(p => {
+      if (p.userId === id || p.user_id === id) {
+        p.userId = null
+        p.user_id = null
+        p.author = p.author || { name: '匿名', role: 'guest' }
+        p.author.role = 'guest'
+      }
+    })
+    writeJson('points.json', points)
+    const comments = readJson('comments.json')
+    comments.forEach(c => {
+      if (c.userId === id || c.user_id === id) {
+        c.userId = null
+        c.user_id = null
+        c.author = c.author || { name: '匿名', role: 'guest' }
+        c.author.role = 'guest'
+      }
+    })
+    writeJson('comments.json', comments)
     return true
   },
   incrementTopicCount(topicId, delta) {

@@ -57,7 +57,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const redirectUri = (import.meta.env.VITE_GOOGLE_REDIRECT_URI as string | undefined) || `${origin}/auth/callback`
     const state = Math.random().toString(36).slice(2)
     const nonce = Math.random().toString(36).slice(2)
-    try { sessionStorage.setItem('pl:oauth_state', state); sessionStorage.setItem('pl:oauth_nonce', nonce) } catch {}
+    try {
+      sessionStorage.setItem('pl:oauth_state', state)
+      sessionStorage.setItem('pl:oauth_nonce', nonce)
+      const backUrl = window.location.pathname + window.location.search + window.location.hash
+      sessionStorage.setItem('pl:back_after_login', backUrl || '/')
+    } catch {}
     const params = new URLSearchParams({
       client_id: clientId,
       redirect_uri: redirectUri,

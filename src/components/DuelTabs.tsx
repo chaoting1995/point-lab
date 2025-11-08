@@ -9,16 +9,18 @@ type Props = {
   value: DuelValue
   onChange: (v: DuelValue) => void
   label?: string
+  disabled?: boolean
 }
 
 // 讚同 / 其他 切換按鈕：
 // - 兩顆按鈕等寬、佔滿一行，gap 16px
 // - 點同一顆可切回預設（value=null）
-export default function DuelTabs({ value, onChange, label }: Props) {
+export default function DuelTabs({ value, onChange, label, disabled }: Props) {
   const { t } = useLanguage()
   const agreeActive = value === 'agree'
   const othersActive = value === 'others'
   const toggle = (key: 'agree' | 'others') => {
+    if (disabled) return
     onChange(value === key ? null : key)
   }
   return (
@@ -30,6 +32,7 @@ export default function DuelTabs({ value, onChange, label }: Props) {
         <button
           type="button"
           onClick={() => toggle('agree')}
+          disabled={disabled}
           style={{
             borderRadius: 10,
             padding: '6px 12px',
@@ -40,7 +43,8 @@ export default function DuelTabs({ value, onChange, label }: Props) {
             background: agreeActive ? '#10b981' : 'transparent',
             flex: 1,
             width: '100%',
-            cursor: 'pointer',
+            cursor: disabled ? 'not-allowed' : 'pointer',
+            opacity: disabled ? 0.6 : 1,
           }}
         >
           {t('points.add.stanceAgree') || '讚同'}
@@ -48,6 +52,7 @@ export default function DuelTabs({ value, onChange, label }: Props) {
         <button
           type="button"
           onClick={() => toggle('others')}
+          disabled={disabled}
           style={{
             borderRadius: 10,
             padding: '6px 12px',
@@ -58,7 +63,8 @@ export default function DuelTabs({ value, onChange, label }: Props) {
             background: othersActive ? '#ef4444' : 'transparent',
             flex: 1,
             width: '100%',
-            cursor: 'pointer',
+            cursor: disabled ? 'not-allowed' : 'pointer',
+            opacity: disabled ? 0.6 : 1,
           }}
         >
           {t('points.add.stanceOther') || '其他'}

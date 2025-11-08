@@ -21,6 +21,37 @@ function writeJson(file, data) {
   fs.writeFileSync(path.join(DATA_DIR, file), JSON.stringify(data, null, 2), 'utf-8')
 }
 
+async function fetchPointComments(pointId) {
+  const all = []
+  const size = 200
+  let page = 1
+  while (true) {
+    const url = `${API_BASE.replace(/\/$/, '')}/api/points/${encodeURIComponent(pointId)}/comments?sort=old&page=${page}&size=${size}`
+    const resp = await fetchJson(url)
+    const items = resp.items || []
+    if (!items.length) break
+    all.push(...items)
+    for (const item of items) {
+      const childCount = item.childCount ?? item.child_count ?? 0
+      if (childCount > 0) {
+        let childPage = 1
+        while (true) {
+          const childUrl = `${API_BASE.replace(/\/$/, '')}/api/points/${encodeURIComponent(pointId)}/comments?sort=old&page=${childPage}&size=${size}&parent=${encodeURIComponent(item.id)}`
+          const childResp = await fetchJson(childUrl)
+          const childItems = childResp.items || []
+          if (!childItems.length) break
+          all.push(...childItems)
+          if (childItems.length < size) break
+          childPage += 1
+        }
+      }
+    }
+    if (items.length < size) break
+    page += 1
+  }
+  return all
+}
+
 async function main() {
   const topicsUrl = `${API_BASE.replace(/\/$/, '')}/api/topics?page=1&size=1000&sort=new`
   const tResp = await fetchJson(topicsUrl)
@@ -37,6 +68,7 @@ async function main() {
   writeJson('topics.json', topics)
 
   const points = []
+  const comments = []
   for (const t of topics) {
     let page = 1
     const size = 200
@@ -58,14 +90,36 @@ async function main() {
           shares: typeof p.shares === 'number' ? p.shares : 0,
           createdAt: p.createdAt || new Date().toISOString(),
         })
+        if ((p.comments ?? 0) > 0) {
+          try {
+            const remoteComments = await fetchPointComments(p.id)
+            for (const c of remoteComments) {
+              comments.push({
+                id: c.id,
+                pointId: c.pointId || p.id,
+                parentId: c.parentId || null,
+                userId: c.userId || c.user_id || null,
+                guestId: c.guestId || c.guest_id || null,
+                content: c.content,
+                upvotes: typeof c.upvotes === 'number' ? c.upvotes : 0,
+                createdAt: c.createdAt || new Date().toISOString(),
+                author: c.author || (c.author_name ? { name: c.author_name, role: c.author_type || 'guest' } : null),
+                authorName: c.author?.name || c.author_name || null,
+                authorType: c.author?.role || c.author_type || null,
+              })
+            }
+          } catch (err) {
+            console.warn(`[seed-json] failed to fetch comments for ${p.id}:`, err.message || err)
+          }
+        }
       }
       if (items.length < size) break
       page += 1
     }
   }
   writeJson('points.json', points)
-  console.log(`[seed-json] wrote ${topics.length} topics and ${points.length} points to server/data/`)
+  writeJson('comments.json', comments)
+  console.log(`[seed-json] wrote ${topics.length} topics, ${points.length} points, ${comments.length} comments to server/data/`)
 }
 
 main().catch(e => { console.error('[seed-json] failed:', e); process.exit(1) })
-

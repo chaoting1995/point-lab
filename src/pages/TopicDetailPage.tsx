@@ -4,10 +4,11 @@ import type { Topic } from '../data/topics'
 import type { Point } from '../data/points'
 import PointCard from '../components/PointCard'
 import { getJson, type ItemResponse, type ListResponse } from '../api/client'
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef, useCallback } from 'react'
 import useLanguage from '../i18n/useLanguage'
 import PageHeader from '../components/PageHeader'
 import Box from '@mui/material/Box'
+import Typography from '@mui/material/Typography'
 import SortTabs from '../components/SortTabs'
 import type { SortKey } from '../hooks/useSortTabs'
 import PrimaryCtaButton from '../components/PrimaryCtaButton'
@@ -23,6 +24,12 @@ export default function TopicDetailPage() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [sort, setSort] = useState<SortKey>('new')
+  const [page, setPage] = useState(1)
+  const [hasMore, setHasMore] = useState(true)
+  const [initialLoaded, setInitialLoaded] = useState(false)
+  const sentinelRef = useRef<HTMLDivElement | null>(null)
+  const observerRef = useRef<IntersectionObserver | null>(null)
+  const PAGE_SIZE = 20
   // duel filter: null=預設（左右兩欄）、'agree' 或 'others' 單欄篩選
   const [duelFilter, setDuelFilter] = useState<null | 'agree' | 'others'>(null)
   // 穩定的查詢鍵：優先使用真正的 topicId（路由參數 id）
@@ -52,29 +59,53 @@ export default function TopicDetailPage() {
     return () => { aborted = true }
   }, [id])
 
-  // simple first-page fetch for stability
-  useEffect(() => {
-    let aborted = false
-    async function run() {
+  const loadPoints = useCallback(
+    async (nextPage: number, append: boolean) => {
+      setLoading(true)
+      setError(null)
       try {
-        setLoading(true)
-        setError(null)
-        const resp = await getJson<ListResponse<Point>>(`/api/points?topic=${topicKey}&page=1&size=30&sort=${sort}`)
-        if (aborted) return
-        setList(resp.items || [])
+        const resp = await getJson<ListResponse<Point>>(`/api/points?topic=${topicKey}&page=${nextPage}&size=${PAGE_SIZE}&sort=${sort}`)
+        const items = resp.items || []
+        setList((prev) => (append ? [...prev, ...items] : items))
+        setPage(nextPage)
+        if (typeof resp.total === 'number') {
+          setHasMore(nextPage * PAGE_SIZE < resp.total)
+        } else {
+          setHasMore(items.length === PAGE_SIZE)
+        }
+        setInitialLoaded(true)
       } catch (e) {
-        if (!aborted) setError(e instanceof Error ? e.message : 'Load failed')
+        setError(e instanceof Error ? e.message : 'Load failed')
       } finally {
-        if (!aborted) setLoading(false)
+        setLoading(false)
       }
-    }
-    run()
-    return () => { aborted = true }
-  }, [topicKey, sort])
-  const handleSort = (v: SortKey) => { setSort(v) }
+    },
+    [topicKey, sort],
+  )
+  useEffect(() => {
+    setList([])
+    setInitialLoaded(false)
+    setHasMore(true)
+    setPage(1)
+    loadPoints(1, false)
+  }, [loadPoints])
+
   const toggleDuel = (key: 'agree' | 'others') => {
     setDuelFilter((prev) => (prev === key ? null : key))
   }
+
+  useEffect(() => {
+    if (!initialLoaded || !hasMore || loading) return
+    if (observerRef.current) observerRef.current.disconnect()
+    observerRef.current = new IntersectionObserver((entries) => {
+      if (entries[0]?.isIntersecting) {
+        observerRef.current?.disconnect()
+        loadPoints(page + 1, true)
+      }
+    })
+    if (sentinelRef.current) observerRef.current.observe(sentinelRef.current)
+    return () => observerRef.current?.disconnect()
+  }, [initialLoaded, hasMore, loading, loadPoints, page])
 
   return (
     <div className="app">
@@ -90,14 +121,8 @@ export default function TopicDetailPage() {
             subtitle={topic?.description}
           />
 
-          <SortTabs value={sort} onChange={handleSort} />
-          {loading && (
-            <Box sx={{ mt: 1.5, display: 'flex', flexDirection: 'column', gap: 2 }}>
-              {Array.from({ length: 4 }).map((_, i) => (
-                <PointCardSkeleton key={i} />
-              ))}
-            </Box>
-          )}
+          <SortTabs value={sort} onChange={(val) => { setSort(val); setPage(1); setInitialLoaded(false); setHasMore(true); loadPoints(1, false) }} />
+          {error && <p className="text-rose-500">{t('common.error')}</p>}
           {topic?.mode === 'duel' && !loading && (
             <Box sx={{ mt: 0.5, mb: 1, display: 'flex', gap: 2, width: '100%' }}>
               <Box
@@ -142,12 +167,10 @@ export default function TopicDetailPage() {
               </Box>
             </Box>
           )}
-          {error && <p className="text-rose-500">{t('common.error')}</p>}
-          {!loading && list.length > 0 ? (
+          {initialLoaded && list.length > 0 ? (
             <>
               {topic?.mode === 'duel' ? (
-                duelFilter
-                ? (
+                duelFilter ? (
                   <div className="point-grid" role="tabpanel">
                     {list.filter((p) => p.position === duelFilter).map((hack) => (
                       <PointCard key={hack.id} point={hack} onDeleted={(id) => setList((prev) => prev.filter((x) => x.id !== id))} />
@@ -179,25 +202,58 @@ export default function TopicDetailPage() {
                   ))}
                 </div>
               )}
+              <Box ref={sentinelRef} sx={{ height: 32 }} />
+              {loading && (
+                <Box sx={{ mt: 1.5, display: 'flex', flexDirection: 'column', gap: 2 }}>
+                  {Array.from({ length: 3 }).map((_, i) => (
+                    <PointCardSkeleton key={`point-skel-${i}`} />
+                  ))}
+                </Box>
+              )}
+              {!hasMore && (
+                <Typography variant="body2" sx={{ textAlign: 'center', color: 'text.secondary', fontSize: 13, mt: 1 }}>
+                  {t('common.noMore') || '到達思想的邊界了'}
+                </Typography>
+              )}
               <Box sx={{ mt: 2, textAlign: 'center' }}>
-                <p className="text-slate-500" style={{ fontSize: 14, margin: 0 }}>{t('points.footerPrompt') || '寫下你的洞見。無需註冊。'}</p>
                 <Box sx={{ mt: 1, display: 'flex', justifyContent: 'center' }}>
                   <PrimaryCtaButton to={`/points/add?topic=${id}`} size="md" iconLeft={<Plus size={16} weight="bold" />}>
                     {t('header.cta')}
                   </PrimaryCtaButton>
                 </Box>
+                <p className="text-slate-500" style={{ fontSize: 14, margin: '12px 0 0' }}>
+                  {(t('points.footerPrompt') || '寫下你的洞見！\n無需註冊，網友會為最好的觀點按讚')
+                    .split('\n')
+                    .map((line, idx, arr) => (
+                      <span key={`footer-line-${idx}`}>
+                        {line}
+                        {idx < arr.length - 1 && <br />}
+                      </span>
+                    ))}
+                </p>
               </Box>
             </>
-          ) : (!loading && (
+          ) : (
             <>
-              <p className="text-center text-slate-500" style={{ fontSize: 14 }}>{t('points.empty') || '這裡是思維的荒蕪之地，建立第一個觀點。無需註冊。'}</p>
-              <Box sx={{ mt: 1, display: 'flex', justifyContent: 'center' }}>
-                <PrimaryCtaButton to={`/points/add?topic=${id}`} size="md" iconLeft={<Plus size={16} weight="bold" />}>
-                  {t('header.cta')}
-                </PrimaryCtaButton>
-              </Box>
+              {loading && (
+                <Box sx={{ mt: 1.5, display: 'flex', flexDirection: 'column', gap: 2 }}>
+                  {Array.from({ length: 4 }).map((_, i) => (
+                    <PointCardSkeleton key={`point-skel-empty-${i}`} />
+                  ))}
+                </Box>
+              )}
+              {!loading && (
+                <>
+                  <p className="text-center text-slate-500" style={{ fontSize: 14 }}>{t('points.empty') || '這裡是思維的荒蕪之地，建立第一個觀點。無需註冊。'}</p>
+                  <Box sx={{ mt: 1, display: 'flex', justifyContent: 'center' }}>
+                    <PrimaryCtaButton to={`/points/add?topic=${id}`} size="md" iconLeft={<Plus size={16} weight="bold" />}>
+                      {t('header.cta')}
+                    </PrimaryCtaButton>
+                  </Box>
+                </>
+              )}
             </>
-          ))}
+          )}
         </Box>
       </main>
     </div>

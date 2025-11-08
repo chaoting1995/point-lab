@@ -14,8 +14,8 @@
   - 評論：一級/二級、排序（最舊/最新/熱門）、分頁（每頁 10 筆）、二級展開/收合、投票
   - 留言輸入：預設單行，自動增高（最多 6 行）；送出按鈕固定圓形；訪客名稱首次輸入後寫入 localStorage
   - 長文截斷：預設顯示 3 行，顯示「查看更多/查看更少」
-- 新增主題（/topics/add）：MUI 表單；發布成功後鎖定表單，顯示「新增觀點」
-- 新增觀點（/points/add?topic=）：MUI 表單；對立模式顯示「選擇立場」（讚同/其他）
+- 新增主題（/topics/add）：MUI 表單；送出期間顯示貼頂 `LinearProgress`、CTA 內載入指示並鎖定所有欄位；成功後直接導向 `/points/add?topic=<id>`
+- 新增觀點（/points/add?topic=）：MUI 表單；送出期間顯示貼頂 `LinearProgress`、CTA 內載入指示並鎖定所有欄位；對立模式顯示「選擇立場」（讚同/其他）；若主題觀點數為 0 顯示提示文案
 - 側欄選單（Drawer）：首頁、主題箱、指南、登入/登出、語系切換
 - 指南頁（/guide）：固定文案（三張卡）
 - 後端 API（Express + JSON）：topics/points 讀寫、排序、投票、刪除
@@ -26,6 +26,7 @@
 
 ## UI/互動需求（摘錄）
 - Header 貼齊外框；品牌連回首頁；右側語系切換、CTA（依情境顯示）與漢堡選單
+- Google 登入按鈕：點擊時顯示貼頂 `LinearProgress` 並 disable 按鈕；在跳往 Google 前把目前 URL 存入 `sessionStorage.pl:back_after_login`，登入回呼成功後導回原頁
 - PageHeader 標題置中且最大化寬度；subtitle 支援換行；可選返回鈕
 - 主題卡片 TopicCard
   - 右側讚/倒讚；下方資訊列：模式 | 觀點數量 | 相對時間 | 刪除

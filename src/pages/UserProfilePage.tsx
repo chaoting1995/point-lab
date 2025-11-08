@@ -4,7 +4,7 @@ import Box from '@mui/material/Box'
 import Avatar from '@mui/material/Avatar'
 import Typography from '@mui/material/Typography'
 import { useParams } from 'react-router-dom'
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState, useRef, useCallback } from 'react'
 import { withBase, getJson, type ListResponse } from '../api/client'
 import useLanguage from '../i18n/useLanguage'
 import useAuth from '../auth/AuthContext'
@@ -29,10 +29,11 @@ import DialogContent from '@mui/material/DialogContent'
 import DialogActions from '@mui/material/DialogActions'
 import TextField from '@mui/material/TextField'
 import Button from '@mui/material/Button'
-import { PencilSimple, Plus, Eye, UserCircle } from 'phosphor-react'
+import { PencilSimple, Eye, UserCircle, CaretRight } from 'phosphor-react'
 import { useNavigate } from 'react-router-dom'
 import Snackbar from '@mui/material/Snackbar'
 import Alert from '@mui/material/Alert'
+import Skeleton from '@mui/material/Skeleton'
 
 type PublicUser = { id: string; name?: string; email?: string; picture?: string; bio?: string | null; topics?: string[]; points?: string[]; comments?: string[] }
 
@@ -43,6 +44,7 @@ export default function UserProfilePage() {
   const [user, setUser] = useState<PublicUser | null>(null)
   const [tab, setTab] = useState<'new'|'hot'|'old'>('new')
   const [points, setPoints] = useState<Point[]>([])
+  const [allPointsCache, setAllPointsCache] = useState<Point[]>([])
   const [editOpen, setEditOpen] = useState(false)
   const [nameDraft, setNameDraft] = useState('')
   const [bioDraft, setBioDraft] = useState('')
@@ -50,28 +52,182 @@ export default function UserProfilePage() {
   const [saveOk, setSaveOk] = useState(false)
   const [saveErr, setSaveErr] = useState<string | null>(null)
   const [viewAsGuest, setViewAsGuest] = useState(false)
+  const [loadingProfile, setLoadingProfile] = useState(true)
+  const [loadingPoints, setLoadingPoints] = useState(true)
+  const [notFound, setNotFound] = useState(false)
+  const [hasMorePoints, setHasMorePoints] = useState(true)
+  const [pointsPage, setPointsPage] = useState(1)
+  const [initialPointsLoaded, setInitialPointsLoaded] = useState(false)
+  const [usingFallback, setUsingFallback] = useState(false)
+  const sentinelRef = useRef<HTMLDivElement | null>(null)
+  const observerRef = useRef<IntersectionObserver | null>(null)
+  const POINTS_PAGE_SIZE = 20
+
   useEffect(() => {
     let aborted = false
+    setLoadingProfile(true)
+    setNotFound(false)
     ;(async () => {
       try {
-        const d = await fetch(withBase(`/api/users/${encodeURIComponent(id || '')}`)).then(r=>r.ok?r.json():null).catch(()=>null)
-        if (!aborted) setUser(d?.data || null)
-        const list = await getJson<ListResponse<Point>>(`/api/points?user=${encodeURIComponent(id||'')}&page=1&size=20&sort=${tab}`)
-        if (!aborted) setPoints(list.items as any)
-      } catch {/* ignore */}
+        const resp = await fetch(withBase(`/api/users/${encodeURIComponent(id || '')}`)).then(r => (r.ok ? r.json() : null)).catch(() => null)
+        if (!aborted) {
+          setUser(resp?.data || null)
+          setNotFound(!resp?.data)
+        }
+      } catch {
+        if (!aborted) {
+          setUser(null)
+          setNotFound(true)
+        }
+      } finally {
+        if (!aborted) setLoadingProfile(false)
+      }
     })()
     return () => { aborted = true }
-  }, [id, tab])
+  }, [id])
+
+  const sortPoints = (items: Point[], currentTab: typeof tab) => {
+    const sorted = [...items]
+    if (currentTab === 'new') {
+      sorted.sort((a, b) => new Date(b.createdAt || '').getTime() - new Date(a.createdAt || '').getTime())
+    } else if (currentTab === 'old') {
+      sorted.sort((a, b) => new Date(a.createdAt || '').getTime() - new Date(b.createdAt || '').getTime())
+    } else {
+      sorted.sort((a, b) => (b.upvotes || 0) - (a.upvotes || 0))
+    }
+    return sorted
+  }
+
+  const fetchFallbackPoints = useCallback(async () => {
+    const pointIds = Array.isArray((user as any)?.points) ? Array.from(new Set((user as any).points as string[])) : []
+    if (!pointIds.length) {
+      setAllPointsCache([])
+      setPoints([])
+      setHasMorePoints(false)
+      setInitialPointsLoaded(true)
+      setLoadingPoints(false)
+      setUsingFallback(true)
+      return
+    }
+    try {
+      const fetched = await Promise.all(
+        pointIds.map(async (pid) => {
+          try {
+            const resp = await getJson<{ data: Point }>(`/api/points/${encodeURIComponent(pid)}`)
+            return resp.data
+          } catch {
+            return null
+          }
+        }),
+      )
+      const valid = fetched.filter(Boolean) as Point[]
+      setAllPointsCache(valid)
+      setPoints(sortPoints(valid, tab))
+      setHasMorePoints(false)
+      setInitialPointsLoaded(true)
+      setUsingFallback(true)
+    } finally {
+      setLoadingPoints(false)
+    }
+  }, [tab, user])
+
+  const loadPointsPage = useCallback(
+    async (nextPage: number, _append: boolean) => {
+      setLoadingPoints(true)
+      try {
+        const list = await getJson<ListResponse<Point>>(`/api/points?user=${encodeURIComponent(id || '')}&page=${nextPage}&size=${POINTS_PAGE_SIZE}&sort=${tab}`)
+        const items = list.items || []
+        if (nextPage === 1) setPoints(items as any)
+        else setPoints((prev) => [...prev, ...(items as any)])
+        setPointsPage(nextPage)
+        if (typeof list.total === 'number') {
+          setHasMorePoints(nextPage * POINTS_PAGE_SIZE < list.total)
+        } else {
+          setHasMorePoints(items.length === POINTS_PAGE_SIZE)
+        }
+        setInitialPointsLoaded(true)
+        setUsingFallback(false)
+      } catch (err) {
+        if (nextPage === 1) {
+          await fetchFallbackPoints()
+        } else {
+          setHasMorePoints(false)
+          setLoadingPoints(false)
+        }
+        return
+      }
+      setLoadingPoints(false)
+    },
+    [fetchFallbackPoints, id, tab],
+  )
+
+  useEffect(() => {
+    setPoints([])
+    setInitialPointsLoaded(false)
+    setHasMorePoints(true)
+    setPointsPage(1)
+    loadPointsPage(1, false)
+  }, [id, tab, loadPointsPage])
+
+  useEffect(() => {
+    if (!usingFallback || !allPointsCache.length) return
+    setPoints(sortPoints(allPointsCache, tab))
+  }, [allPointsCache, tab, usingFallback])
+
+  useEffect(() => {
+    if (usingFallback || !initialPointsLoaded || loadingPoints || !hasMorePoints) return
+    if (observerRef.current) observerRef.current.disconnect()
+    observerRef.current = new IntersectionObserver((entries) => {
+      if (entries[0]?.isIntersecting) {
+        observerRef.current?.disconnect()
+        loadPointsPage(pointsPage + 1, true)
+      }
+    })
+    if (sentinelRef.current) observerRef.current.observe(sentinelRef.current)
+    return () => observerRef.current?.disconnect()
+  }, [usingFallback, initialPointsLoaded, loadingPoints, hasMorePoints, loadPointsPage, pointsPage])
+
+  const pointsSkeleton = useMemo(
+    () =>
+      Array.from({ length: 3 }).map((_, idx) => (
+        <Box key={`point-skel-${idx}`} sx={{ borderRadius: 2, border: '1px solid', borderColor: 'divider', p: 2 }}>
+          <Skeleton variant="text" width="90%" height={24} />
+          <Skeleton variant="text" width="60%" height={18} />
+        </Box>
+      )),
+    [],
+  )
   return (
     <div className="app">
       <Header />
       <main className="app__inner">
         <Box sx={{ maxWidth: 840, mx: 'auto', p: 2 }}>
-          <PageHeader title={(t('user.profileCenter') || '會員中心')} backButton onBack={()=>history.back()} />
-          {user ? (
+          <PageHeader
+            title=""
+            backButton
+            onBack={() => {
+              if (window.history.length > 2) navigate(-1)
+              else navigate('/topics')
+            }}
+          />
+          {loadingProfile ? (
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                <Skeleton variant="circular" width={72} height={72} />
+                <Box sx={{ flex: 1 }}>
+                  <Skeleton variant="text" width={180} height={28} />
+                  <Skeleton variant="text" width={200} height={18} />
+                </Box>
+              </Box>
+              <Skeleton variant="rectangular" height={80} sx={{ borderRadius: 2 }} />
+              <Skeleton variant="rectangular" height={120} sx={{ borderRadius: 2 }} />
+            </Box>
+          ) : user ? (
             <>
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 1 }}>
-                <Avatar sx={{ width: 72, height: 72 }} src={user.picture || undefined}>{(user.name || 'U').slice(0,1)}</Avatar>
+                <Avatar sx={{ width: 72, height: 72 }} src={user.picture || undefined}>
+                  {!user.picture && (user.name || 'U').slice(0, 1)}
+                </Avatar>
                 <Box>
                   <Typography variant="h6" sx={{ m: 0, fontWeight: 800 }}>{user.name || '用戶'}</Typography>
                   {user.email && <Typography variant="body2" color="text.secondary">{user.email}</Typography>}
@@ -92,8 +248,6 @@ export default function UserProfilePage() {
                   )}
                 </Box>
               )}
-              <Divider sx={{ my: 1 }} />
-
               {me?.id === user.id && !viewAsGuest && (
                 <>
                   <Typography variant="subtitle1" sx={{ fontWeight: 800, mb: 0.5 }}>{t('user.milestonesTitle') || '里程碑'}</Typography>
@@ -101,33 +255,69 @@ export default function UserProfilePage() {
                   <CardContent sx={{ p: 0, '&:last-child': { paddingBottom: 0 } }}>
                     <List dense sx={{ py: 0, mb: 0, bgcolor: 'transparent' }}>
                       <ListItem disablePadding secondaryAction={null}>
+                        <ListItemButton onClick={() => navigate('/topics')}>
+                          <ListItemIcon>
+                            <Checkbox
+                              edge="start"
+                              tabIndex={-1}
+                              disableRipple
+                              checked={(user.comments?.length || 0) > 0}
+                              disabled
+                              icon={<RadioButtonUnchecked sx={{ color: 'text.disabled' }} />}
+                              checkedIcon={<CheckCircle sx={{ color: 'success.main' }} />}
+                            />
+                          </ListItemIcon>
+                          <ListItemText
+                            primary={
+                              (user.comments?.length || 0) > 0
+                                ? `評論數量：${user.comments?.length || 0}`
+                                : t('user.milestoneComment') || '新增第一則評論'
+                            }
+                          />
+                        </ListItemButton>
+                      </ListItem>
+                      <ListItem disablePadding sx={{ borderTop: '1px solid', borderColor: 'divider' }}>
+                        <ListItemButton onClick={() => navigate('/topics')}>
+                          <ListItemIcon>
+                            <Checkbox
+                              edge="start"
+                              tabIndex={-1}
+                              disableRipple
+                              checked={(user.points?.length || 0) > 0}
+                              disabled
+                              icon={<RadioButtonUnchecked sx={{ color: 'text.disabled' }} />}
+                              checkedIcon={<CheckCircle sx={{ color: 'success.main' }} />}
+                            />
+                          </ListItemIcon>
+                          <ListItemText
+                            primary={
+                              (user.points?.length || 0) > 0
+                                ? `觀點數量：${user.points?.length || 0}`
+                                : t('user.milestonePoint') || '新增第一則觀點'
+                            }
+                          />
+                        </ListItemButton>
+                      </ListItem>
+                      <ListItem disablePadding sx={{ borderTop: '1px solid', borderColor: 'divider' }}>
                         <ListItemButton onClick={() => navigate('/topics/add')}>
                           <ListItemIcon>
-                            <Checkbox edge="start" tabIndex={-1} disableRipple checked={(user.topics?.length || 0) > 0} disabled
+                            <Checkbox
+                              edge="start"
+                              tabIndex={-1}
+                              disableRipple
+                              checked={(user.topics?.length || 0) > 0}
+                              disabled
                               icon={<RadioButtonUnchecked sx={{ color: 'text.disabled' }} />}
-                              checkedIcon={<CheckCircle sx={{ color: 'success.main' }} />} />
+                              checkedIcon={<CheckCircle sx={{ color: 'success.main' }} />}
+                            />
                           </ListItemIcon>
-                          <ListItemText primary={t('user.milestoneTopic') || '新增第一個主題'} />
-                        </ListItemButton>
-                      </ListItem>
-                      <ListItem disablePadding sx={{ borderTop: '1px solid', borderColor: 'divider' }}>
-                        <ListItemButton onClick={() => navigate('/topics')}>
-                          <ListItemIcon>
-                            <Checkbox edge="start" tabIndex={-1} disableRipple checked={(user.points?.length || 0) > 0} disabled
-                              icon={<RadioButtonUnchecked sx={{ color: 'text.disabled' }} />}
-                              checkedIcon={<CheckCircle sx={{ color: 'success.main' }} />} />
-                          </ListItemIcon>
-                          <ListItemText primary={t('user.milestonePoint') || '新增第一則觀點'} />
-                        </ListItemButton>
-                      </ListItem>
-                      <ListItem disablePadding sx={{ borderTop: '1px solid', borderColor: 'divider' }}>
-                        <ListItemButton onClick={() => navigate('/topics')}>
-                          <ListItemIcon>
-                            <Checkbox edge="start" tabIndex={-1} disableRipple checked={(user.comments?.length || 0) > 0} disabled
-                              icon={<RadioButtonUnchecked sx={{ color: 'text.disabled' }} />}
-                              checkedIcon={<CheckCircle sx={{ color: 'success.main' }} />} />
-                          </ListItemIcon>
-                          <ListItemText primary={t('user.milestoneComment') || '新增第一則評論'} />
+                          <ListItemText
+                            primary={
+                              (user.topics?.length || 0) > 0
+                                ? `主題數量：${user.topics?.length || 0}`
+                                : t('user.milestoneTopic') || '新增第一個主題'
+                            }
+                          />
                         </ListItemButton>
                       </ListItem>
                     </List>
@@ -135,14 +325,6 @@ export default function UserProfilePage() {
                 </Card>
                 </>
               )}
-              <Box sx={{ display: 'flex', gap: 0, mb: 1, color: 'text.secondary', alignItems: 'center', flexWrap: 'wrap', fontSize: 14 }}>
-                <span style={{ marginRight: 6 }}>發布數量：</span>
-                <span>觀點 <b style={{ color: '#0f172a' }}>{user.points?.length || 0}</b></span>
-                <span style={{ margin: 0 }}>・</span>
-                <span>評論 <b style={{ color: '#0f172a' }}>{user.comments?.length || 0}</b></span>
-                <span style={{ margin: 0 }}>・</span>
-                <span>主題 <b style={{ color: '#0f172a' }}>{user.topics?.length || 0}</b></span>
-              </Box>
               {(((user as any).pointLikes || 0) > 0 || ((user as any).topicLikes || 0) > 0) && (
                 <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.25, mb: 1, fontSize: 14, color: 'text.secondary' }}>
                   {(() => {
@@ -169,23 +351,46 @@ export default function UserProfilePage() {
               )}
               <Divider sx={{ my: 1 }} />
 
-              <Typography sx={{ fontWeight: 800, mb: 0.5, fontSize: 30, textAlign: 'center' }}>{t('user.pointsTitle') || '發布過的觀點'}</Typography>
-              {points.length === 0 ? (
+              <Typography sx={{ fontWeight: 800, mb: 0.5, fontSize: 30, textAlign: 'center' }}>
+                {t('user.pointsTitle') || '發布過的觀點'}
+              </Typography>
+              {!initialPointsLoaded ? (
+                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5, mt: 2 }}>{pointsSkeleton}</Box>
+              ) : points.length === 0 ? (
                 <Box sx={{ textAlign: 'center', py: 2 }}>
-                  <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>{t('user.noPoints') || '還沒有發布過任何觀點！'}</Typography>
-                  {me?.id === user.id && (
-                    <PrimaryCtaButton to="/points/add" size="sm" iconLeft={<Plus size={16} weight="bold" />}>{t('header.cta') || '新增觀點'}</PrimaryCtaButton>
-                  )}
+                  <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
+                    {t('user.noPoints') || '還沒有發布過任何觀點！'}
+                  </Typography>
+                  <PrimaryCtaButton to="/topics" size="sm" className="gap-2 justify-center">
+                    前往主題箱
+                    <CaretRight size={16} weight="bold" />
+                  </PrimaryCtaButton>
                 </Box>
               ) : (
                 <>
-                  <SortTabs value={tab} onChange={(v)=> setTab(v)} />
+                  <SortTabs value={tab} onChange={(v) => setTab(v)} />
                   <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
-                    {points.map(p => (
-                      <div key={p.id} onClick={()=> p.topicId && navigate(`/topics/${encodeURIComponent(p.topicId)}`)} style={{ cursor: p.topicId ? 'pointer' : 'default' }}>
+                    {points.map((p) => (
+                      <div
+                        key={p.id}
+                        onClick={() => p.topicId && navigate(`/topics/${encodeURIComponent(p.topicId)}`)}
+                        style={{ cursor: p.topicId ? 'pointer' : 'default' }}
+                      >
                         <PointCard point={p as any} />
                       </div>
                     ))}
+                    {!usingFallback && <div ref={sentinelRef} style={{ height: 32 }} />}
+                  </Box>
+                  {!usingFallback && !hasMorePoints && (
+                    <Typography variant="body2" sx={{ textAlign: 'center', color: 'text.secondary', fontSize: 13, mt: 1 }}>
+                      {t('common.noMore') || '到達思想的邊界了'}
+                    </Typography>
+                  )}
+                  <Box sx={{ textAlign: 'center', py: 2 }}>
+                    <PrimaryCtaButton to="/topics" size="sm" className="gap-2 justify-center">
+                      前往主題箱
+                      <CaretRight size={16} weight="bold" />
+                    </PrimaryCtaButton>
                   </Box>
                 </>
               )}
@@ -225,7 +430,11 @@ export default function UserProfilePage() {
               </Snackbar>
             </>
           ) : (
-            <Typography variant="body2" color="text.secondary">載入中…</Typography>
+            <Box sx={{ textAlign: 'center', py: 4 }}>
+              <Typography variant="body2" color="text.secondary">
+                {notFound ? '找不到這位用戶。' : '暫時無法載入資料。'}
+              </Typography>
+            </Box>
           )}
         </Box>
       </main>

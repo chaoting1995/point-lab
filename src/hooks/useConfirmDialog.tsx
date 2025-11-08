@@ -3,6 +3,7 @@ import ConfirmDialog from '../components/ConfirmDialog'
 
 type Options = {
   title?: string
+  body?: string
   confirmText?: string
   cancelText?: string
 }
@@ -34,6 +35,7 @@ export default function useConfirmDialog() {
     <ConfirmDialog
       open={open}
       title={opts.title}
+      body={opts.body}
       confirmText={opts.confirmText}
       cancelText={opts.cancelText}
       onCancel={handleCancel}
@@ -43,4 +45,3 @@ export default function useConfirmDialog() {
 
   return { confirm, ConfirmDialogEl: DialogEl }
 }
-

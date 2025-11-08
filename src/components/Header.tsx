@@ -41,7 +41,7 @@ export function Header() {
   return (
     <header className="header navbar bg-base-100">
       <Link to="/" className="header__brand" aria-label="PointLab">
-        <span className="header__brand-logo">P</span>
+        <img src="/logo.svg" alt="PointLab logo" className="header__brand-logo" />
         <span className="header__brand-name">PointLab</span>
       </Link>
       <nav className="header__center" aria-label="PointLab navigation">
@@ -72,8 +72,8 @@ export function Header() {
                 onClick={(e)=> { try { (e.currentTarget as HTMLButtonElement).blur() } catch {}; setUserMenuAnchor(e.currentTarget as unknown as HTMLElement) }}
                 style={{ border: 'none', background: 'transparent', padding: 0, margin: 0, display: 'inline-flex', cursor: 'pointer' }}
               >
-                <Avatar sx={{ width: 28, height: 28 }} src={user.picture} alt={user.name || 'user'}>
-                  {(user.name || 'U').slice(0, 1)}
+                <Avatar sx={{ width: 28, height: 28 }} src={user.picture || undefined} alt={user.name || 'user'}>
+                  {!user.picture && (user.name || 'U').slice(0, 1)}
                 </Avatar>
               </button>
             </Tooltip>
@@ -91,8 +91,8 @@ export function Header() {
               <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
                 <Typography variant="body2" color="text.secondary" sx={{ textAlign: 'center' }}>{user.email}</Typography>
                 <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 1 }}>
-                  <Avatar sx={{ width: 64, height: 64 }} src={user.picture} alt={user.name || 'user'}>
-                    {(user.name || 'U').slice(0, 1)}
+                  <Avatar sx={{ width: 64, height: 64 }} src={user.picture || undefined} alt={user.name || 'user'}>
+                    {!user.picture && (user.name || 'U').slice(0, 1)}
                   </Avatar>
                   <Typography variant="h6" sx={{ m: 0, fontWeight: 800, textAlign: 'center', width: '100%' }}>
                     {user.role === 'superadmin' ? (
@@ -161,8 +161,8 @@ export function Header() {
               <>
                 <ListItemButton disableRipple disableTouchRipple sx={{ cursor: 'default' }}>
                   <ListItemIcon>
-                    <Avatar sx={{ width: 28, height: 28 }} src={user.picture} alt={user.name || 'user'}>
-                      {(user.name || 'U').slice(0, 1)}
+                    <Avatar sx={{ width: 28, height: 28 }} src={user.picture || undefined} alt={user.name || 'user'}>
+                      {!user.picture && (user.name || 'U').slice(0, 1)}
                     </Avatar>
                   </ListItemIcon>
                   <ListItemText primary={user.name || '用戶'} secondary={user.email || ''} />

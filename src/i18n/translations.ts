@@ -21,12 +21,15 @@ type LanguageToggleTranslation = {
 type HeroTranslation = {
   eyebrow: string
   title: string
+  titleHighlight?: string
   subtitle: string
   primaryAction: string
   secondaryAction: string
   badgeLabel: string
   badgeNote: string
   logos: string[]
+  tags?: string[]
+  highlightPhrase?: string
 }
 
 type TabsTranslation = {
@@ -106,6 +109,7 @@ export type AppTranslations = {
       ctaHighlight?: string
       ctaTail?: string
       add: string
+      ctaNote?: string
       empty?: string
     }
     common?: {
@@ -211,14 +215,21 @@ const baseZhHant: AppTranslations = {
   },
   hero: {
     eyebrow: '',
-    title: '觀點實驗室',
+    title: '用 PointLab 匯聚好觀點',
+    titleHighlight: '好觀點',
     subtitle:
-      'PointLab 收整社群最愛的生活與工作觀點（Point），讓你幾分鐘內找到下一個能放進日常的靈感。',
+      '資訊爆炸的時代，內容氾濫\n' +
+      '真知灼見的好觀點，不該被淹沒！\n' +
+      'PointLab 的目標，是搜集好觀點\n' +
+      '讓觀點可以被分享、看見、辯論、票選、沉澱\n' +
+      '最終，我們將獲得一份精心挑選的好觀點清單！',
     primaryAction: '開始探索',
     secondaryAction: '投稿新觀點',
-    badgeLabel: 'Product Hunt 當日冠軍',
-    badgeNote: '上線 48 小時內 3,200+ 票',
-    logos: ['Product Hunt', 'Maker Stations', 'Indie Hackers'],
+    badgeLabel: '',
+    badgeNote: '',
+    logos: [],
+    tags: ['開源智慧', '沉澱觀點'],
+    highlightPhrase: '好觀點清單',
   },
   tabs: {
     hot: '熱門',
@@ -264,7 +275,7 @@ const baseZhHant: AppTranslations = {
   topics: {
     add: {
       title: '新增主題',
-      subtitle: '主題、辯題、問題，建立任何你想探討的議題！',
+      subtitle: '好問題，比好答案更重要\n主題、辯題、問題，建立任何你想探討的議題！',
       nameLabel: '主題名稱',
       namePlaceholder: '例如：什麼是「自由」？',
       descLabel: '主題描述（可選）',
@@ -285,6 +296,7 @@ const baseZhHant: AppTranslations = {
       ctaHighlight: '建立',
       ctaTail: '更多主題，無需註冊！',
       add: '新增主題',
+      ctaNote: '無需註冊，網友會為最好的觀點按讚',
       empty: '尚無主題',
     },
     common: {
@@ -306,7 +318,7 @@ const baseZhHant: AppTranslations = {
     },
     edit: { title: '編輯觀點' },
     empty: '這裡是思維的荒蕪之地，建立第一個觀點！\n無需註冊！',
-    footerPrompt: '寫下你的洞見。無需註冊。',
+    footerPrompt: '寫下你的洞見！\n無需註冊，網友會為最好的觀點按讚',
   },
   nav: {
     home: '首頁',
@@ -411,6 +423,19 @@ export const translations: Record<Locale, AppTranslations> = {
   // English falls back to zh-Hant for missing keys
   en: {
     ...baseZhHant,
+    hero: {
+      ...baseZhHant.hero,
+      title: 'Bring Great Points Together with PointLab',
+      titleHighlight: 'Great Points',
+      subtitle:
+        'In the age of information overload, noise wins.\n' +
+        'Sharp, well-earned points shouldn’t be buried.\n' +
+        'PointLab exists to collect great points.\n' +
+        'Share them, surface them, debate them, vote on them, let them settle.\n' +
+        'In the end, we get a handpicked list of the sharpest insights.',
+      tags: ['Open-source wisdom', 'Distilled points'],
+      highlightPhrase: 'handpicked list of the sharpest insights',
+    },
     languageToggle: {
       traditional: '繁',
       simplified: '简',
@@ -518,6 +543,7 @@ export const translations: Record<Locale, AppTranslations> = {
         ctaHighlight: 'Create',
         ctaTail: ' more topics, no signup needed!',
         add: 'New Topic',
+        ctaNote: 'No signup needed — the community will upvote the sharpest points.',
         empty: 'No topics yet.',
       },
       common: {
@@ -539,7 +565,7 @@ export const translations: Record<Locale, AppTranslations> = {
       },
       edit: { title: 'Edit Point' },
       empty: 'It\'s quiet here. Be the first to post a point — no signup needed.',
-      footerPrompt: 'Share your insight. No signup needed.',
+    footerPrompt: 'Share your insight!\nNo signup needed — the community will upvote the sharpest points.',
     },
     nav: {
       home: 'Home',
