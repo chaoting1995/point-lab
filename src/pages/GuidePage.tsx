@@ -1,5 +1,6 @@
 import Header from '../components/Header'
 import PageHeader from '../components/PageHeader'
+import Footer from '../components/Footer'
 import Box from '@mui/material/Box'
 import Typography from '@mui/material/Typography'
 import useLanguage from '../i18n/useLanguage'
@@ -58,6 +59,7 @@ export default function GuidePage() {
           </Box>
         </Box>
       </main>
+      <Footer />
     </div>
   )
 }
