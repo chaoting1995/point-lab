@@ -51,7 +51,7 @@ export default function PointAddPage() {
   const [loadingTopic, setLoadingTopic] = useState(!!topicId)
   const [description, setDescription] = useState('')
   const [authorName, setAuthorName] = useState('')
-  const [submitting, setSubmitting] = useState(!false)
+  const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [successOpen, setSuccessOpen] = useState(false)
   const [touched, setTouched] = useState<{ desc?: boolean; name?: boolean }>({})
