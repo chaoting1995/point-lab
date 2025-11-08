@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://point-lab.pages.dev/sitemap.xml
