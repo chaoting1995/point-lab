@@ -1,14 +1,12 @@
 import Header from '../components/Header'
 import { useNavigate } from 'react-router-dom'
 import { useState } from 'react'
+import { createPortal } from 'react-dom'
 import useLanguage from '../i18n/useLanguage'
 import Box from '@mui/material/Box'
 import Stack from '@mui/material/Stack'
 import TextField from '@mui/material/TextField'
 import Alert from '@mui/material/Alert'
-import Snackbar from '@mui/material/Snackbar'
-import PrimaryCtaButton from '../components/PrimaryCtaButton'
-import { Plus } from 'phosphor-react'
 import FormControl from '@mui/material/FormControl'
 import FormLabel from '@mui/material/FormLabel'
 import RadioGroup from '@mui/material/RadioGroup'
@@ -19,6 +17,26 @@ import { withBase } from '../api/client'
 import { getOrCreateGuestId, getGuestName } from '../utils/guest'
 import useAuth from '../auth/AuthContext'
 import { addGuestItem } from '../utils/guestActivity'
+import LinearProgress from '@mui/material/LinearProgress'
+import ClipLoader from 'react-spinners/ClipLoader'
+
+function SubmittingOverlay({ open }: { open: boolean }) {
+  if (!open || typeof document === 'undefined') return null
+  return createPortal(
+    <LinearProgress
+      color="primary"
+      sx={{
+        position: 'fixed',
+        top: 0,
+        left: 0,
+        width: '100%',
+        zIndex: 3000,
+        height: 4,
+      }}
+    />,
+    document.body,
+  )
+}
 
 export default function TopicAddPage() {
   const navigate = useNavigate()
@@ -29,14 +47,13 @@ export default function TopicAddPage() {
   const [mode, setMode] = useState<'open' | 'duel'>('open')
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [successOpen, setSuccessOpen] = useState(false)
-  const [createdId, setCreatedId] = useState<string | null>(null)
   const [touched, setTouched] = useState<{ name?: boolean }>({})
-  const locked = !!createdId
+  const isDisabled = submitting
   return (
     <div className="app">
       <Header />
-      <main className="app__inner">
+      <SubmittingOverlay open={submitting} />
+      <main className="app__inner" aria-busy={submitting}>
         {/* 去除雙層 padding，遵循 8px 側邊間距（由 .app__inner 控制） */}
         <Box sx={{ px: 0 }}>
           <PageHeader
@@ -60,7 +77,7 @@ export default function TopicAddPage() {
               error={touched.name && !name.trim()}
               helperText={touched.name && !name.trim() ? (t('topics.add.nameLabel') + ' 為必填') : ' '}
               sx={{ '& .MuiOutlinedInput-root': { bgcolor: 'common.white' } }}
-              disabled={locked}
+              disabled={isDisabled}
             />
             <TextField
               label={t('topics.add.descLabel')}
@@ -71,9 +88,9 @@ export default function TopicAddPage() {
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               sx={{ '& .MuiOutlinedInput-root': { bgcolor: 'common.white' } }}
-              disabled={locked}
+              disabled={isDisabled}
             />
-            <FormControl disabled={locked}>
+            <FormControl disabled={isDisabled}>
               <FormLabel sx={{ fontWeight: 700 }}>{t('topics.add.modeLabel') || '主題模式'}</FormLabel>
               <RadioGroup row value={mode} onChange={(e) => setMode(e.target.value as 'open' | 'duel')}>
                 <FormControlLabel value="open" control={<Radio />} label={t('topics.add.modeOpen') || '開放式主題'} />
@@ -84,7 +101,7 @@ export default function TopicAddPage() {
             <Stack spacing={1.5} alignItems="stretch">
               <button
                 className="header__cta btn btn-primary btn-md gap-2 w-full justify-center"
-                disabled={submitting || !name.trim() || locked}
+                disabled={isDisabled || !name.trim()}
                 aria-busy={submitting}
                 onClick={async () => {
                   try {
@@ -116,11 +133,15 @@ export default function TopicAddPage() {
                       throw new Error(message)
                     }
                     const body = await res.json()
-                    // 顯示下一步提示與按鈕，引導前往新增觀點
-                    setCreatedId(body?.data?.id || null)
-                    // 未登入（或後端未回傳 createdBy）時，將主題 id 記錄到 guest activity
-                    try { if (!body?.data?.createdBy) addGuestItem('topic', body?.data?.id) } catch {}
-                    setSuccessOpen(true)
+                    const topicId = body?.data?.id
+                    try {
+                      if (topicId && !body?.data?.createdBy) addGuestItem('topic', topicId)
+                    } catch {}
+                    if (topicId) {
+                      navigate(`/points/add?topic=${encodeURIComponent(topicId)}`)
+                    } else {
+                      navigate('/topics')
+                    }
                   } catch (e) {
                     setError(e instanceof Error ? e.message : '發布失敗')
                   } finally {
@@ -130,21 +151,7 @@ export default function TopicAddPage() {
               >
                 {submitting ? (
                   <>
-                    <svg
-                      className="animate-spin"
-                      xmlns="http://www.w3.org/2000/svg"
-                      width="16"
-                      height="16"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="2"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      aria-hidden
-                    >
-                      <path d="M21 12a9 9 0 1 1-6.219-8.56" />
-                    </svg>
+                    <ClipLoader size={16} color="currentColor" speedMultiplier={0.9} />
                     {t('actions.publish')}
                   </>
                 ) : (
@@ -153,33 +160,8 @@ export default function TopicAddPage() {
               </button>
             </Stack>
           </Stack>
-          {createdId && (
-            <Box sx={{ mt: 2, textAlign: 'center' }}>
-              <p className="text-slate-600" style={{ fontSize: 14, margin: 0 }}>
-                {t('topics.add.firstPrompt') || '這個主題空空如也，為主題添加第一個觀點吧！'}
-              </p>
-              <Box sx={{ mt: 1, display: 'flex', justifyContent: 'center' }}>
-                <PrimaryCtaButton to={`/points/add?topic=${createdId}`} size="md" iconLeft={<Plus size={16} weight="bold" />}>
-                  新增觀點
-                </PrimaryCtaButton>
-              </Box>
-            </Box>
-          )}
         </Box>
       </main>
-      <Snackbar
-        open={successOpen}
-        autoHideDuration={1600}
-        onClose={() => setSuccessOpen(false)}
-        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
-        sx={{ width: '100%' }}
-      >
-        <Box sx={{ width: '100%', maxWidth: 576, px: 2 }}>
-          <Alert severity="success" variant="filled" sx={{ borderRadius: '10px', width: '100%' }}>
-            {t('topics.add.success') || t('actions.posted')}
-          </Alert>
-        </Box>
-      </Snackbar>
     </div>
   )
 }
