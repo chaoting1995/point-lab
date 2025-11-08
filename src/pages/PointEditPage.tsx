@@ -11,7 +11,7 @@ import PageHeader from '../components/PageHeader'
 import type { Point } from '../data/points'
 import type { Topic } from '../data/topics'
 import TopicCard from '../components/TopicCard'
-import { getJson, type ItemResponse, type ListResponse, withBase } from '../api/client'
+import { getJson, type ItemResponse, withBase } from '../api/client'
 import DuelTabs, { type DuelValue } from '../components/DuelTabs'
 
 export default function PointEditPage() {
@@ -50,15 +50,8 @@ export default function PointEditPage() {
     async function run() {
       if (!topicId) return
       try {
-        let t: Topic | null = null
-        try {
-          const resp = await getJson<ItemResponse<Topic>>(`/api/topics/id/${topicId}`)
-          t = resp.data
-        } catch {
-          const list = await getJson<ListResponse<Topic>>('/api/topics?page=1&size=1000')
-          t = (list.items || []).find((x) => x.id === topicId || (x as any).slug === topicId) || null
-        }
-        if (!aborted) setTopic(t)
+        const resp = await getJson<ItemResponse<Topic>>(`/api/topics/id/${topicId}`)
+        if (!aborted) setTopic(resp.data)
       } catch {}
     }
     run()

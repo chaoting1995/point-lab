@@ -2,6 +2,7 @@
 // and JSON fallback when SQLite is not installed.
 import fs from 'node:fs'
 import path from 'node:path'
+import { createRequire } from 'node:module'
 
 let sqlite = null
 try {
@@ -30,16 +31,27 @@ function writeJson(file, data) {
 
 let db = null
 export function init() {
-  if (!sqlite) return false
+  if (!sqlite) {
+    try {
+      const req = createRequire(import.meta.url)
+      // eslint-disable-next-line import/no-extraneous-dependencies
+      const mod = req('better-sqlite3')
+      sqlite = mod?.default || mod || null
+    } catch {}
+  }
+  if (!sqlite) {
+    try { console.warn('[repo] storage=json (better-sqlite3 not loaded)') } catch {}
+    return false
+  }
   try {
     db = sqlite(DB_PATH)
     db.pragma('journal_mode = WAL')
+    try { console.log(`[repo] storage=sqlite path=${DB_PATH}`) } catch {}
   db.exec(`
       create table if not exists topics (
         id text primary key,
         name text not null,
         description text,
-        slug text,
         mode text default 'open',
         created_by text,
         created_by_guest text,
@@ -105,6 +117,7 @@ export function init() {
         token text not null unique,
         created_at text not null,
         expires_at text not null,
+        last_seen text
         foreign key(user_id) references users(id) on delete cascade
       );
       create table if not exists reports (
@@ -135,6 +148,16 @@ export function init() {
 function nowIso() { return new Date().toISOString() }
 
 export const repo = {
+  diag() {
+    const out = { sqlite: !!db, dbPath: DB_PATH, topicsDb: null, pointsDb: null, topicsJson: 0, pointsJson: 0 }
+    try { out.topicsJson = readJson('topics.json').length } catch {}
+    try { out.pointsJson = readJson('points.json').length } catch {}
+    if (db) {
+      try { out.topicsDb = db.prepare('select count(*) as c from topics').get().c } catch { out.topicsDb = null }
+      try { out.pointsDb = db.prepare('select count(*) as c from points').get().c } catch { out.pointsDb = null }
+    }
+    return out
+  },
   ensureUserActivityColumns() {
     if (!db) return
     try { db.prepare('alter table users add column topics_json text').run() } catch {}
@@ -186,20 +209,20 @@ export const repo = {
     else items = [...items].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
     return { items: items.slice((page - 1) * size, (page - 1) * size + size), total: items.length }
   },
-  getTopic(idOrSlug) {
+  getTopic(id) {
     if (db) {
-      const row = db.prepare('select * from topics where id=? or slug=?').get(idOrSlug, idOrSlug)
+      const row = db.prepare('select * from topics where id=?').get(id)
       return row || null
     }
     const topics = readJson('topics.json')
-    return topics.find(t => t.id === idOrSlug || t.slug === idOrSlug) || null
+    return topics.find(t => t.id === id) || null
   },
   createTopic({ id, name, description, mode, createdBy, createdByGuest, author }) {
     if (db) {
       try { db.prepare('alter table topics add column created_by text').run() } catch {}
       try { db.prepare('alter table topics add column created_by_guest text').run() } catch {}
       db.prepare('insert into topics (id,name,description,slug,mode,score,count,created_at) values (?,?,?,?,?,?,?,?)')
-        .run(id, name, description, description ? null : null, mode, 0, 0, nowIso())
+        .run(id, name, description, null, mode, 0, 0, nowIso())
       if (createdBy) { try { db.prepare('update topics set created_by=? where id=?').run(createdBy, id) } catch {} }
       if (createdByGuest) { try { db.prepare('update topics set created_by_guest=? where id=?').run(createdByGuest, id) } catch {} }
       if (createdByGuest) this.incGuestCounter(createdByGuest, 'topic')
@@ -207,7 +230,7 @@ export const repo = {
       return this.getTopic(id)
     }
     const topics = readJson('topics.json')
-    const rec = { id, name, description, slug: name, mode, score: 0, count: 0, createdAt: nowIso(), createdBy: createdBy || null, createdByGuest: createdByGuest || null, author }
+    const rec = { id, name, description, slug: null, mode, score: 0, count: 0, createdAt: nowIso(), createdBy: createdBy || null, createdByGuest: createdByGuest || null, author }
     topics.unshift(rec)
     writeJson('topics.json', topics)
     if (createdBy) this.appendUserItem(createdBy, 'topics', id)
@@ -304,7 +327,8 @@ export const repo = {
       return this.getPoint(rec.id)
     }
     const points = readJson('points.json')
-    points.unshift({ ...rec, userId: rec.userId || null, guestId: rec.guestId || null })
+    const now = nowIso()
+    points.unshift({ ...rec, userId: rec.userId || null, guestId: rec.guestId || null, createdAt: now })
     writeJson('points.json', points)
     if (rec.topicId) this.incrementTopicCount(rec.topicId, +1)
     if (rec.userId) this.appendUserItem(rec.userId, 'points', rec.id)
@@ -586,7 +610,19 @@ export const repo = {
         const comments = q('select count(*) as c from comments')
         let reports = 0
         try { reports = q('select count(*) as c from reports') } catch {}
-        return { users, guests, topics, points, comments, reports }
+        // DAU: 今天有 last_seen 的使用者/訪客
+        let dauUsers = 0
+        try { dauUsers = db.prepare("select count(distinct user_id) as c from sessions where date(coalesce(last_seen, created_at)) = date('now','localtime')").get().c } catch {}
+        let dauGuests = 0
+        try { dauGuests = db.prepare("select count(*) as c from guests where date(last_seen) = date('now','localtime')").get().c } catch {}
+        const dauTotal = (dauUsers || 0) + (dauGuests || 0)
+        // MAU: 近 30 天（含今日）有 last_seen 的獨立使用者/訪客
+        let mauUsers = 0
+        try { mauUsers = db.prepare("select count(distinct user_id) as c from sessions where date(coalesce(last_seen, created_at)) >= date('now','-29 days','localtime')").get().c } catch {}
+        let mauGuests = 0
+        try { mauGuests = db.prepare("select count(*) as c from guests where date(last_seen) >= date('now','-29 days','localtime')").get().c } catch {}
+        const mauTotal = (mauUsers || 0) + (mauGuests || 0)
+        return { users, guests, topics, points, comments, reports, dauUsers, dauGuests, dauTotal, mauUsers, mauGuests, mauTotal }
       } catch { return { users: 0, topics: 0, points: 0, comments: 0, reports: 0 } }
     }
     const users = readJson('users.json').length
@@ -596,7 +632,19 @@ export const repo = {
     const comments = readJson('comments.json').length
     let reports = 0
     try { reports = readJson('reports.json').length } catch {}
-    return { users, guests, topics, points, comments, reports }
+    // JSON fallback：以今天的 last_seen 計算
+    const today = new Date().toISOString().slice(0,10)
+    const sessions = readJson('sessions.json')
+    const dauUsers = new Set(sessions.filter(s => (s.last_seen||s.createdAt||'').slice(0,10)===today).map(s=>s.userId)).size
+    let dauGuests = 0; try { dauGuests = readJson('guests.json').filter(g => (g.last_seen||'').slice(0,10)===today).length } catch {}
+    const dauTotal = (dauUsers||0) + (dauGuests||0)
+    // MAU: 近 30 天（含今日）
+    const since = new Date(); since.setDate(since.getDate() - 29)
+    const sinceIso = since.toISOString().slice(0,10)
+    const mauUsers = new Set(sessions.filter(s => (s.last_seen||s.createdAt||'').slice(0,10) >= sinceIso).map(s=>s.userId)).size
+    let mauGuests = 0; try { mauGuests = readJson('guests.json').filter(g => (g.last_seen||'').slice(0,10) >= sinceIso).length } catch {}
+    const mauTotal = (mauUsers||0) + (mauGuests||0)
+    return { users, guests, topics, points, comments, reports, dauUsers, dauGuests, dauTotal, mauUsers, mauGuests, mauTotal }
   },
   createLocalUser({ email, password_hash, name }) {
     const now = nowIso()
@@ -655,14 +703,22 @@ export const repo = {
     const now = new Date()
     const expires = new Date(now.getTime() + ttlDays*24*60*60*1000)
     if (db) {
-      db.prepare('insert into sessions (id,user_id,token,created_at,expires_at) values (?,?,?,?,?)')
-        .run(`s-${Date.now()}`, userId, token, nowIso(), expires.toISOString())
+      try { db.prepare('alter table sessions add column last_seen text').run() } catch {}
+      db.prepare('insert into sessions (id,user_id,token,created_at,expires_at,last_seen) values (?,?,?,?,?,?)')
+        .run(`s-${Date.now()}`, userId, token, nowIso(), expires.toISOString(), nowIso())
       return { token, expiresAt: expires.toISOString() }
     }
     const sessions = readJson('sessions.json')
-    sessions.push({ id: `s-${Date.now()}`, userId, token, createdAt: now.toISOString(), expiresAt: expires.toISOString() })
+    sessions.push({ id: `s-${Date.now()}`, userId, token, createdAt: now.toISOString(), expiresAt: expires.toISOString(), last_seen: now.toISOString() })
     writeJson('sessions.json', sessions)
     return { token, expiresAt: expires.toISOString() }
+  },
+  updateSessionLastSeen(token) {
+    const now = nowIso()
+    if (db) { try { db.prepare('update sessions set last_seen=? where token=?').run(now, token) } catch {} ; return }
+    const sessions = readJson('sessions.json')
+    const idx = sessions.findIndex(s=>s.token===token)
+    if (idx!==-1) { sessions[idx].last_seen = now; writeJson('sessions.json', sessions) }
   },
   removeSession(token) {
     if (db) {
@@ -677,6 +733,45 @@ export const repo = {
     if (db) { db.prepare('delete from sessions where user_id=?').run(userId); return }
     const sessions = readJson('sessions.json').filter((s)=> s.userId!==userId)
     writeJson('sessions.json', sessions)
+  },
+  // 近 28 天每日新增觀點數 { date: 'YYYY-MM-DD', count: number } 陣列（含零填補）
+  getPointsDailyCounts28d() {
+    const days = 28
+    const dateKey = (d) => {
+      const y = d.getFullYear()
+      const m = String(d.getMonth() + 1).padStart(2, '0')
+      const dd = String(d.getDate()).padStart(2, '0')
+      return `${y}-${m}-${dd}`
+    }
+    const today = new Date()
+    const start = new Date(today.getFullYear(), today.getMonth(), today.getDate())
+    start.setDate(start.getDate() - (days - 1))
+    const map = new Map()
+    if (db) {
+      try {
+        // 使用 localtime，並限定近 28 天
+        const rows = db.prepare("select date(created_at,'localtime') as d, count(*) as c from points where date(created_at,'localtime') >= date('now','-27 days','localtime') group by date(created_at,'localtime')").all()
+        rows.forEach(r => { map.set(String(r.d), Number(r.c)||0) })
+      } catch {}
+    } else {
+      // JSON fallback：聚合 createdAt 到 YYYY-MM-DD
+      const points = readJson('points.json')
+      for (const p of points) {
+        const d = new Date(p.createdAt || p.created_at || 0)
+        if (isNaN(d.getTime())) continue
+        const key = dateKey(d)
+        map.set(key, (map.get(key) || 0) + 1)
+      }
+    }
+    // 填補 28 天序列
+    const out = []
+    for (let i = 0; i < days; i++) {
+      const d = new Date(start.getTime())
+      d.setDate(start.getDate() + i)
+      const key = dateKey(d)
+      out.push({ date: key, count: map.get(key) || 0 })
+    }
+    return out
   }
 }
 

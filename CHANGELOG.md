@@ -19,6 +19,28 @@
 - 前端：登入彈窗（max-width 300px、內容置中）；側欄登入改為打開彈窗，再由彈窗觸發 Google 登入。
 - 後端：修正投票 delta 聚合，正確處理 ±2；Topic/Point/Comment 投票統一用數值 delta。
 
+### 2025-11-08
+- 管理後台統計
+  - 新增 DAU/MAU 統計欄位（/api/admin/stats 回傳 dauUsers/dauGuests/dauTotal、mauUsers/mauGuests/mauTotal）。
+  - 新增 28 天觀點新增折線圖 API：`GET /api/admin/stats/points-28d`。
+  - 前端使用 `@mui/x-charts` 在資訊主頁顯示折線圖；Y 軸從 0 起、加入內邊距，避免 0 貼太高。
+  - 調整卡片排列：用戶數/訪客數/舉報數同列；卡片在大螢幕統一寬度（120px）、小螢幕滿版寬度；整體靠左排列。
+- 設計與使用性
+  - 主題數/觀點數/評論數卡片取消點擊導向。
+  - Avatar/Popover 可存取性修正建議（恢復焦點、slotProps 設定方式）。
+- Slug 全面移除
+  - 後端移除 `GET /api/topics/:slug`；`repo.getTopic` 只接受 id。
+  - `createTopic` 不再寫入 slug；新增 SQLite 遷移腳本：`server/scripts/drop-topics-slug.js`。
+  - 匯入腳本 `migrate-from-json.js` 同步移除 slug 欄位；文件更新。
+  - 前端 TopicDetail 僅使用 id 讀取，移除 slug 回退/轉址。
+- 種子與診斷
+  - 新增 SQLite 種子：`server/scripts/seed-from-prod.js`（從正式站匯入 topics/points）。
+  - 新增 JSON 種子：`server/scripts/seed-json-from-prod.js`（fallback 模式快速補資料）。
+  - 新增診斷端點：`GET /api/_diag` 回傳 storage 與筆數（sqlite/json），協助排查。
+- Loading 體驗
+  - 新增骨架元件：`src/components/Skeletons.tsx`（TopicCardSkeleton/PointCardSkeleton）。
+  - 主題箱/主題詳頁載入時顯示 Skeleton，避免畫面跳動與空白。
+
 ## 2025-11-06
 - Hack → Point 命名清理（程式與 UI）。
 - 新增 AGENTS.md 與 ARCHITECTURE.md（上手指引與架構概覽）。

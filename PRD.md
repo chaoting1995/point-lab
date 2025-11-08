@@ -87,13 +87,12 @@
 ## 待確認（Open Questions）
 - Hack→Point 全面改名的時程（已開始，剩餘檔名與型別清理）
 - 是否恢復無限捲動（分頁載入）
-- 是否保留 slug 相容或加入 301 轉址
 
 ## 後續計畫（Next Steps）
 1. 全面 Hack→Point 檔案/型別/樣式命名一致化
 2. 統一 usePagedList，恢復穩定的無限捲動（主題/觀點通用）
 3. 列表操作的錯誤提示與撤銷（Undo）
-4. 如需只保留 id 方案：先維持後端 id/slug 相容，前端只產生 id 連結，觀察後再移除相容或加 301 轉址
+（已決策）全站只保留 id，slug 不再支援；如需 SEO 固定連結，未來改用 ID-based 永久鏈結策略。
 
 ## 技術債 / TODO（資料層）
 - 目前資料庫使用 SQLite（better-sqlite3）或 JSON fallback（server/data/*.json）；已移除 hacks.json，相容匯入改用 points.json
@@ -141,6 +140,15 @@
   - 投票三態切換（含負數）：未投→讚、未投→倒讚、讚↔倒讚、取消；localStorage 狀態保留。
 - 主題/觀點卡：投票三態與 i18n 顯示（8 則評論 | 報告 | 分享）。
 - 裝置：桌面 Dialog 與行動 Drawer 外觀、捲動、關閉（Esc / 點 backdrop）。
+
+## TODO（技術）
+- 本地 SQLite 載入問題：開發環境 better-sqlite3 載入失敗導致後端落入 JSON fallback；短期以 `server/scripts/seed-json-from-prod.js` 補資料，後續需修復以與正式站一致。
+  - 臨時方案：`node server/scripts/seed-json-from-prod.js` 從正式站同步 topics/points 至 `server/data/*.json`。
+  - 修復步驟（預計）：
+    1) 觀察啟動日誌（已加入）：`[repo] storage=sqlite|json`。
+    2) `npm rebuild better-sqlite3 --unsafe-perm` 或重新安裝；確認 Node/架構一致。
+    3) 以 `POINTLAB_DB_PATH=server/pointlab.db node server/index.js` 驗證。
+    4) 成功後移除 JSON fallback 種子依賴，確保本地/正式站一致。
 
 ## 部署與回滾
 - 部署順序：先後端（Fly）→ 前端（Pages），避免前端呼叫尚未上線之 API 造成 404。

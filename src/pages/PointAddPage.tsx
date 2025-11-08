@@ -10,7 +10,7 @@ import Snackbar from '@mui/material/Snackbar'
 import PageHeader from '../components/PageHeader'
 import TopicCard from '../components/TopicCard'
 import type { Topic } from '../data/topics'
-import { getJson, type ItemResponse, type ListResponse, withBase } from '../api/client'
+import { getJson, type ItemResponse, withBase } from '../api/client'
 import useAuth from '../auth/AuthContext'
 import FormControlLabel from '@mui/material/FormControlLabel'
 import Switch from '@mui/material/Switch'
@@ -40,15 +40,9 @@ export default function PointAddPage() {
     async function run() {
       if (!topicId) return
       try {
-        // 優先以 id 取資料，失敗時回退到列表搜尋（支援舊 slug）
         let t: Topic | null = null
-        try {
-          const resp = await getJson<ItemResponse<Topic>>(`/api/topics/id/${topicId}`)
-          t = resp.data
-        } catch {
-          const list = await getJson<ListResponse<Topic>>('/api/topics')
-          t = (list.items || []).find((x) => x.id === topicId || x.slug === topicId) || null
-        }
+        const resp = await getJson<ItemResponse<Topic>>(`/api/topics/id/${topicId}`)
+        t = resp.data
         if (!aborted) setTopic(t)
       } catch {
         if (!aborted) setTopic(null)

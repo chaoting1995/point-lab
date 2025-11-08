@@ -9,6 +9,7 @@ import { useEffect, useRef, useState } from 'react'
 import { Plus } from 'phosphor-react'
 import PrimaryCtaButton from '../components/PrimaryCtaButton'
 import TopicCard from '../components/TopicCard'
+import { TopicCardSkeleton } from '../components/Skeletons'
 import SortTabs from '../components/SortTabs'
 import type { SortKey } from '../hooks/useSortTabs'
 import PageHeader from '../components/PageHeader'
@@ -83,9 +84,15 @@ export default function TopicsPage() {
             align="center"
           />
           <SortTabs value={sort} onChange={handleSortChange} />
-          {loading && <p className="text-slate-500">{t('common.loading')}</p>}
+          {loading && (
+            <Box sx={{ mt: 1.5, display: 'flex', flexDirection: 'column', gap: 2 }}>
+              {Array.from({ length: 6 }).map((_, i) => (
+                <TopicCardSkeleton key={i} />
+              ))}
+            </Box>
+          )}
           {error && <p className="text-rose-500">{error}</p>}
-          {!error && (
+          {!error && !loading && (
             <Box sx={{ mt: 1.5, display: 'flex', flexDirection: 'column', gap: 2 }}>
               {items.map((t) => (
                 <TopicCard
@@ -95,7 +102,6 @@ export default function TopicsPage() {
                 />
               ))}
               {hasMore && <div ref={sentinelRef} />}
-              {loading && <p className="text-center text-slate-500">{t('common.loading')}</p>}
               {!hasMore && !loading && items.length > 0 && (
                 <>
                   <p className="text-center text-slate-400" style={{ fontSize: 12 }}>{t('common.allLoaded')}</p>

@@ -24,6 +24,9 @@ const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
 const DATA_DIR = path.join(__dirname, 'data')
 
+// Throttle map for updating session last_seen
+const lastSeenThrottle = new Map()
+
 function readJson(file, fallback = []) {
   try {
     const p = path.join(DATA_DIR, file)
@@ -40,19 +43,20 @@ function writeJson(file, data) {
   fs.writeFileSync(p, JSON.stringify(data, null, 2), 'utf-8')
 }
 
-function slugify(input = '') {
-  const basic = String(input)
-    .trim()
-    .toLowerCase()
-    .replace(/\s+/g, '-')
-    .replace(/[^a-z0-9\-\u4e00-\u9fa5]/g, '-')
-    .replace(/-+/g, '-')
-    .replace(/^-|-$/g, '')
-  return basic || `topic-${Date.now()}`
-}
+// slug 已移除，不再需要 slugify
 
 app.get('/api/health', (req, res) => {
   res.json({ ok: true, ts: Date.now() })
+})
+
+// Diagnostics: show storage backend and counts
+app.get('/api/_diag', (req, res) => {
+  try {
+    const info = typeof repo.diag === 'function' ? repo.diag() : null
+    res.json({ data: info })
+  } catch {
+    res.status(500).json({ error: 'DIAG_FAILED' })
+  }
 })
 
 // Cookie helpers
@@ -213,7 +217,7 @@ app.get('/api/topics', (req, res) => {
   }
 })
 
-// by id (preferred)
+// by id
 app.get('/api/topics/id/:id', (req, res) => {
   try {
     const topic = repo.getTopic(req.params.id)
@@ -226,18 +230,7 @@ app.get('/api/topics/id/:id', (req, res) => {
   }
 })
 
-// backward compat by slug
-app.get('/api/topics/:slug', (req, res) => {
-  try {
-    const topic = repo.getTopic(req.params.slug)
-    if (!topic) return res.status(404).json({ error: 'NOT_FOUND' })
-    const createdAt = topic.createdAt || topic.created_at || new Date().toISOString()
-    const createdBy = topic.created_by || topic.createdBy
-    res.json({ data: { ...topic, createdAt, ...(createdBy ? { createdBy } : {}) } })
-  } catch (e) {
-    res.status(500).json({ error: 'READ_TOPIC_FAILED' })
-  }
-})
+// slug 相容已移除：前端一律以 id 使用 API 與路由
 
 app.post('/api/topics', (req, res) => {
   try {
@@ -523,6 +516,15 @@ app.get('/api/me', (req, res) => {
     if (!token) return res.status(401).json({ error: 'UNAUTHORIZED' })
     const u = repo.getUserBySession(token)
     if (!u) return res.status(401).json({ error: 'UNAUTHORIZED' })
+    // Update session last_seen with a simple 5-min throttle per token
+    try {
+      const now = Date.now()
+      const last = lastSeenThrottle.get(token) || 0
+      if (now - last > 5 * 60 * 1000) {
+        repo.updateSessionLastSeen(token)
+        lastSeenThrottle.set(token, now)
+      }
+    } catch {}
     const isSuper = (u.id === 'u-1762500221827') || (u.email === 'chaoting666@gmail.com')
     const role = isSuper ? 'superadmin' : (u.role || 'user')
     res.json({ data: { id: u.id, email: u.email, name: u.name, picture: u.picture, role } })
@@ -653,6 +655,20 @@ app.get('/api/admin/stats', (req, res) => {
     const data = repo.getStats()
     res.json({ data })
   } catch { res.status(500).json({ error: 'READ_STATS_FAILED' }) }
+})
+
+// Admin: points daily counts (28d)
+app.get('/api/admin/stats/points-28d', (req, res) => {
+  const cookieMap = parseCookies(req)
+  const token = cookieMap['pl_session'] || cookieMap['pl_session_dev']
+  const u = token ? repo.getUserBySession(token) : null
+  const isSuper = u && ((u.id === 'u-1762500221827') || (u.email === 'chaoting666@gmail.com'))
+  const role = u ? (isSuper ? 'superadmin' : (u.role || 'user')) : 'user'
+  if (role !== 'admin' && role !== 'superadmin') return res.status(403).json({ error: 'FORBIDDEN' })
+  try {
+    const series = repo.getPointsDailyCounts28d()
+    res.json({ data: series })
+  } catch { res.status(500).json({ error: 'READ_POINTS_DAILY_FAILED' }) }
 })
 
 // Admin: guests list

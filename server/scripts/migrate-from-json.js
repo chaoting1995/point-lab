@@ -25,7 +25,6 @@ function ensureSchema(db) {
       id text primary key,
       name text not null,
       description text,
-      slug text,
       mode text default 'open',
       score integer default 0,
       count integer default 0,
@@ -58,12 +57,11 @@ function main() {
   const topics = readJson('topics.json', [])
   const points = readJson('points.json', [])
 
-  const insertTopic = db.prepare(`insert into topics (id,name,description,slug,mode,score,count,created_at)
-    values (@id,@name,@description,@slug,@mode,@score,@count,@created_at)
+  const insertTopic = db.prepare(`insert into topics (id,name,description,mode,score,count,created_at)
+    values (@id,@name,@description,@mode,@score,@count,@created_at)
     on conflict(id) do update set
       name=excluded.name,
       description=excluded.description,
-      slug=excluded.slug,
       mode=excluded.mode,
       score=excluded.score,
       count=excluded.count,
@@ -91,7 +89,6 @@ function main() {
         id: t.id,
         name: t.name,
         description: t.description ?? null,
-        slug: t.slug ?? null,
         mode: t.mode === 'duel' ? 'duel' : 'open',
         score: typeof t.score === 'number' ? t.score : 0,
         count: typeof t.count === 'number' ? t.count : 0,
@@ -120,7 +117,6 @@ function main() {
           id: row.topic_id,
           name: 'Imported Topic',
           description: null,
-          slug: null,
           mode: 'open',
           score: 0,
           count: 0,

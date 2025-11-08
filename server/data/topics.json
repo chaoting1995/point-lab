@@ -2,84 +2,101 @@
   {
     "id": "t-1762403381642",
     "name": "第一屆「讓你被打動到的文字」大賽，正式開始！",
-    "slug": "第一屆-讓你被打動到的文字-大賽-正式開始",
-    "count": 6,
+    "description": null,
+    "slug": null,
+    "mode": "open",
     "score": 0,
-    "createdAt": "2025-11-06T04:29:41.642Z",
-    "mode": "open"
+    "count": 7,
+    "createdAt": "2025-11-06T04:29:41.642Z"
   },
   {
     "id": "t-1762336108115",
     "name": "網路時代的眾生喧譁，是公民社會的福音/災厄",
-    "slug": "網路時代的眾生喧囂-是公民社會的福音-災厄",
-    "count": 1,
+    "description": null,
+    "slug": null,
+    "mode": "duel",
     "score": 2,
-    "createdAt": "2025-11-05T09:48:28.115Z",
-    "mode": "duel"
+    "count": 1,
+    "createdAt": "2025-11-05T09:48:28.115Z"
   },
   {
     "id": "t-1762334541065",
     "name": "慾望是不是自由的枷鎖",
-    "slug": "慾望是不是自由的枷鎖",
-    "count": 8,
+    "description": null,
+    "slug": null,
+    "mode": "duel",
     "score": 2,
-    "createdAt": "2025-11-05T09:22:21.065Z",
-    "mode": "duel"
+    "count": 8,
+    "createdAt": "2025-11-05T09:22:21.065Z"
   },
   {
     "id": "t-1762327772928",
     "name": "搭乘時光機到十年之後發現和現在的愛人沒有走到最後， 回來之後該/不該繼續這段愛情",
-    "slug": "搭乘時光機到十年之後發現和現在的愛人沒有走到最後-回來之後該-不該繼續這段愛情",
-    "count": 8,
+    "description": null,
+    "slug": null,
+    "mode": "duel",
     "score": 3,
-    "createdAt": "2025-11-05T07:29:32.928Z",
-    "mode": "duel"
+    "count": 8,
+    "createdAt": "2025-11-05T07:29:32.928Z"
   },
   {
     "id": "t-1762285180637",
     "name": "吃優葛，要不要舔蓋子？",
     "description": "耐人尋味的生活小難題。\n正方立場：豈能暴殄天物，當然要爆舔一波！\n反方立場：當有一天我財富自由，我不會暗示的太明顯。\n\n到底是正方還是反方，真的好令人猶豫！\n快來寫下你的觀點！",
-    "slug": "吃優葛-要不要舔蓋子",
-    "count": 1,
+    "slug": null,
+    "mode": "duel",
     "score": 0,
-    "createdAt": "2025-11-04T19:39:40.638Z",
-    "mode": "duel"
+    "count": 3,
+    "createdAt": "2025-11-04T19:39:40.638Z"
   },
   {
     "id": "t-1762284137275",
     "name": "自由/安全",
     "description": "自由 & 安全，誰更重要？",
-    "slug": "自由-安全",
-    "count": 1,
+    "slug": null,
+    "mode": "duel",
     "score": 0,
-    "createdAt": "2025-11-04T19:22:17.275Z",
-    "mode": "duel"
+    "count": 1,
+    "createdAt": "2025-11-04T19:22:17.275Z"
+  },
+  {
+    "id": "t-deep-work",
+    "name": "Imported Topic",
+    "description": null,
+    "slug": null,
+    "mode": "open",
+    "score": 0,
+    "count": 1,
+    "createdAt": "2025-11-04T16:46:46.141Z"
   },
   {
     "id": "t-1762274062479",
     "name": "2025年觀點排行榜",
     "description": "你2025年聽到過最牛逼的觀點是什麼？",
-    "slug": "2025年觀點排行榜",
-    "count": 0,
+    "slug": null,
+    "mode": "open",
     "score": 15,
+    "count": 1,
     "createdAt": "2025-11-04T16:34:22.479Z"
-  },
-  {
-    "id": "t-1762259696407",
-    "name": "效率",
-    "slug": "效率",
-    "count": 0,
-    "score": 2,
-    "createdAt": "2025-11-04T12:34:56.407Z"
   },
   {
     "id": "t-energy",
     "name": "能量管理！",
-    "slug": "energy",
     "description": "依能量安排工作節奏",
-    "count": 11,
-    "tag": "#能量管理",
+    "slug": null,
+    "mode": "open",
     "score": 0,
+    "count": 11,
     "createdAt": "2025-11-04T14:55:46.227Z"
+  },
+  {
+    "id": "t-1762259696407",
+    "name": "效率",
+    "description": null,
+    "slug": null,
+    "mode": "open",
+    "score": 2,
+    "count": 0,
+    "createdAt": "2025-11-04T12:34:56.407Z"
   }
 ]

@@ -23,9 +23,10 @@
 
 ## API 速覽（穩定介面）
 - 健診：`GET /api/health`
+- 診斷（開發）：`GET /api/_diag` → `{ sqlite, dbPath, topicsDb, pointsDb, topicsJson, pointsJson }`
 - Topics：
   - `GET /api/topics?page&size&sort=new|hot|old`
-  - `GET /api/topics/id/:id`
+  - `GET /api/topics/id/:id`（僅支援 id；slug 已移除）
   - `POST /api/topics`（name, description?, mode=open|duel；若用戶已登入，後端會記錄 created_by=userId）
   - `PATCH /api/topics/:id`（name/description/mode）
   - `PATCH|POST /api/topics/:id/vote`（Body: { delta: 1|-1 }）
@@ -41,17 +42,24 @@
     - `GET /api/points/:id/comments?sort=old|new|hot&page&size[&parent=<cid>]`（回傳 childCount 供一級顯示）
     - `POST /api/points/:id/comments`（content, parentId?, authorName?, authorType?；若用戶已登入，後端記錄 userId，authorType 覆寫為 user）
     - `PATCH /api/comments/:id/vote`（Body: { delta: 1|-1|±2 }，允許為負數）
-- 備註：舊路由 `/api/hacks` 已移除。
+- 備註：舊路由 `/api/hacks` 已移除。舊 `GET /api/topics/:slug` 亦已移除，前後端全面改用 `id`。
 
 ## 資料層策略
 - 優先使用 SQLite（`server/pointlab.db`，better-sqlite3）。不存在時自動退回 JSON 檔（`server/data/*.json`）。
 - 一次性匯入：`npm run migrate:json` 將 `topics.json / points.json` 匯入 SQLite。
+- 移除欄位（SQLite）：`POINTLAB_DB_PATH=/path/to/pointlab.db npm run migrate:drop-slug`（移除 `topics.slug`）。
+- 種子資料：
+  - 從正式站匯入到 SQLite：`POINTLAB_DB_PATH=server/pointlab.db npm run seed:from-prod`
+  - 快速補 JSON（fallback 用）：`node server/scripts/seed-json-from-prod.js`
 
 ## 主要目錄與檔案
 - 後端：
   - `server/index.js` – Express API 與 SPA 靜態服務（若存在 `dist/`）。
   - `server/db/repo.js` – 資料庫/JSON 雙實作 repository。
-  - `server/scripts/migrate-from-json.js` – 匯入腳本。
+  - `server/scripts/migrate-from-json.js` – 匯入腳本（不再含 slug）。
+  - `server/scripts/drop-topics-slug.js` – SQLite 遷移：移除 `topics.slug`。
+  - `server/scripts/seed-from-prod.js` – 從正式站 API 匯入到本機 SQLite。
+  - `server/scripts/seed-json-from-prod.js` – 從正式站 API 匯入到 `server/data/*.json`（fallback）。
 - 前端：
   - `src/pages/*` – 頁面（Topics/TopicDetail/PointAdd...）。
   - `src/components/*` – UI 元件（Header/TopicCard/PointCard/SortTabs...）。
@@ -72,6 +80,7 @@
 - Vite 代理：開發時 `/api` 代理到 8787，部署分離需設 `VITE_API_BASE`。
 - SQLite/JSON 切換：better-sqlite3 缺失時自動回退；注意 JSON 檔案寫入的原子性（短期內使用者風險接受）。
 - 前端命名已統一為 Point，避免與舊 Hack 命名混用。
+  - 若本機落入 JSON fallback，可用 `GET /api/_diag` 檢查；短期可用 `seed-json-from-prod.js` 快速補資料。
 
 ## TODO / Roadmap（簡版）
 - JSON 模式增強：原子寫入（tmp+rename）、簡易鎖、Schema 驗證。

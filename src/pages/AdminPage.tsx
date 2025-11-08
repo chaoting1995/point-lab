@@ -16,6 +16,9 @@ import useAuth from '../auth/AuthContext'
 import { withBase } from '../api/client'
 import useLanguage from '../i18n/useLanguage'
 import GoogleLoginButton from '../components/GoogleLoginButton'
+// 圖表：近 28 天新增觀點數（使用 MUI X Charts）
+// 安裝套件：@mui/x-charts
+import { LineChart } from '@mui/x-charts'
 import Divider from '@mui/material/Divider'
 import TableContainer from '@mui/material/TableContainer'
 import Table from '@mui/material/Table'
@@ -398,25 +401,53 @@ export default function AdminPage() {
 }
 
 function HomeStats({ stats, onLoad, onNavigate }: { stats: any, onLoad: (s:any)=>void, onNavigate: (path:string)=>void }) {
+  const [points28, setPoints28] = useState<Array<{ date: string; count: number }>>([])
   useEffect(() => {
     (async () => {
       try { const r = await fetch(withBase('/api/admin/stats'), { credentials: 'include' }); if (r.ok) { const d = await r.json(); onLoad(d.data) } } catch {}
     })()
+    ;(async () => {
+      try { const r = await fetch(withBase('/api/admin/stats/points-28d'), { credentials: 'include' }); if (r.ok) { const d = await r.json(); setPoints28(d.data||[]) } } catch {}
+    })()
   }, [])
-  const s = stats || { users: 0, guests: 0, topics: 0, points: 0, comments: 0, reports: 0 }
+  const s = stats || { users: 0, guests: 0, topics: 0, points: 0, comments: 0, reports: 0, dauUsers: 0, dauGuests: 0, dauTotal: 0, mauUsers: 0, mauGuests: 0, mauTotal: 0 }
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-      <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 2 }}>
+      <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap', justifyContent: 'flex-start' }}>
         <StatCard label="用戶數" value={s.users} onClick={()=> onNavigate('/admin/users')} />
         <StatCard label="訪客數" value={s.guests||0} onClick={()=> onNavigate('/admin/guests')} />
-      </Box>
-      <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 2 }}>
-        <StatCard label="主題數" value={s.topics} onClick={()=> onNavigate('/topics')} />
-        <StatCard label="觀點數" value={s.points} onClick={()=> onNavigate('/topics')} />
-        <StatCard label="評論數" value={s.comments} onClick={()=> onNavigate('/topics')} />
-      </Box>
-      <Box sx={{ display: 'grid', gridTemplateColumns: '1fr', gap: 2 }}>
         <StatCard label="舉報數" value={s.reports} onClick={()=> onNavigate('/admin/reports')} />
+      </Box>
+      <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap', justifyContent: 'flex-start' }}>
+        <StatCard label="主題數" value={s.topics} />
+        <StatCard label="觀點數" value={s.points} />
+        <StatCard label="評論數" value={s.comments} />
+      </Box>
+      <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap', justifyContent: 'flex-start' }}>
+        <StatCard label="DAU（用戶）" value={s.dauUsers||0} />
+        <StatCard label="DAU（訪客）" value={s.dauGuests||0} />
+        <StatCard label="DAU（總計）" value={s.dauTotal||0} />
+      </Box>
+      <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap', justifyContent: 'flex-start' }}>
+        <StatCard label="MAU（用戶）" value={s.mauUsers||0} />
+        <StatCard label="MAU（訪客）" value={s.mauGuests||0} />
+        <StatCard label="MAU（總計）" value={s.mauTotal||0} />
+      </Box>
+      <Box sx={{ mt: 2, border: '1px solid', borderColor: 'divider', borderRadius: '14px', p: 2, bgcolor: 'background.paper' }}>
+        <Typography sx={{ fontWeight: 800, fontSize: 20, mb: 1 }}>近 28 天新增觀點數</Typography>
+        <div style={{ width: '100%', overflowX: 'auto' }}>
+          <div style={{ minWidth: 640 }}>
+            {(() => { const maxY = Math.max(5, ...(points28.map(p=>p.count||0))); return (
+            <LineChart
+              xAxis={[{ scaleType: 'point', data: points28.map(p=>p.date.slice(5)), tickMinStep: 1 }]}
+              yAxis={[{ min: 0, max: maxY }]}
+              series={[{ data: points28.map(p=>p.count), color: 'var(--mui-palette-primary-main, #4f46e5)' }]}
+              height={260}
+              margin={{ top: 10, bottom: 24, left: 30, right: 10 }}
+            />
+            ) })()}
+          </div>
+        </div>
       </Box>
     </Box>
   )
@@ -424,7 +455,7 @@ function HomeStats({ stats, onLoad, onNavigate }: { stats: any, onLoad: (s:any)=
 
 function StatCard({ label, value, onClick }: { label: string; value: number; onClick?: ()=>void }) {
   return (
-    <Box onClick={onClick} sx={{ border: '1px solid', borderColor: 'divider', borderRadius: '14px', p: 2, textAlign: 'center', bgcolor: 'background.paper', boxShadow: '0 1px 4px rgba(15,35,95,0.06)', cursor: onClick ? 'pointer' : 'default', '&:hover': onClick ? { boxShadow: '0 4px 14px rgba(15,35,95,0.12)' } : undefined, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 0.5 }}>
+    <Box onClick={onClick} sx={{ width: { xs: 'auto', lg: 120 }, border: '1px solid', borderColor: 'divider', borderRadius: '14px', p: 2, textAlign: 'center', bgcolor: 'background.paper', boxShadow: '0 1px 4px rgba(15,35,95,0.06)', cursor: onClick ? 'pointer' : 'default', '&:hover': onClick ? { boxShadow: '0 4px 14px rgba(15,35,95,0.12)' } : undefined, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 0.5 }}>
       <Typography sx={{ fontWeight: 900, fontSize: 28, color: 'primary.main', lineHeight: 1 }}>{value}</Typography>
       <Typography variant="body2" color="text.secondary" sx={{ lineHeight: 1.2 }}>{label}</Typography>
     </Box>

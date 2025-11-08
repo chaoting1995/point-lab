@@ -39,7 +39,7 @@
 ## 資料庫與 Schema
 - 引擎：better-sqlite3（WAL 模式），檔案 `server/pointlab.db`
 - Schema（簡述）：
-  - `topics(id text pk, name, description, slug, mode 'open'|'duel', score int, count int, created_at text)`
+  - `topics(id text pk, name, description, mode 'open'|'duel', score int, count int, created_at text)`
   - `points(id text pk, topic_id fk, description, author_name, author_type, position, upvotes, comments, shares, created_at text)`
 - 索引：topics(created_at/score)、points(topic_id/position/created_at)
 - 匯入：`npm run migrate:json` 將 `server/data/topics.json` 與 `points.json` 匯入 DB。

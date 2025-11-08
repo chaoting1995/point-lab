@@ -49,7 +49,7 @@ PointLab 是參考 50hacks.co 打造的觀點實驗網站，使用 React + TypeS
 Topic（主題）
 - 欄位：`id`、`name`、`description?`、`createdAt`、`score`、`count`、`mode`（`open`｜`duel`）
 - 列表：`GET /api/topics?page=1&size=30&sort=new|hot|old`
-- 讀取：`GET /api/topics/id/:id`（可接受 id 或舊 slug）
+- 讀取：`GET /api/topics/id/:id`（僅支援 id）
 - 建立：`POST /api/topics` 參數：`name`、`description?`、`mode`（預設 `open`）。若用戶已登入，後端會記錄 `created_by=userId`，回傳物件帶 `createdBy`。
 - 投票：`PATCH /api/topics/:id/vote` Body：`{ delta: 1 | -1 }`
 - 刪除：`DELETE /api/topics/:id`
@@ -73,12 +73,13 @@ Comments（評論）
 其他 API
 
 - 公開使用者：`GET /api/users/:id` → `{ id, name, picture, bio }`
-  - 目前後台/管理 API（需 admin/superadmin）：
+- 目前後台/管理 API（需 admin/superadmin）：
     - `GET /api/admin/users?page&size`（用戶列表，含發布數量與讚數彙總；伺服器分頁，回傳 `{ items,total,page,size }`）
     - `PATCH /api/admin/users/:id/role`（變更角色：user|admin|superadmin）
     - `GET /api/admin/reports[?type=topic|point|comment]&page&size`（舉報列表；伺服器分頁，回傳 `{ items,total,page,size }`）
     - `POST /api/reports`（新增舉報：`{ type, targetId, reason? }`）
-    - `GET /api/admin/stats`（總覽統計：users/guests/topics/points/comments/reports）
+    - `GET /api/admin/stats`（總覽統計：users/guests/topics/points/comments/reports；活躍：DAU dauUsers/dauGuests/dauTotal、MAU mauUsers/mauGuests/mauTotal）
+    - `GET /api/admin/stats/points-28d`（近 28 天每日新增觀點數，回傳 `[{ date: 'YYYY-MM-DD', count: number }]`，已補零天）
 
 資料欄位補充
 - 登入狀態下發表的 Topic/Point/Comment 會寫入 `userId`；Topic 另保存 `createdBy`。
@@ -94,13 +95,20 @@ Comments（評論）
   - 超級管理者：三行顯示「尊榮的超級管理者 / {名稱} / 歡迎你！」
   - 管理者：三行顯示「尊榮的網站管理者 / {名稱} / 歡迎你！」
   - 會員：三行顯示「尊榮的會員 / {名稱} / 歡迎你！」
-- Admin 首頁卡片導向：
+- Admin 首頁卡片導向與 DAU：
   - 用戶數 → `/admin/users`
-  - 訪客數 → `/admin/users`（暫共用入口）
+  - 訪客數 → `/admin/guests`
   - 主題數 / 觀點數 / 評論數 → `/topics`
   - 舉報數 → `/admin/reports`
+  - 顯示活躍卡片：
+    - DAU（三張卡）：DAU（用戶）/ DAU（訪客）/ DAU（總計）
+    - MAU（三張卡）：MAU（用戶）/ MAU（訪客）/ MAU（總計）
 - Admin 未授權時顯示「登入卡片」（非彈窗），置中呈現 Google 登入按鈕。
 - /admin/reports 切換按鈕：採用共用按鈕樣式（`btn btn-sm`），選取態加上 `btn-primary`。
+- Loading 體驗優化：
+  - 主題箱（/topics）載入時顯示 Topic 骨架（6 欄位，標題/摘要/資訊列）。
+  - 主題詳頁（/topics/:id）載入時顯示 Point 骨架（4 列，含右側投票區位）。
+  - 檔案：`src/components/Skeletons.tsx`、`src/pages/TopicsPage.tsx`、`src/pages/TopicDetailPage.tsx`。
 
 ## 評論功能（前端互動規格）
 
@@ -126,7 +134,7 @@ Comments（評論）
   - 超長單行自動換行（`word-break: break-word; overflow-wrap: anywhere`）；僅在實際被三行截斷時顯示「查看更多」。
 
 注意事項
-- 前端路由一律使用 `id`；後端仍容許以舊 `slug` 查找（避免舊連結 404）。
+- 前端與後端一律使用 `id`；不再支援 `slug`。
 - 對立（duel）模式：新增觀點頁提供「選擇立場」按鈕組（讚同/其他）；詳頁左右分欄顯示兩邊觀點。
 - 多語系：UI 文案支援 繁/簡/英；使用者輸入內容不自動翻譯。
 
@@ -170,6 +178,57 @@ npm run migrate:json
 - 匯入內容：topics.json → topics、points.json → points（會保留 createdAt/score/count/position 等欄位）
 - 之後即可僅用 SQLite 提供 API；JSON 可保留為備援快照。
 
+### SQLite 遷移：移除 topics.slug 欄位
+
+專案已全面改用 `id`，不再使用 `slug`。若你的 SQLite 既有資料表包含 `slug` 欄位，可執行一次性遷移移除該欄位：
+
+```
+POINTLAB_DB_PATH=/path/to/pointlab.db npm run migrate:drop-slug
+```
+
+在 Fly 機器上可執行：
+
+```
+flyctl ssh console -C 'sh -lc "cd /app && POINTLAB_DB_PATH=/app/data/pointlab.db node server/scripts/drop-topics-slug.js"'
+```
+
+成功訊息會顯示：`[migrate] topics.slug dropped successfully.`
+
+### 從正式站匯入資料到本機（種子）
+
+若本機的 SQLite 沒有資料，可直接從正式站 API 匯入主題與觀點：
+
+```
+POINTLAB_DB_PATH=server/pointlab.db npm run seed:from-prod
+```
+
+預設來源：`https://pointlab-api.fly.dev`。若需自訂來源，提供參數：
+
+```
+POINTLAB_DB_PATH=server/pointlab.db node server/scripts/seed-from-prod.js https://your-api.example.com
+```
+
+執行後本機 `/admin` 的統計與列表會顯示匯入結果。
+
+### JSON fallback 種子（快速補資料）
+
+若開發環境暫時無法載入 SQLite（fallback 到 JSON），可直接把正式站資料寫入 JSON 檔：
+
+```
+node server/scripts/seed-json-from-prod.js
+```
+
+輸出：`server/data/topics.json`、`server/data/points.json`。之後在 JSON 模式下 `/admin` 也能看到正確數據。
+
+### 診斷端點（資料層）
+
+開發時可檢查目前後端使用的儲存層與筆數：
+
+```
+GET /api/_diag
+→ { data: { sqlite: true|false, dbPath, topicsDb, pointsDb, topicsJson, pointsJson } }
+```
+
 ## Google 登入設定（可選，建議開啟）
 
 若要啟用真實的 Google 第三方登入：
@@ -207,4 +266,4 @@ npm run dev:all
 ## 常見問題
 
 - 刪除後列表沒更新？已在列表頁於刪除後自動重抓第 1 頁；若後端未重啟請執行 `npm run dev:all`。
-- 以 slug 進入詳頁 404？後端已支援 id/slug 兼容；請確認後端為最新版本（自動重啟或重跑）。
+- 以 slug 進入詳頁將無法使用，請改用 `/topics/:id`。

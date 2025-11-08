@@ -12,6 +12,7 @@ import SortTabs from '../components/SortTabs'
 import type { SortKey } from '../hooks/useSortTabs'
 import PrimaryCtaButton from '../components/PrimaryCtaButton'
 import { Plus } from 'phosphor-react'
+import { PointCardSkeleton } from '../components/Skeletons'
 
 export default function TopicDetailPage() {
   const { id = '' } = useParams()
@@ -24,6 +25,8 @@ export default function TopicDetailPage() {
   const [sort, setSort] = useState<SortKey>('new')
   // duel filter: null=預設（左右兩欄）、'agree' 或 'others' 單欄篩選
   const [duelFilter, setDuelFilter] = useState<null | 'agree' | 'others'>(null)
+  // 穩定的查詢鍵：優先使用真正的 topicId（路由參數 id）
+  const topicKey = encodeURIComponent(topic?.id || id)
 
   // load topic meta
   useEffect(() => {
@@ -33,14 +36,12 @@ export default function TopicDetailPage() {
         setLoading(true)
         setError(null)
         let topicData: Topic | null = null
-        try {
-          const topicResp = await getJson<ItemResponse<Topic>>(`/api/topics/id/${id}`)
-          topicData = topicResp.data
-        } catch {
-          const list = await getJson<ListResponse<Topic>>('/api/topics?page=1&size=1000')
-          topicData = (list.items || []).find((t) => t.id === id || t.slug === id) || null
+        const topicResp = await getJson<ItemResponse<Topic>>(`/api/topics/id/${id}`)
+        topicData = topicResp.data
+        if (!aborted && topicData) {
+          setTopic(topicData)
+          // 已移除 slug：路由必須是 id，無需再做轉向
         }
-        if (!aborted && topicData) setTopic(topicData)
       } catch (e) {
         if (!aborted) setError(e instanceof Error ? e.message : 'Load failed')
       } finally {
@@ -58,7 +59,7 @@ export default function TopicDetailPage() {
       try {
         setLoading(true)
         setError(null)
-        const resp = await getJson<ListResponse<Point>>(`/api/points?topic=${id}&page=1&size=30&sort=${sort}`)
+        const resp = await getJson<ListResponse<Point>>(`/api/points?topic=${topicKey}&page=1&size=30&sort=${sort}`)
         if (aborted) return
         setList(resp.items || [])
       } catch (e) {
@@ -69,7 +70,7 @@ export default function TopicDetailPage() {
     }
     run()
     return () => { aborted = true }
-  }, [id, sort])
+  }, [topicKey, sort])
   const handleSort = (v: SortKey) => { setSort(v) }
   const toggleDuel = (key: 'agree' | 'others') => {
     setDuelFilter((prev) => (prev === key ? null : key))
@@ -90,7 +91,14 @@ export default function TopicDetailPage() {
           />
 
           <SortTabs value={sort} onChange={handleSort} />
-          {topic?.mode === 'duel' && (
+          {loading && (
+            <Box sx={{ mt: 1.5, display: 'flex', flexDirection: 'column', gap: 2 }}>
+              {Array.from({ length: 4 }).map((_, i) => (
+                <PointCardSkeleton key={i} />
+              ))}
+            </Box>
+          )}
+          {topic?.mode === 'duel' && !loading && (
             <Box sx={{ mt: 0.5, mb: 1, display: 'flex', gap: 2, width: '100%' }}>
               <Box
                 component="button"
@@ -134,9 +142,8 @@ export default function TopicDetailPage() {
               </Box>
             </Box>
           )}
-          {loading && <p className="text-slate-500">{t('common.loading')}</p>}
           {error && <p className="text-rose-500">{t('common.error')}</p>}
-          {list.length > 0 ? (
+          {!loading && list.length > 0 ? (
             <>
               {topic?.mode === 'duel' ? (
                 duelFilter
