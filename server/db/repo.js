@@ -337,6 +337,20 @@ export const repo = {
     if (idx === -1) return false
     topics.splice(idx, 1)
     writeJson('topics.json', topics)
+    const points = readJson('points.json')
+    if (points.length) {
+      const toRemove = points.filter(p => p.topicId === id || p.topic_id === id)
+      if (toRemove.length) {
+        const remainingPoints = points.filter(p => !(p.topicId === id || p.topic_id === id))
+        writeJson('points.json', remainingPoints)
+        const removedPointIds = new Set(toRemove.map(p => p.id))
+        const comments = readJson('comments.json')
+        if (comments.length) {
+          const nextComments = comments.filter(c => !removedPointIds.has(c.pointId) && !removedPointIds.has(c.point_id))
+          if (nextComments.length !== comments.length) writeJson('comments.json', nextComments)
+        }
+      }
+    }
     return true
   },
   listPoints({ topic, user, sort = 'hot', page = 1, size = 20 }) {
@@ -697,29 +711,34 @@ export const repo = {
   },
   getStats() {
     if (db) {
-      try {
-        const q = (sql)=> db.prepare(sql).get().c
-        const users = q('select count(*) as c from users')
-        let guests = 0; try { guests = q('select count(*) as c from guests') } catch {}
-        const topics = q('select count(*) as c from topics')
-        const points = q('select count(*) as c from points')
-        const comments = q('select count(*) as c from comments')
-        let reports = 0
-        try { reports = q('select count(*) as c from reports') } catch {}
-        // DAU: 今天有 last_seen 的使用者/訪客
-        let dauUsers = 0
-        try { dauUsers = db.prepare("select count(distinct user_id) as c from sessions where date(coalesce(last_seen, created_at)) = date('now','localtime')").get().c } catch {}
-        let dauGuests = 0
-        try { dauGuests = db.prepare("select count(*) as c from guests where date(last_seen) = date('now','localtime')").get().c } catch {}
-        const dauTotal = (dauUsers || 0) + (dauGuests || 0)
-        // MAU: 近 30 天（含今日）有 last_seen 的獨立使用者/訪客
-        let mauUsers = 0
-        try { mauUsers = db.prepare("select count(distinct user_id) as c from sessions where date(coalesce(last_seen, created_at)) >= date('now','-29 days','localtime')").get().c } catch {}
-        let mauGuests = 0
-        try { mauGuests = db.prepare("select count(*) as c from guests where date(last_seen) >= date('now','-29 days','localtime')").get().c } catch {}
-        const mauTotal = (mauUsers || 0) + (mauGuests || 0)
-        return { users, guests, topics, points, comments, reports, dauUsers, dauGuests, dauTotal, mauUsers, mauGuests, mauTotal }
-      } catch { return { users: 0, topics: 0, points: 0, comments: 0, reports: 0 } }
+      const count = (sql) => {
+        try {
+          const row = db.prepare(sql).get() || {}
+          const value = row.c ?? row.count ?? 0
+          return Number.isFinite(value) ? Number(value) : 0
+        } catch {
+          return 0
+        }
+      }
+      const users = count('select count(*) as c from users')
+      const guests = count('select count(*) as c from guests')
+      const topics = count('select count(*) as c from topics')
+      const points = count('select count(*) as c from points')
+      const comments = count('select count(*) as c from comments')
+      const reports = count('select count(*) as c from reports')
+      // DAU: 今天有 last_seen 的使用者/訪客
+      let dauUsers = 0
+      try { dauUsers = db.prepare("select count(distinct user_id) as c from sessions where date(coalesce(last_seen, created_at)) = date('now','localtime')").get().c } catch {}
+      let dauGuests = 0
+      try { dauGuests = db.prepare("select count(*) as c from guests where date(last_seen) = date('now','localtime')").get().c } catch {}
+      const dauTotal = (dauUsers || 0) + (dauGuests || 0)
+      // MAU: 近 30 天（含今日）有 last_seen 的獨立使用者/訪客
+      let mauUsers = 0
+      try { mauUsers = db.prepare("select count(distinct user_id) as c from sessions where date(coalesce(last_seen, created_at)) >= date('now','-29 days','localtime')").get().c } catch {}
+      let mauGuests = 0
+      try { mauGuests = db.prepare("select count(*) as c from guests where date(last_seen) >= date('now','-29 days','localtime')").get().c } catch {}
+      const mauTotal = (mauUsers || 0) + (mauGuests || 0)
+      return { users, guests, topics, points, comments, reports, dauUsers, dauGuests, dauTotal, mauUsers, mauGuests, mauTotal }
     }
     const users = readJson('users.json').length
     let guests = 0; try { guests = readJson('guests.json').length } catch {}
