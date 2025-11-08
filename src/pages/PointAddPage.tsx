@@ -233,13 +233,6 @@ export default function PointAddPage() {
               ) : topic ? (
                 <Box sx={{ pointerEvents: 'none' }}>
                   <TopicCard topic={topic} showMeta={false} showVote={false} />
-                  {(topic.count ?? 0) === 0 && (
-                    <Box sx={{ mt: 1.5, px: 1 }}>
-                      <p className="text-slate-600" style={{ fontSize: 14, margin: 0, textAlign: 'center' }}>
-                        {t('topics.add.firstPrompt')}
-                      </p>
-                    </Box>
-                  )}
                 </Box>
               ) : (
                 <Box sx={{ p: 2 }}>
@@ -251,6 +244,11 @@ export default function PointAddPage() {
             <Typography variant="caption" color="text.secondary" sx={{ textAlign: 'center' }}>
               {topic ? '點擊更換主題' : '請先選擇主題'}
             </Typography>
+            {topic && (topic.count ?? 0) === 0 && (
+              <Typography variant="body2" color="text.secondary" sx={{ textAlign: 'center', fontSize: 14, mt: -0.5 }}>
+                {t('topics.add.firstPrompt')}
+              </Typography>
+            )}
             {/* 對立模式：立場選擇（Button Group） */}
             {topic?.mode === 'duel' && (
               <DuelTabs
