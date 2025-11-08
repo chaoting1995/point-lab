@@ -3,29 +3,43 @@
 本文件彙整目前討論的產品方向與變更需求，供開發與後續協作參考。
 
 ## 目標
-- 以 React + TypeScript + Vite + MUI 建置「PointLab」。
-- 功能與 UI 參考 50hacks.co，品牌為「PointLab」。
-- 多語系：繁/簡/英（預設繁體），單一按鈕循環切換；UI 文案在 i18n 範圍，使用者內容不翻譯。
+- 以 React + TypeScript + Vite + MUI 建置「PointLab」，提供蒐集 / 辯論 / 票選 / 沉澱觀點的體驗。
+- 品牌語言：Hero 標題固定為「用 PointLab 匯聚好觀點」，搭配「開源智慧／沉澱觀點」標籤、五行副標、單一 CTA「開始探索」，並在 Hero 下方顯示實時數據（topics/points/visits）。
+- 多語系：繁/簡/英（預設繁體），單一按鈕循環切換；UI 文案全部進 i18n 字典（不再允許 `t('key') || 'fallback'`），使用者內容不翻譯。
 
 ## 範圍（Scope）
-- 主題箱（/topics）：主題列表 + SortTabs（最新/熱門/最早）、TopicCard（讚/倒讚/數量/時間/刪除）
-- 主題詳頁（/topics/:id）：PageHeader、SortTabs、PointCard 列表；對立模式左右分欄（讚同/其他）
-  - 觀點卡片可開啟「評論彈窗」：桌面 Dialog（max-width 576, r=10），行動 Drawer（自下而上）
-  - 評論：一級/二級、排序（最舊/最新/熱門）、分頁（每頁 10 筆）、二級展開/收合、投票
-  - 留言輸入：預設單行，自動增高（最多 6 行）；送出按鈕固定圓形；訪客名稱首次輸入後寫入 localStorage
-  - 長文截斷：預設顯示 3 行，顯示「查看更多/查看更少」
-- 新增主題（/topics/add）：MUI 表單；送出期間顯示貼頂 `LinearProgress`、CTA 內載入指示並鎖定所有欄位；成功後直接導向 `/points/add?topic=<id>`
-- 新增觀點（/points/add?topic=）：MUI 表單；送出期間顯示貼頂 `LinearProgress`、CTA 內載入指示並鎖定所有欄位；對立模式顯示「選擇立場」（讚同/其他）；若主題觀點數為 0 顯示提示文案
-- 側欄選單（Drawer）：首頁、主題箱、指南、登入/登出、語系切換
-- 指南頁（/guide）：固定文案（三張卡）
-- 後端 API（Express + JSON）：topics/points 讀寫、排序、投票、刪除
+- 首頁（`/`）
+  - Hero：標題「用 PointLab 匯聚好觀點」、僅「好觀點」跳色；標題上方顯示「開源智慧」「沉澱觀點」標籤（含 icon、14px）；副標為五行文案（字級 16px）且僅「好觀點清單」加粗。
+  - CTA：僅保留主按鈕「開始探索」，右側 caret-right icon，點擊導向 `/topics`；不再顯示 Product Hunt/Logos。
+  - HeroStats：串 `/api/stats/overview` 顯示 topics / points / visits；使用 `react-countup`、數字 30px，與 Hero / CTA 距離 ≤32px。
+  - 觀點列表：移除卡片背景，顯示「觀點列表」標題 + SortTabs（熱門/最新/最早）；列表採 IntersectionObserver infinite scroll，終點文案「這裡是思維的邊界」，底部 CTA「前往主題箱」。
+- 主題箱（`/topics`）：SortTabs（最新/熱門/最早）、TopicCard（讚/倒讚/數量/時間/刪除）；列表採 infinite scroll + 骨架；底部附 Footer。
+- 主題詳頁（`/topics/:id`）：PageHeader、SortTabs、PointCard 列表；對立模式左右分欄（讚同/其他）。列表為 infinite scroll，卡片可開啟評論面板。
+  - 評論：一級/二級、排序（最舊/最新/熱門）、分頁（每頁 10 筆）、二級展開/收合、投票，維持 3 行截斷/See more/回覆置頂等規格。
+- 新增主題（`/topics/add`）：MUI 表單；送出期間顯示貼頂 `LinearProgress`、CTA 內 `ClipLoader` 並鎖定欄位；成功後直接導向 `/points/add?topic=<id>`。
+- 新增觀點（`/points/add?topic=`）：TopicCard 變成主題選擇器（點擊開 Dialog、可搜尋、選項間有分隔線）；選擇後同步 URL `?topic=<id>`，清除則移除。送出期間顯示貼頂 `LinearProgress`、CTA 內 `ClipLoader`、欄位逐一 disabled，對立模式顯示「選擇立場」。若主題觀點數為 0 顯示提示文案，訪客名稱欄位始終存在並同步 localStorage（不再提供「使用訪客身份」按鈕）。
+- 側欄選單（Drawer）：首頁、主題箱、指南、登入/登出、語系切換。
+- 指南頁（`/guide`）：固定文案（三張卡）。
+- 會員中心（`/users/:id`）：PageHeader 僅保留返回鈕；上方個人資訊、里程碑卡（評論→觀點→主題，點擊導向 /topics、/points/add、/topics/add）、個人觀點列表 infinite scroll（卡片可點回對應主題）、底部 CTA「新增觀點」。訪客視角也顯示里程碑，底部永遠呈現 CTA。
+- Footer：最大寬 576px，段落為「探索（首頁 → 主題箱 → 登入後顯示會員中心）」「參與（新增主題／新增觀點／指南）」「關於（單行敘述）」；須出現在首頁、主題箱、主題詳頁底部。
+- 後端 API（Express + SQLite/JSON fallback）：topics/points/comments/users/reports/statistics CRUD、投票、刪除、`GET /api/stats/overview`、`DELETE /api/admin/users/:id`（刪除後內容標記為無主）。
 
 ## 非範圍（Out of scope）
 - 真實資料庫與大型權限系統（目前為 JSON 檔）。
 - 完全像素級複製原站的所有動畫。
 
 ## UI/互動需求（摘錄）
-- Header 貼齊外框；品牌連回首頁；右側語系切換、CTA（依情境顯示）與漢堡選單
+- Header 貼齊外框；品牌連回首頁（logo/網頁標籤均指向 `public/logo.svg`）；右側語系切換、CTA（依情境顯示）與漢堡選單
+- Hero：標題固定「用 PointLab 匯聚好觀點」，僅「好觀點」跳色；標題上方顯示「開源智慧」「沉澱觀點」兩個 tag（含 icon，14px）。副標 16px、五行文案僅「好觀點清單」加粗，內容依序為：
+  1. 資訊爆炸的時代，內容氾濫
+  2. 真知灼見的好觀點，不該被淹沒！
+  3. PointLab 的目標，是搜集好觀點
+  4. 讓觀點可以被分享、辯論、票選、沉澱
+  5. 最終，我們將獲得一份精心挑選的好觀點清單！
+  CTA 只有「開始探索」＋ caret-right，點到 `/topics`。
+- HeroStats：緊貼 Hero 後顯示 topics/points/visits，資料來源 `GET /api/stats/overview`，使用 `react-countup`，數字 30px、主色，指標之間垂直分隔；僅顯示三個指標。
+- 首頁觀點列表：移除背景卡，改為標題 + SortTabs；卡片整體可點進 `/topics/<topicId>`，底部 CTA 使用 `PrimaryCtaButton` + caret-right，置中；終點文案固定「這裡是思維的邊界」。
+- Infinite scroll：首頁觀點列表、主題箱、主題詳頁、會員中心皆用 IntersectionObserver，在 sentinel 進入視窗後才抓下一頁；需提供骨架/Loading/錯誤提示，終點顯示 `common.noMore`。
 - Google 登入按鈕：點擊時顯示貼頂 `LinearProgress` 並 disable 按鈕；在跳往 Google 前把目前 URL 存入 `sessionStorage.pl:back_after_login`，登入回呼成功後導回原頁
 - PageHeader 標題置中且最大化寬度；subtitle 支援換行；可選返回鈕
 - 主題卡片 TopicCard
@@ -34,8 +48,14 @@
 - 觀點卡片 PointCard
   - 內容最多兩行，溢出顯示「查看更多/查看更少」（只在確實溢出時顯示）
   - 對立模式依 position 著色（綠/紅）與左右分欄；資訊列置底；可刪除
+  - 卡片整張可點進 `/topics/<topicId>`；投票需採樂觀更新（UI 先變、API 防抖 200~300ms）。
 - 新增觀點：對立模式顯示「選擇立場」按鈕組（未選不可發布）
 - 版面：移除雙層左右 padding（比照主題列表），統一圓角 10px
+- 新增觀點 TopicCard：維持原卡片外觀，但點擊時打開 Dialog 列出所有主題（含搜尋、分隔線），選擇後同步 URL `?topic=<id>`；清除選擇也需移除參數。若主題 `count=0` 顯示提示文案，未選主題不得發布。
+- 新增主題/觀點提交：貼頂 `LinearProgress` + CTA 內 `react-spinners/ClipLoader`，欄位逐一 disabled；新增主題成功後直接導向 `/points/add?topic=<id>`。
+- Footer：最大寬 576px，垂直排列；「探索」列出主題箱（登入後加會員中心）、「參與」列出新增主題/新增觀點/指南、「關於」為單行語句。同一 Footer 要出現在首頁、主題箱、主題詳頁底部。
+- 會員中心：PageHeader 只顯示返回鈕；里程碑（評論→觀點→主題）點擊分別導向 `/topics`、`/points/add`、`/topics/add`，即便是訪客視角也顯示；觀點列表 infinite scroll，底部 CTA 永遠顯示「新增觀點」。
+- 後台用戶列表：Tab 必須包含「全部 / 會員 / 訪客」並拉開間距；列表新增「操作」欄位放置刪除按鈕，點擊後跳出確認彈窗（標題「確定刪除此用戶？」、描述「用戶的內容將標記為無主，無法復原。」）。刪除請求採 `DELETE /api/admin/users/:id`，完成後立即從列表移除並將該用戶內容標記為 guest/無主。
 
 ### 評論規格（Comments Spec）
 - 容器與版型
@@ -128,6 +148,10 @@
 ## API 補強（建議）
 - Points 投票：`PATCH /api/points/:id/vote` Body: `{ delta: 1|-1|±2 }`（三態切換導致的累計），資料欄位：points.upvotes；影響熱門排序。
 - Report（可選）：`POST /api/comments/:id/report`、`POST /api/points/:id/report`（MVP 可先導向外部表單）。
+
+## 資料維護限制
+- SQLite（`server/pointlab.db`）為主資料來源，JSON 僅做 fallback。任何匯入或覆蓋動作前需先備份 DB。
+- ⚠️ 除非使用者在當前需求中明確允許，禁止執行 `npm run seed:from-prod`、`node server/scripts/seed-json-from-prod.js` 或其他會覆蓋本地資料的腳本；如需執行也要先告知使用者並備份。
 
 ## i18n key（補充清單）
 - actions.reply / replying / cancel / share / commentPlaceholder / viewRepliesCount / hideReplies

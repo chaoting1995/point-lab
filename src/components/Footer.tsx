@@ -15,6 +15,9 @@ export function Footer() {
     <footer className="footer">
       <div>
         <div className="footer__title">{discover.title}</div>
+        <a className="footer__link" href="/">
+          首頁
+        </a>
         <a className="footer__link" href="/topics">
           主題箱
         </a>

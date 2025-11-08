@@ -53,6 +53,7 @@
   - 從正式站匯入到 SQLite：`POINTLAB_DB_PATH=server/pointlab.db npm run seed:from-prod`（會同步 topics / points / comments）
   - 快速補 JSON（fallback 用）：`node server/scripts/seed-json-from-prod.js`（會寫入 `topics.json`/`points.json`/`comments.json`）
 - 匯入後若觀點卡片的評論數與實際留言不符，可執行 `npm run recount:comments` 重新計算（同時更新 SQLite 與 JSON fallback）。
+- ⚠️ 未經使用者在當前工作中明確指示，**禁止**執行任何會覆蓋本機資料的匯入腳本（`seed:from-prod`、`seed-json-from-prod`、手動複製正式站 DB 等），避免毀損使用者剛建立的主題/觀點。
 
 ## 主要目錄與檔案
 - 後端：
@@ -75,6 +76,7 @@
 - JSON fallback：統一讀寫 `points.json`/`topics.json`；不得再新增 `hacks.json`。
 - 文件：如變更 API 或資料層，務必同步更新 README 與本文。
 - 投票行為：三態（未投/讚/倒讚），允許為負數；前端以 localStorage 記錄用戶對單項的投票狀態。
+- i18n：不得再保留 `t('key') || 'fallback'` 的寫法；若缺字請補齊字典，而不是加硬編碼備援。
  - Git 提交規範：commit message 僅允許單行摘要（不超過 72 字元）。詳細變更請寫入 `CHANGELOG.md`，必要時在 PR 描述補充。
 
 ## 常見陷阱
@@ -135,6 +137,35 @@
   - `/points/add`、`/topics/add` 送出時顯示貼頂 `LinearProgress` 並鎖定所有輸入；CTA 內改用 `react-spinners/ClipLoader`。
   - 新增觀點頁：若帶入的主題 `count` 為 0，TopicCard 下方顯示「這個主題空空如也，為主題添加第一個觀點吧！」提醒用戶。
   - 新增主題頁：發布成功後直接導向 `/points/add?topic=<id>`，頁面不再停留且無額外 CTA。
+- 新增觀點頁 TopicCard 是主題選擇器：點擊卡片會開 Dialog 顯示所有主題（含搜尋、分隔線），選擇後同步 `?topic=<id>`，清除則移除參數。未選主題時不得發布，也不再提供「使用訪客身份」切換；訪客名稱輸入與 localStorage 同步。
+
+## 首頁 / 列表 / Footer 規範
+- Hero
+  - 標題固定為「用 PointLab 匯聚好觀點」，僅「好觀點」跳色（`hero.titleHighlight`）；不再換行成兩段。
+  - 副標使用 16px，照字典內五行文案渲染，每行為一個 `<span>`；僅「好觀點清單」加粗。
+  - 標題上方需有「開源智慧」「沉澱觀點」兩個 Tag（字級 14px、左側 ✦ icon），並保留 1rem 間距。
+  - CTA 只保留主按鈕「開始探索」，右側固定 caret-right icon，點擊前往主題箱；CTA 與 HeroStats 距離維持 32px 以內。
+- HeroStats
+  - 使用 `/api/stats/overview` 的 topics/points/visits 三個指標（comments 暫不顯示）。
+  - 每個數字 30px、採主色跳色；以縱向排版（數字在上、文案在下），指標之間用垂直分隔線。
+  - 採 `react-countup` 動畫，頁面載入時才開始跑數字。
+- 首頁觀點列表
+  - 外層不再包卡片背景，直接顯示「觀點列表」標題＋ SortTabs。
+  - 卡片整體可點進對應主題詳頁，底部 CTA 使用 `PrimaryCtaButton` + caret-right，置中且與列表有足夠間距。
+  - 到達列表終點顯示「這裡是思維的邊界」，Loading/錯誤文字置中。
+  - CTA 之後緊接 HeroStats，不需再加入 Product Hunt 標章或外部 Logo。
+- 無限捲動
+  - 首頁觀點列表、主題箱 `/topics`、主題詳頁 `/topics/:id`、會員中心 `/users/:id` 全採 IntersectionObserver；僅在 sentinel 進入視窗時才抓下一頁，避免初次渲染就連續發請求。
+  - 各頁面需提供骨架或 loading 文案，結尾統一用 `common.noMore`（這裡是思維的邊界）。
+- Footer
+  - 最大寬 576px，位於主內容下方（首頁、主題箱、主題詳頁都要顯示）；與上一區塊保留 32px 以上間距。
+  - 「探索」底下僅列垂直連結，順序：首頁 → 主題箱（登入時再顯示會員中心）。「參與」列出新增主題、新增觀點、指南（垂直排列）。關於段落為單行句：「PointLab 的目標，是搜集好觀點。讓觀點可以被分享、辯論、票選、沉澱。」
+  - 會員登入後 Footer 的「會員中心」才可見；未登入僅顯示主題箱。
+- 會員中心
+  - 最上方 PageHeader 僅顯示返回按鈕，不顯示「會員中心」字樣；描述底下不畫分隔線。
+  - 里程碑（評論/觀點/主題）順序固定為「評論 → 觀點 → 主題」，即便訪客模式也不隱藏；點擊提示文案會導向對應頁（評論→/topics、觀點→/points/add、主題→/topics/add）。
+  - 列表底部與空態 CTA 皆為「新增觀點」，右側 caret-right；底部無論是否有資料都要顯示 CTA。
+- 主題詳頁／主題箱下方也需附上 Footer，避免頁面突然結束。
 
 ## 工作流程（建議）
 

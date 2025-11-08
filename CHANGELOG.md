@@ -46,6 +46,30 @@
 - 新增主題/觀點頁：送出期間顯示貼頂 `LinearProgress` 與 CTA 內 `ClipLoader`，鎖定所有欄位；新增主題成功後直接導向 `/points/add?topic=<id>`，新增觀點頁若主題觀點數為 0 會顯示提示文案。
 - 首頁 CTA：觀點列表下方的「前往主題箱」採用 `PrimaryCtaButton` + caret-right icon，置中並與列表拉開間距。
 - 新增資料維護腳本 `npm run recount:comments`，可在匯入後重新計算觀點的評論數（同步支援 SQLite 與 JSON fallback）。
+- 首頁體驗
+  - Hero 改版：移除卡片背景，新增「開源智慧／沉澱觀點」標籤（含 icon）、標題「用 PointLab 匯聚好觀點」並以 `hero.titleHighlight` 讓「好觀點」跳色；副標支援多行、僅「好觀點清單」加粗。
+  - CTA 僅保留單一主按鈕「開始探索」＋ caret-right；Hero 與 CTA 與數據區距離、padding 依新稿調整，`header` 與 `<title>` 使用 `public/logo.svg`。
+  - 新增 HeroStats：載入 `/api/stats/overview` 的 topics/points/visits，使用 `react-countup` 動態跳動並以主色數字＋豎線分隔。
+  - 首頁觀點列表移除外層卡片、加上「觀點列表」標題，卡片可點擊帶往對應主題詳頁；列表底部 CTA 與 Hero CTA 同型。
+  - 空狀態／終點文案改為「這裡是思維的邊界」，`common.noMore` 同步更新。
+- 無限捲動與載入提示
+  - 首頁觀點列表、主題箱 `/topics`、主題詳頁 `/topics/:id`、會員中心 `/users/:id` 皆改為 IntersectionObserver 無限捲動；骨架載入 + 「這裡是思維的邊界」終點提示一致。
+  - 移除首頁初次載入即請求第 2 頁的行為，僅在捲到底時才抓下一頁；新增 loading/錯誤文字。
+  - Member Center 列表底部與空態 CTA 改為「新增觀點」。
+- 新增觀點 / 主題流程
+  - `/points/add` 的 TopicCard 變成主題選擇器（維持卡片外觀）；點擊開啟 Dialog，支援搜尋、點擊套用、清除，並自動同步 `?topic=` 查詢參數。
+  - 移除「使用訪客身份」切換；若為訪客一律顯示名稱欄位並沿用 localStorage 的暱稱；提交時依實際名稱更新 localStorage。
+  - 發布時的 CTA spinner 改採 `react-spinners/ClipLoader`；提交完成依主題帶回 `/topics/:topicId`，若主題觀點數為 0 於卡片底下顯示「這個主題空空如也…」提示。
+  - 新增主題成功後直接導向 `/points/add?topic=<id>`，跳過原本的成功提示區塊。
+- Footer 與導覽
+  - Footer 最大寬 576px，探索/參與/關於鏈結改成縱向排列並採新版文案；「會員中心」僅在登入時顯示，未登入只露出「主題箱」。
+  - Footer 追加到主題箱與主題詳頁底部，與上一區塊保有間距。
+  - 首頁觀點列表下方新增「前往主題箱」CTA，樣式與「新增觀點」一致並置中；會員中心底部 CTA 亦採相同元件。
+  - 探索連結新增「首頁」並放在最上方，後續依序為「主題箱」「會員中心（登入時）」。
+- 後台用戶管理
+  - 用戶列表新增「全部 / 會員 / 訪客」三個 Tab 並拉開間距；列表欄位新增「操作」，提供刪除按鈕。
+  - 刪除按鈕點擊會跳出確認彈窗（「確定刪除此用戶？」＋「用戶的內容將標記為無主，無法復原。」），確認後呼叫 `DELETE /api/admin/users/:id`，資料立即從列表移除，後端也會把該用戶的內容標記為「無主」。
+  - 發布數量欄位強制不換行，角色切換選單字級調整，訪客資料與會員資料整併於同一表。
 
 ## 2025-11-06
 - Hack → Point 命名清理（程式與 UI）。

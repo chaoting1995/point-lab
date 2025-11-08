@@ -1,13 +1,16 @@
 # point-lab
 
-PointLab 是參考 50hacks.co 打造的觀點實驗網站，使用 React + TypeScript + Vite + MUI 開發；前端支援繁/簡/英文多語系切換，後端用簡單的 Express(JSON 檔) 提供 API。
+PointLab 是一個專注於「蒐集、辯論、票選、沉澱好觀點」的實驗網站。前端採 React + TypeScript + Vite + MUI + Tailwind，後端為 Express REST API，資料層以 SQLite 為主、JSON 為備援；UI 文案支援繁 / 簡 / 英。
 
 ## 主要功能
 
-- 還原 50 Hacks 風格的頭部導覽、英雄區塊與卡片列表。
-- 提供「熱門 / 最新 / Top 50」三種 Tab 檢視方式，卡片內建收藏、分享、複製等互動。
-- 內建 50 筆繁體中文資料，透過 OpenCC 動態轉換成簡體中文。
-- 採用 Nunito 字體與玻璃質感卡片樣式，呼應原站的視覺氛圍。
+- **首頁敘事 + 數據**：Hero 區塊包含「開源智慧 / 沉澱觀點」標籤、標題「用 PointLab 匯聚好觀點」（`好觀點` 跳色）、五行副標，只保留一顆 CTA「開始探索」。HeroStats 串接 `GET /api/stats/overview` 顯示主題 / 觀點 / 造訪人次並使用 `react-countup` 動態數字。
+- **主題 / 觀點 / 評論**：Topics 支援 open/duel 模式、投票、刪除；Points 具三態投票（±2）、評論面板（排序/二級留言/投票/自動換行）；所有列表都支援 i18n 文案與 localStorage 投票紀錄。
+- **無限捲動與 CTA**：首頁觀點列表、主題箱、主題詳頁、會員中心皆透過 IntersectionObserver 做 infinite scroll，終點文案統一為「這裡是思維的邊界」，列表下方使用 `PrimaryCtaButton`（含 caret-right）。
+- **新增流程**：`/topics/add`、`/points/add` 送出時貼頂 `LinearProgress`、CTA 內 `ClipLoader`、表單逐一 disabled；新增主題成功後自動導向 `/points/add?topic=<id>`，新增觀點頁的 TopicCard 變成主題選擇器 Dialog，發布前必須選擇主題。
+- **登入與會員中心**：Google 登入按鈕在跳轉前顯示 LinearProgress 並暫存返回路徑；會員中心含里程碑卡（評論→觀點→主題）、個人觀點列表 infinite scroll、底部「新增觀點」CTA，登入後 Footer 才顯示「會員中心」。
+- **後台管理**：Admin Users/Reports/Stats 提供角色切換、DAU/MAU、報表；用戶列表新增「全部/會員/訪客」Tab 與刪除動作，刪除後內容標記為無主；還有舉報流程與 28 天觀點曲線。
+- **多語系**：全部 UI 文字走 i18n 字典（不可再加 `t('key') || 'fallback'`），繁/簡切換時會透過 opencc-js 轉換使用者輸入。
 
 ## 開發環境
 
@@ -25,24 +28,23 @@ PointLab 是參考 50hacks.co 打造的觀點實驗網站，使用 React + TypeS
 - `npm run build`：產生正式版靜態檔
 - `npm run preview`：預覽 build 結果
 - `npm run lint`：執行 ESLint 檢查
+- `npm run recount:comments`：重新計算所有觀點的評論數（SQLite 與 JSON fallback 皆會同步）
 
 > 開發時前端以 Vite 代理 `/api` 到 `http://localhost:8787`（見 `vite.config.ts`）。
 
+> ⚠️ 除非使用者在當前指令中明確要求，請勿執行任何會覆蓋本機資料的匯入腳本（`npm run seed:from-prod`、`node server/scripts/seed-json-from-prod.js` 等）。
+
 ## Tech Stack / 注意事項
 
-- 前端：React + TypeScript + Vite + MUI + Phosphor Icons
-- 後端：Express（JSON 檔作為暫時資料庫），Vite dev 代理 `/api`
-- i18n：opencc-js（繁→簡轉換）+ 自建字典；UI 文案支援 繁/簡/英
+- 前端：React + TypeScript + Vite + MUI + Tailwind + Phosphor Icons；Nunito 為主字體。
+- 後端：Express + better-sqlite3，所有 fetch 透過 `withBase()`，在 dev 模式由 Vite 代理 `/api` → `http://localhost:8787`。
+- 資料層：SQLite (`server/pointlab.db`) 為預設來源，若無法載入會自動退回 `server/data/*.json`。所有腳本皆支援 `POINTLAB_DB_PATH`，`npm run recount:comments` 可重新統計評論數。⚠️ 未經使用者要求請勿執行任何會覆蓋本地資料的匯入腳本。
+- i18n：opencc-js（繁→簡）＋ `src/i18n/translations.ts`；**禁止**再使用 `t('key') || 'fallback'`，缺字需補字典。
 
 技術債（資料層）
-- 目前資料庫使用 JSON 檔（`server/data/*.json`）
-  - 風險：併發寫入衝突、無交易/回滾、檔案毀損、整檔讀寫效能差、多機檔案不同步
-  - 短期強化：原子寫入（tmp + rename）、應用層鎖、定期快照、Schema 驗證
-  - 升級路線：
-    1) SQLite + better-sqlite3（單檔、交易安全）
-    2) ORM（Prisma/Drizzle）定義 schema/遷移、把排序/分頁交給 DB
-    3) 託管 Postgres（Supabase/Neon/Railway），備份/監控/權限
-  - 遷移步驟：匯入 JSON →（可選）雙寫灰度 → 切讀 DB，保留 JSON 只讀備援
+- JSON fallback 仍存在併發寫入風險：無交易/回滾、整檔覆寫、不同步。
+- 短期：補原子寫入（tmp + rename）、簡易鎖、Schema 驗證、定期快照。
+- 長期：持續以 SQLite 為主，必要時導入 ORM（Prisma/Drizzle）與 migraiton，最終遷移到託管 Postgres（Supabase/Neon/Railway）。
 
 ## 資料模型與 API
 
@@ -56,7 +58,7 @@ Topic（主題）
 
 Point（觀點）
 - 欄位：`id`、`description`、`createdAt`、`author{name,role}`、`topicId?`、`userId?`、`position?`（對立模式下 `agree｜others`）
-- 列表：`GET /api/points?topic=<topicId>&page=1&size=30&sort=new|hot|old`
+- 列表：`GET /api/points?topic=<topicId>&page=1&size=20&sort=new|hot|old`
 - 建立：`POST /api/points` 參數：`description`、`topicId?`、`authorName?`、`authorType=guest|user`、`position?`。若用戶已登入，後端會記錄 `userId`，並覆寫 `authorType='user'` 與作者名稱。
 - 投票：`PATCH /api/points/:id/vote` Body：`{ delta: 1 | -1 }`（三態切換會出現 ±2 的累計行為，後端最終以整數 upvotes 儲存並影響熱門排序）
 - 刪除：`DELETE /api/points/:id`（會同步將對應 Topic 的 `count - 1`）
@@ -77,6 +79,7 @@ Comments（評論）
 - 目前後台/管理 API（需 admin/superadmin）：
     - `GET /api/admin/users?page&size`（用戶列表，含發布數量與讚數彙總；伺服器分頁，回傳 `{ items,total,page,size }`）
     - `PATCH /api/admin/users/:id/role`（變更角色：user|admin|superadmin）
+    - `DELETE /api/admin/users/:id`（僅 superadmin；刪除後會把該用戶的主題/觀點/評論標記為無主、session 失效）
     - `GET /api/admin/reports[?type=topic|point|comment]&page&size`（舉報列表；伺服器分頁，回傳 `{ items,total,page,size }`）
     - `POST /api/reports`（新增舉報：`{ type, targetId, reason? }`）
     - `GET /api/admin/stats`（總覽統計：users/guests/topics/points/comments/reports；活躍：DAU dauUsers/dauGuests/dauTotal、MAU mauUsers/mauGuests/mauTotal）
@@ -86,30 +89,42 @@ Comments（評論）
 - 登入狀態下發表的 Topic/Point/Comment 會寫入 `userId`；Topic 另保存 `createdBy`。
 - 訪客身份：會建立 `pl:guest:id`，未登入/訪客發布時，後端會記錄 `topics.created_by_guest`、`points.guest_id`、`comments.guest_id`；`/api/admin/stats` 回傳 `guests` 總數。
 
-## 前端互動與樣式調整（近期）
+## 前端互動與樣式指引
 
-- 舉報流程：Topic/Point/Comment 的「報告」都先彈出「確定舉報？」彈窗，含可選的原因輸入框；確認後送出 `POST /api/reports`（Body: `{ type, targetId, reason? }`）。
-- 評論標頭：一級評論顯示「{名稱}・{時間}・報告・回覆」。
-- 共享按鈕：移除全站「分享」按鈕與相關文案（提示已改為僅提到複製連結）。
-- 操作字重：卡片操作文本按鈕（報告/編輯/刪除 等）在 hover 時會加粗並變主色。
-- Avatar 彈窗問候：
-  - 超級管理者：三行顯示「尊榮的超級管理者 / {名稱} / 歡迎你！」
-  - 管理者：三行顯示「尊榮的網站管理者 / {名稱} / 歡迎你！」
-  - 會員：三行顯示「尊榮的會員 / {名稱} / 歡迎你！」
-- Admin 首頁卡片導向與 DAU：
-  - 用戶數 → `/admin/users`
-  - 訪客數 → `/admin/guests`
-  - 主題數 / 觀點數 / 評論數 → `/topics`
-  - 舉報數 → `/admin/reports`
-  - 顯示活躍卡片：
-    - DAU（三張卡）：DAU（用戶）/ DAU（訪客）/ DAU（總計）
-    - MAU（三張卡）：MAU（用戶）/ MAU（訪客）/ MAU（總計）
-- Admin 未授權時顯示「登入卡片」（非彈窗），置中呈現 Google 登入按鈕。
-- /admin/reports 切換按鈕：採用共用按鈕樣式（`btn btn-sm`），選取態加上 `btn-primary`。
-- Loading 體驗優化：
-  - 主題箱（/topics）載入時顯示 Topic 骨架（6 欄位，標題/摘要/資訊列）。
-  - 主題詳頁（/topics/:id）載入時顯示 Point 骨架（4 列，含右側投票區位）。
-  - 檔案：`src/components/Skeletons.tsx`、`src/pages/TopicsPage.tsx`、`src/pages/TopicDetailPage.tsx`。
+### Hero / 首頁
+- 標題固定為「用 PointLab 匯聚好觀點」，僅「好觀點」跳色；上方必須顯示「開源智慧」「沉澱觀點」兩個 14px tag（含 icon）。
+- 副標 16px，依 `translations.hero.subtitle` 的換行符號切成 5 行，僅「好觀點清單」加粗。
+- CTA 只保留一顆「開始探索」按鈕（含 caret-right），點擊導向 `/topics`；Hero 與 CTA 與 HeroStats 間距 32px 以內。
+- HeroStats 呼叫 `GET /api/stats/overview` 顯示 topics / points / visits，採主色數字 + 垂直分隔線，搭配 `react-countup`。
+
+### 列表 / Infinite Scroll
+- 首頁觀點列表外層移除卡片框，新增標題「觀點列表」。卡片可以點擊進入對應主題詳頁。
+- 觀點/主題/會員中心列表皆採 IntersectionObserver infinite scroll；初始僅抓一頁，進入 sentinel 才載入下一頁。Loading/錯誤訊息置中，終點統一顯示「這裡是思維的邊界」。
+- 列表底部 CTA 使用 `PrimaryCtaButton` + caret-right，置中且保留上下間距；首頁為「前往主題箱」，會員中心為「新增觀點」。
+
+### 表單 / 登入
+- Google 登入按鈕在打開 Google 之前顯示貼頂 `LinearProgress`，並將 `pathname+search+hash` 存到 `sessionStorage.pl:back_after_login`；`/auth/callback` 成功後導回原頁。
+- `/topics/add`、`/points/add` 提交期間顯示貼頂 `LinearProgress`、CTA 內 `ClipLoader`，欄位逐一 disabled 並降低透明度；錯誤時顯示 Alert。
+- 新增主題成功後直接導向 `/points/add?topic=<id>`，不再留下成功視窗。
+- 新增觀點頁的 TopicCard 行為：
+  - 預設顯示「選擇主題」，點擊後開啟 Dialog（含搜尋、列表分隔線）。選擇後同步 URL `?topic=<id>`，清除則移除該參數。
+  - 未選主題無法發布；若主題 `count` 為 0 顯示「這個主題空空如也，為主題添加第一個觀點吧！」。
+  - 移除「使用訪客身份」按鈕；訪客名稱直接顯示欄位並與 localStorage 同步，成功發布後更新 localStorage。
+
+### Footer / 導覽
+- Footer 最大寬 576px，垂直排列：探索（首頁 → 主題箱 → 登入後才顯示會員中心）、參與（新增主題 / 新增觀點 / 指南）、關於（單行目標敘述）。登入前僅顯示首頁 / 主題箱。
+- Footer 需出現在首頁、主題箱、主題詳頁底部；與上一段落保持 ≥32px 間距。
+- Header 與 `<title>`/favicon 均指向 `public/logo.svg`，品牌點擊回首頁。
+
+### 會員中心
+- PageHeader 僅留返回鈕；描述下方不再畫分隔線。
+- 里程碑順序：評論 → 觀點 → 主題；即便訪客視角也要顯示。每個 ListItemButton 會導向 `/topics`、`/points/add`、`/topics/add`。
+- 列表及空態 CTA 統一為「新增觀點」，列表底部無論是否有資料都保留 CTA。
+
+### 舉報 / Admin
+- Topic/Point/Comment 的「報告」都先彈出確認 Dialog（含原因輸入框），確認才送 `POST /api/reports`。
+- Admin Users 新增「全部 / 會員 / 訪客」Tab，Tab 之間要有間距；列表新增「操作」欄，提供刪除按鈕與確認彈窗（刪除後內容標記為無主，session 失效）。
+- Admin 首頁卡片導向：用戶/訪客 → `/admin/users` (Tab 過濾)；主題/觀點/評論 → `/topics`；舉報 → `/admin/reports`；DAU/MAU 卡維持用戶/訪客/總計排列。
 
 ## 評論功能（前端互動規格）
 
@@ -213,6 +228,8 @@ POINTLAB_DB_PATH=server/pointlab.db node server/scripts/seed-from-prod.js https:
 
 執行後本機 `/admin` 的統計與列表會顯示匯入結果。
 
+> ⚠️ 此腳本會覆蓋本機 SQLite／JSON 資料，僅在使用者於當前工作中明確要求時才能執行。
+
 ### JSON fallback 種子（快速補資料）
 
 若開發環境暫時無法載入 SQLite（fallback 到 JSON），可直接把正式站資料寫入 JSON 檔：
@@ -222,6 +239,8 @@ node server/scripts/seed-json-from-prod.js
 ```
 
 輸出：`server/data/topics.json`、`server/data/points.json`、`server/data/comments.json`。之後在 JSON 模式下 `/admin` 也能看到正確數據。
+
+> ⚠️ 同樣僅能在使用者明確要求覆蓋資料時執行此腳本。
 
 ### 重新計算評論數
 
