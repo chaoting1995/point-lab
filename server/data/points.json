@@ -1,5 +1,31 @@
 [
   {
+    "id": "point-1762623653778",
+    "userId": null,
+    "guestId": "g-df8365ea4bc95984c85110baef00c087",
+    "description": "d",
+    "topicId": "t-1762284137275",
+    "author": {
+      "name": "Ryan",
+      "role": "guest"
+    },
+    "position": "agree",
+    "createdAt": "2025-11-08T17:40:53.781Z"
+  },
+  {
+    "id": "point-1762623635894",
+    "userId": "u-1762536903623",
+    "guestId": null,
+    "description": "ㄇaaa",
+    "topicId": "t-1762284137275",
+    "author": {
+      "name": "Ryan Chang",
+      "role": "user"
+    },
+    "position": "agree",
+    "createdAt": "2025-11-08T17:40:35.895Z"
+  },
+  {
     "id": "point-1762450742330",
     "topicId": "t-1762403381642",
     "description": "立志不怕高遠，因為立志不是為了到達，是為了出發。",
