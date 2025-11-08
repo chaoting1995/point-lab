@@ -223,6 +223,16 @@ node server/scripts/seed-json-from-prod.js
 
 輸出：`server/data/topics.json`、`server/data/points.json`、`server/data/comments.json`。之後在 JSON 模式下 `/admin` 也能看到正確數據。
 
+### 重新計算評論數
+
+若你在本地刪除主題/觀點或重新匯入資料後，發現觀點卡片上的「評論數」與實際留言不一致，可執行：
+
+```
+npm run recount:comments
+```
+
+此腳本會同時更新 SQLite `points.comments` 欄位與 JSON fallback (`server/data/points.json`)，讓前台顯示的評論數維持正確。
+
 ### 診斷端點（資料層）
 
 開發時可檢查目前後端使用的儲存層與筆數：

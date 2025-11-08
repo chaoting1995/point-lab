@@ -182,6 +182,7 @@ export type AppTranslations = {
     allLoaded?: string
     seeMore?: string
     seeLess?: string
+    noMore?: string
     edit?: string
     delete?: string
     counts?: {
@@ -339,6 +340,7 @@ const baseZhHant: AppTranslations = {
     allLoaded: '已抵達思想邊界',
     seeMore: '查看更多',
     seeLess: '查看更少',
+    noMore: '沒有更多內容了',
     edit: '編輯',
     delete: '刪除',
     counts: {
@@ -586,6 +588,7 @@ export const translations: Record<Locale, AppTranslations> = {
       allLoaded: 'All loaded',
       seeMore: 'See more',
       seeLess: 'See less',
+      noMore: 'No more items',
       edit: 'Edit',
       delete: 'Delete',
       counts: {

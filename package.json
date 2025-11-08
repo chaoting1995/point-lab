@@ -12,6 +12,7 @@
     "dev:all": "concurrently -n server,web -c cyan,green \"npm:server\" \"npm:dev\"",
     "migrate:json": "node server/scripts/migrate-from-json.js",
     "seed:from-prod": "node server/scripts/seed-from-prod.js",
+    "recount:comments": "node server/scripts/recount-comments.js",
     "migrate:drop-slug": "node server/scripts/drop-topics-slug.js",
     "fly:login": "flyctl auth login",
     "fly:volume": "flyctl volumes create data --size 1 --region sin",

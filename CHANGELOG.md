@@ -45,6 +45,7 @@
 - 登入流 UX：Google 登入按鈕點擊時顯示貼頂 `LinearProgress` 並 disable；登入前把 `pathname+search+hash` 寫入 `sessionStorage.pl:back_after_login`，`/auth/callback` 成功後移除並導回原頁。
 - 新增主題/觀點頁：送出期間顯示貼頂 `LinearProgress` 與 CTA 內 `ClipLoader`，鎖定所有欄位；新增主題成功後直接導向 `/points/add?topic=<id>`，新增觀點頁若主題觀點數為 0 會顯示提示文案。
 - 首頁 CTA：觀點列表下方的「前往主題箱」採用 `PrimaryCtaButton` + caret-right icon，置中並與列表拉開間距。
+- 新增資料維護腳本 `npm run recount:comments`，可在匯入後重新計算觀點的評論數（同步支援 SQLite 與 JSON fallback）。
 
 ## 2025-11-06
 - Hack → Point 命名清理（程式與 UI）。

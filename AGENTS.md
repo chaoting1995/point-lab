@@ -52,6 +52,7 @@
 - 種子資料：
   - 從正式站匯入到 SQLite：`POINTLAB_DB_PATH=server/pointlab.db npm run seed:from-prod`（會同步 topics / points / comments）
   - 快速補 JSON（fallback 用）：`node server/scripts/seed-json-from-prod.js`（會寫入 `topics.json`/`points.json`/`comments.json`）
+- 匯入後若觀點卡片的評論數與實際留言不符，可執行 `npm run recount:comments` 重新計算（同時更新 SQLite 與 JSON fallback）。
 
 ## 主要目錄與檔案
 - 後端：
