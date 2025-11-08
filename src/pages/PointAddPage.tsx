@@ -1,10 +1,13 @@
 import Header from '../components/Header'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { useState, useEffect } from 'react'
+import { createPortal } from 'react-dom'
 import useLanguage from '../i18n/useLanguage'
 import Box from '@mui/material/Box'
 import Stack from '@mui/material/Stack'
 import TextField from '@mui/material/TextField'
+import Skeleton from '@mui/material/Skeleton'
+import LinearProgress from '@mui/material/LinearProgress'
 import Alert from '@mui/material/Alert'
 import Snackbar from '@mui/material/Snackbar'
 import PageHeader from '../components/PageHeader'
@@ -15,8 +18,29 @@ import useAuth from '../auth/AuthContext'
 import FormControlLabel from '@mui/material/FormControlLabel'
 import Switch from '@mui/material/Switch'
 import DuelTabs, { type DuelValue } from '../components/DuelTabs'
+import PrimaryCtaButton from '../components/PrimaryCtaButton'
 import { addGuestItem } from '../utils/guestActivity'
-import { getOrCreateGuestId } from '../utils/guest'
+import { getOrCreateGuestId, saveGuestName } from '../utils/guest'
+
+function SubmittingOverlay({ open }: { open: boolean }) {
+  if (!open || typeof document === 'undefined') return null
+  return createPortal(
+    <>
+      <LinearProgress
+        color="primary"
+        sx={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          width: '100%',
+          zIndex: 3000,
+          height: 4,
+        }}
+      />
+    </>,
+    document.body,
+  )
+}
 
 export default function PointAddPage() {
   const navigate = useNavigate()
@@ -24,9 +48,10 @@ export default function PointAddPage() {
   const [params] = useSearchParams()
   const topicId = params.get('topic') || ''
   const [topic, setTopic] = useState<Topic | null>(null)
+  const [loadingTopic, setLoadingTopic] = useState(!!topicId)
   const [description, setDescription] = useState('')
   const [authorName, setAuthorName] = useState('')
-  const [submitting, setSubmitting] = useState(false)
+  const [submitting, setSubmitting] = useState(!false)
   const [error, setError] = useState<string | null>(null)
   const [successOpen, setSuccessOpen] = useState(false)
   const [touched, setTouched] = useState<{ desc?: boolean; name?: boolean }>({})
@@ -38,7 +63,10 @@ export default function PointAddPage() {
   useEffect(() => {
     let aborted = false
     async function run() {
-      if (!topicId) return
+      if (!topicId) {
+        setLoadingTopic(false)
+        return
+      }
       try {
         let t: Topic | null = null
         const resp = await getJson<ItemResponse<Topic>>(`/api/topics/id/${topicId}`)
@@ -46,6 +74,8 @@ export default function PointAddPage() {
         if (!aborted) setTopic(t)
       } catch {
         if (!aborted) setTopic(null)
+      } finally {
+        if (!aborted) setLoadingTopic(false)
       }
     }
     run()
@@ -56,9 +86,9 @@ export default function PointAddPage() {
   useEffect(() => {
     if (!user) {
       try {
-        const stored = localStorage.getItem('pl:guestName')
-        // 只有打開頁面時若 localStorage 已有名稱，才預填並隱藏欄位
-        if (stored && !authorName) setAuthorName(stored)
+        const storedObj = localStorage.getItem('pl:guest')
+        const name = storedObj ? (JSON.parse(storedObj).name as string | undefined) : undefined
+        if (name && !authorName) setAuthorName(name)
       } catch {}
     }
     // 僅在首次 render（無 user 改變）時檢查；不要依賴 authorName，以免輸入中被覆蓋
@@ -68,7 +98,8 @@ export default function PointAddPage() {
   return (
     <div className="app">
       <Header />
-      <main className="app__inner">
+      <SubmittingOverlay open={submitting} />
+      <main className="app__inner" aria-busy={submitting} aria-live="polite">
         <Box sx={{ p: { xs: 1.5, md: 2 } }}>
           <PageHeader
             align="center"
@@ -78,16 +109,31 @@ export default function PointAddPage() {
             subtitle={''}
           />
 
-          <Stack spacing={2} sx={{ maxWidth: 640, mx: 'auto' }}>
+          <Stack spacing={2} sx={{ maxWidth: 640, mx: 'auto', opacity: submitting ? 0.6 : 1 }}>
             {/* 顯示主題卡片（隱藏投票與附加資訊），點擊返回主題詳頁 */}
-            {topic && (
-              <div onClick={() => navigate(`/topics/${topic.id}`)}>
-                <TopicCard topic={topic} showMeta={false} showVote={false} />
-              </div>
+            {loadingTopic ? (
+              <Box sx={{ borderRadius: 2, border: '1px solid', borderColor: 'divider', p: 2 }}>
+                <Skeleton variant="text" width="70%" height={24} />
+                <Skeleton variant="text" width="50%" height={18} />
+              </Box>
+            ) : (
+              topic && (
+                <div
+                  onClick={() => !submitting && navigate(`/topics/${topic.id}`)}
+                  style={{ cursor: submitting ? 'default' : 'pointer', pointerEvents: submitting ? 'none' : 'auto' }}
+                >
+                  <TopicCard topic={topic} showMeta={false} showVote={false} />
+                </div>
+              )
             )}
             {/* 對立模式：立場選擇（Button Group） */}
             {topic?.mode === 'duel' && (
-              <DuelTabs value={positionSel} onChange={setPositionSel} label={t('points.add.stanceLabel') || '選擇立場'} />
+              <DuelTabs
+                value={positionSel}
+                onChange={setPositionSel}
+                label={t('points.add.stanceLabel') || '選擇立場'}
+                disabled={submitting}
+              />
             )}
             <TextField
               label={t('points.add.descLabel') || '觀點內容'}
@@ -102,12 +148,19 @@ export default function PointAddPage() {
               error={touched.desc && !description.trim()}
               helperText={touched.desc && !description.trim() ? ((t('points.add.descLabel') || '你的觀點') + ' 為必填') : ' '}
               sx={{ '& .MuiOutlinedInput-root': { bgcolor: 'common.white' } }}
+              disabled={submitting}
             />
             {/* 登入狀態：可切換是否使用訪客身份 */}
             {user ? (
               <>
                 <FormControlLabel
-                  control={<Switch checked={useGuest} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setUseGuest(e.target.checked)} />}
+                  control={
+                    <Switch
+                      checked={useGuest}
+                      onChange={(e: React.ChangeEvent<HTMLInputElement>) => setUseGuest(e.target.checked)}
+                      disabled={submitting}
+                    />
+                  }
                   label={t('points.add.useGuest') || '使用訪客身份'}
                 />
                 {useGuest && (
@@ -122,12 +175,12 @@ export default function PointAddPage() {
                     error={touched.name && !authorName.trim()}
                     helperText={touched.name && !authorName.trim() ? ((t('points.add.nameLabel') || '你的名稱') + ' 為必填') : ' '}
                     sx={{ '& .MuiOutlinedInput-root': { bgcolor: 'common.white' } }}
+                    disabled={submitting}
                   />
                 )}
               </>
             ) : (
-              // 未登入：只有當頁面初始時已存在 guestName 才自動隱藏輸入；否則顯示輸入框直到發布成功後才保存
-              !localStorage.getItem('pl:guestName') ? (
+              (!localStorage.getItem('pl:guest')) ? (
                 <TextField
                   label={t('points.add.nameLabel') || '你的名稱（無需註冊）'}
                   placeholder={t('points.add.namePlaceholder') || '例如：小明'}
@@ -139,69 +192,90 @@ export default function PointAddPage() {
                   error={touched.name && !authorName.trim()}
                   helperText={touched.name && !authorName.trim() ? ((t('points.add.nameLabel') || '你的名稱') + ' 為必填') : ' '}
                   sx={{ '& .MuiOutlinedInput-root': { bgcolor: 'common.white' } }}
+                  disabled={submitting}
                 />
               ) : null
             )}
             {error && <Alert severity="error" sx={{ mt: 0 }}>{error}</Alert>}
-            <Stack spacing={1.5} alignItems="stretch">
-              <button
-                className="header__cta btn btn-primary btn-md gap-2 w-full justify-center"
-                disabled={
-                  submitting ||
-                  !description.trim() ||
-                  // 登入且未使用訪客身份：不需填作者名
-                  (!!user && !useGuest ? false : !authorName.trim()) ||
-                  // 對立模式需選擇立場
-                  (topic?.mode === 'duel' && !positionSel)
-                }
-                aria-busy={submitting}
-                onClick={async () => {
-                  try {
-                    setSubmitting(true)
-                    setError(null)
-                  const res = await fetch(withBase('/api/points'), {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                      description: description.trim(),
-                      topicId: topicId || undefined,
-                      authorName: (!!user && !useGuest) ? undefined : authorName.trim(),
-                      authorType: (!!user && !useGuest) ? 'user' : 'guest',
-                      position: topic?.mode === 'duel' ? positionSel || undefined : undefined,
-                      ...(!!user && !useGuest ? {} : { guestId: getOrCreateGuestId() }),
-                    }),
-                  })
-                    if (!res.ok) throw new Error('發布失敗，請稍後再試')
-                    const body = await res.json().catch(()=>null)
-                    try {
-                      if (!user) {
-                        const nameToSave = authorName.trim()
-                        if (nameToSave) localStorage.setItem('pl:guestName', nameToSave)
-                      }
-                    } catch {}
-                    try { if (!user || useGuest) { const pid = body?.data?.id; if (pid) addGuestItem('point', pid) } } catch {}
-                    setSuccessOpen(true)
-                    setTimeout(() => navigate(topicId ? `/topics/${topicId}` : '/'), 1200)
-                  } catch (e) {
-                    setError(e instanceof Error ? e.message : '發布失敗')
-                  } finally {
-                    setSubmitting(false)
-                  }
-                }}
-              >
-                {submitting ? (
-                  <>
-                    <svg className="animate-spin" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
-                      <path d="M21 12a9 9 0 1 1-6.219-8.56" />
-                    </svg>
-                    {t('actions.publish')}
-                  </>
-                ) : (
-                  t('actions.publish')
-                )}
-              </button>
-            </Stack>
           </Stack>
+          <PrimaryCtaButton
+            size="md"
+            fullWidth
+            className="gap-2 justify-center"
+            disabled={
+              loadingTopic ||
+              submitting ||
+              !description.trim() ||
+              (!!user && !useGuest ? false : !authorName.trim()) ||
+              (topic?.mode === 'duel' && !positionSel)
+            }
+            onClick={async () => {
+              setTouched({ desc: true, name: true })
+              if (!description.trim()) return
+              if ((!user || useGuest) && !authorName.trim()) return
+              if (topic?.mode === 'duel' && !positionSel) return
+              try {
+                setSubmitting(true)
+                setError(null)
+                const res = await fetch(withBase('/api/points'), {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({
+                    description: description.trim(),
+                    topicId: topicId || undefined,
+                    authorName: !!user && !useGuest ? undefined : authorName.trim(),
+                    authorType: !!user && !useGuest ? 'user' : 'guest',
+                    position: topic?.mode === 'duel' ? positionSel || undefined : undefined,
+                    ...(!!user && !useGuest ? {} : { guestId: getOrCreateGuestId() }),
+                  }),
+                  credentials: 'include',
+                })
+                if (!res.ok) throw new Error('發布失敗，請稍後再試')
+                const body = await res.json().catch(() => null)
+                try {
+                  if (!user) {
+                    const nameToSave = authorName.trim()
+                    if (nameToSave) saveGuestName(nameToSave)
+                  }
+                } catch {}
+                try {
+                  if (!user || useGuest) {
+                    const pid = body?.data?.id
+                    if (pid) addGuestItem('point', pid)
+                  }
+                } catch {}
+                setSuccessOpen(true)
+                setTimeout(() => navigate(topicId ? `/topics/${topicId}` : '/'), 1200)
+              } catch (e) {
+                setError(e instanceof Error ? e.message : '發布失敗')
+              } finally {
+                setSubmitting(false)
+              }
+            }}
+          >
+            {submitting ? (
+              <>
+                <svg
+                  className="animate-spin"
+                  xmlns="http://www.w3.org/2000/svg"
+                  width="16"
+                  height="16"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  aria-hidden
+                >
+                  <path d="M21 12a9 9 0 1 1-6.219-8.56" />
+                </svg>
+                {t('actions.publish')}
+              </>
+            ) : (
+              t('actions.publish')
+            )}
+          </PrimaryCtaButton>
         </Box>
       </main>
       <Snackbar
