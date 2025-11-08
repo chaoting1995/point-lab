@@ -1,11 +1,12 @@
 import Header from '../components/Header'
 import { useNavigate, useSearchParams } from 'react-router-dom'
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useMemo } from 'react'
 import { createPortal } from 'react-dom'
 import useLanguage from '../i18n/useLanguage'
 import Box from '@mui/material/Box'
 import Stack from '@mui/material/Stack'
 import TextField from '@mui/material/TextField'
+import Button from '@mui/material/Button'
 import Skeleton from '@mui/material/Skeleton'
 import LinearProgress from '@mui/material/LinearProgress'
 import Alert from '@mui/material/Alert'
@@ -13,13 +14,21 @@ import Snackbar from '@mui/material/Snackbar'
 import PageHeader from '../components/PageHeader'
 import TopicCard from '../components/TopicCard'
 import type { Topic } from '../data/topics'
-import { getJson, type ItemResponse, withBase } from '../api/client'
+import { getJson, type ItemResponse, type ListResponse, withBase } from '../api/client'
 import useAuth from '../auth/AuthContext'
 import DuelTabs, { type DuelValue } from '../components/DuelTabs'
 import PrimaryCtaButton from '../components/PrimaryCtaButton'
 import { addGuestItem } from '../utils/guestActivity'
 import { getOrCreateGuestId, saveGuestName } from '../utils/guest'
 import ClipLoader from 'react-spinners/ClipLoader'
+import Dialog from '@mui/material/Dialog'
+import DialogTitle from '@mui/material/DialogTitle'
+import DialogContent from '@mui/material/DialogContent'
+import DialogActions from '@mui/material/DialogActions'
+import List from '@mui/material/List'
+import ListItemButton from '@mui/material/ListItemButton'
+import ListItemText from '@mui/material/ListItemText'
+import Typography from '@mui/material/Typography'
 
 function SubmittingOverlay({ open }: { open: boolean }) {
   if (!open || typeof document === 'undefined') return null
@@ -44,8 +53,9 @@ function SubmittingOverlay({ open }: { open: boolean }) {
 export default function PointAddPage() {
   const navigate = useNavigate()
   const { t } = useLanguage()
-  const [params] = useSearchParams()
-  const topicId = params.get('topic') || ''
+  const [params, setSearchParams] = useSearchParams()
+  const initialTopicId = params.get('topic') || ''
+  const [topicId, setTopicId] = useState(initialTopicId)
   const [topic, setTopic] = useState<Topic | null>(null)
   const [loadingTopic, setLoadingTopic] = useState(!!topicId)
   const [description, setDescription] = useState('')
@@ -57,11 +67,27 @@ export default function PointAddPage() {
   const { user } = useAuth()
   // 對立模式下的立場選擇；null 代表未選擇
   const [positionSel, setPositionSel] = useState<DuelValue>(null)
-
-  const handleTopicCardClick = useCallback(() => {
-    if (submitting || !topic) return
-    navigate(`/topics/${topic.id}`)
-  }, [submitting, topic, navigate])
+  const [topicSelectorOpen, setTopicSelectorOpen] = useState(false)
+  const [topicOptions, setTopicOptions] = useState<Topic[]>([])
+  const [topicOptionsLoading, setTopicOptionsLoading] = useState(false)
+  const [topicSearch, setTopicSearch] = useState('')
+  const filteredTopics = useMemo(() => {
+    if (!topicSearch.trim()) return topicOptions
+    const kw = topicSearch.trim().toLowerCase()
+    return topicOptions.filter((t) => t.name.toLowerCase().includes(kw) || (t.description || '').toLowerCase().includes(kw))
+  }, [topicOptions, topicSearch])
+  const loadTopicOptions = useCallback(async () => {
+    if (topicOptionsLoading) return
+    setTopicOptionsLoading(true)
+    try {
+      const resp = await getJson<ListResponse<Topic>>('/api/topics?page=1&size=500&sort=new')
+      setTopicOptions(resp.items || [])
+    } catch {
+      setTopicOptions([])
+    } finally {
+      setTopicOptionsLoading(false)
+    }
+  }, [topicOptionsLoading])
 
   const handleSubmit = useCallback(async () => {
     setTouched({ desc: true, name: true })
@@ -108,9 +134,40 @@ export default function PointAddPage() {
   }, [description, user, authorName, topic, positionSel, topicId, navigate])
 
   useEffect(() => {
+    if (topicSelectorOpen && topicOptions.length === 0 && !topicOptionsLoading) {
+      loadTopicOptions()
+    }
+  }, [topicSelectorOpen, topicOptions.length, topicOptionsLoading, loadTopicOptions])
+
+  const applySearchParam = useCallback((value: string | null) => {
+    const next = new URLSearchParams(params.toString())
+    if (value) next.set('topic', value)
+    else next.delete('topic')
+    setSearchParams(next, { replace: true })
+  }, [params, setSearchParams])
+
+  const handleTopicSelect = (item: Topic) => {
+    setTopic(item)
+    setTopicId(item.id)
+    setLoadingTopic(false)
+    applySearchParam(item.id)
+    setTopicSelectorOpen(false)
+  }
+
+  const handleTopicClear = () => {
+    setTopic(null)
+    setTopicId('')
+    setPositionSel(null)
+    setLoadingTopic(false)
+    applySearchParam(null)
+    setTopicSelectorOpen(false)
+  }
+
+  useEffect(() => {
     let aborted = false
     async function run() {
       if (!topicId) {
+        setTopic(null)
         setLoadingTopic(false)
         return
       }
@@ -152,43 +209,60 @@ export default function PointAddPage() {
             align="center"
             backButton
             onBack={() => navigate(topicId ? `/topics/${topicId}` : '/topics')}
-            title={t('points.add.title') || '新增觀點'}
+            title={t('points.add.title')}
             subtitle={''}
           />
 
           <Stack spacing={2} sx={{ maxWidth: 640, mx: 'auto', opacity: submitting ? 0.6 : 1 }}>
-            {/* 顯示主題卡片（隱藏投票與附加資訊），點擊返回主題詳頁 */}
-            {loadingTopic ? (
-              <Box sx={{ borderRadius: 2, border: '1px solid', borderColor: 'divider', p: 2 }}>
-                <Skeleton variant="text" width="70%" height={24} />
-                <Skeleton variant="text" width="50%" height={18} />
-              </Box>
-            ) : (
-              topic && (
-                <div onClick={handleTopicCardClick} style={{ cursor: submitting ? 'default' : 'pointer', pointerEvents: submitting ? 'none' : 'auto' }}>
+            <Box
+              onClick={() => setTopicSelectorOpen(true)}
+              className="layout-card"
+              sx={{
+                border: topic ? '1px solid transparent' : '1px dashed rgba(79,70,229,0.4)',
+                boxShadow: topic ? undefined : '0 0 0 1px rgba(79,70,229,0.15)',
+                transition: 'box-shadow 0.2s ease, border-color 0.2s ease',
+                cursor: 'pointer',
+                p: 0,
+              }}
+            >
+              {loadingTopic ? (
+                <Box sx={{ p: 2 }}>
+                  <Skeleton variant="text" width="70%" height={24} />
+                  <Skeleton variant="text" width="50%" height={18} />
+                </Box>
+              ) : topic ? (
+                <Box sx={{ pointerEvents: 'none' }}>
                   <TopicCard topic={topic} showMeta={false} showVote={false} />
                   {(topic.count ?? 0) === 0 && (
                     <Box sx={{ mt: 1.5, px: 1 }}>
                       <p className="text-slate-600" style={{ fontSize: 14, margin: 0, textAlign: 'center' }}>
-                        {t('topics.add.firstPrompt') || '這個主題空空如也，為主題添加第一個觀點吧！'}
+                        {t('topics.add.firstPrompt')}
                       </p>
                     </Box>
                   )}
-                </div>
-              )
-            )}
+                </Box>
+              ) : (
+                <Box sx={{ p: 2 }}>
+                  <Typography sx={{ fontWeight: 700, mb: 0.5 }}>{t('points.add.selectTopic')}</Typography>
+                  <Typography variant="body2" color="text.secondary">點擊挑選一個主題後才能發布觀點</Typography>
+                </Box>
+              )}
+            </Box>
+            <Typography variant="caption" color="text.secondary" sx={{ textAlign: 'center' }}>
+              {topic ? '點擊更換主題' : '請先選擇主題'}
+            </Typography>
             {/* 對立模式：立場選擇（Button Group） */}
             {topic?.mode === 'duel' && (
               <DuelTabs
                 value={positionSel}
                 onChange={setPositionSel}
-                label={t('points.add.stanceLabel') || '選擇立場'}
+                label={t('points.add.stanceLabel')}
                 disabled={submitting}
               />
             )}
             <TextField
-              label={t('points.add.descLabel') || '觀點內容'}
-              placeholder={t('points.add.descPlaceholder') || '寫下你的觀點…'}
+              label={t('points.add.descLabel')}
+              placeholder={t('points.add.descPlaceholder')}
               fullWidth
               multiline
               minRows={4}
@@ -197,21 +271,21 @@ export default function PointAddPage() {
               onBlur={() => setTouched((s) => ({ ...s, desc: true }))}
               required
               error={touched.desc && !description.trim()}
-              helperText={touched.desc && !description.trim() ? ((t('points.add.descLabel') || '你的觀點') + ' 為必填') : ' '}
+              helperText={touched.desc && !description.trim() ? ((t('points.add.descLabel')) + ' 為必填') : ' '}
               sx={{ '& .MuiOutlinedInput-root': { bgcolor: 'common.white' } }}
               disabled={submitting}
             />
             {!user && (
               <TextField
-                label={t('points.add.nameLabel') || '你的名稱（無需註冊）'}
-                placeholder={t('points.add.namePlaceholder') || '例如：小明'}
+                label={t('points.add.nameLabel')}
+                placeholder={t('points.add.namePlaceholder')}
                 fullWidth
                 value={authorName}
                 onChange={(e) => setAuthorName(e.target.value)}
                 onBlur={() => setTouched((s) => ({ ...s, name: true }))}
                 required
                 error={touched.name && !authorName.trim()}
-                helperText={touched.name && !authorName.trim() ? ((t('points.add.nameLabel') || '你的名稱') + ' 為必填') : ' '}
+                helperText={touched.name && !authorName.trim() ? ((t('points.add.nameLabel')) + ' 為必填') : ' '}
                 sx={{ '& .MuiOutlinedInput-root': { bgcolor: 'common.white' } }}
                 disabled={submitting}
               />
@@ -225,6 +299,7 @@ export default function PointAddPage() {
             disabled={
               loadingTopic ||
               submitting ||
+              !topicId ||
               !description.trim() ||
               (!user && !authorName.trim()) ||
               (topic?.mode === 'duel' && !positionSel)
@@ -255,6 +330,87 @@ export default function PointAddPage() {
           </Alert>
         </Box>
       </Snackbar>
+      <Dialog
+        open={topicSelectorOpen}
+        onClose={() => setTopicSelectorOpen(false)}
+        fullWidth
+        maxWidth="sm"
+        PaperProps={{ sx: { borderRadius: '12px' } }}
+      >
+        <DialogTitle>選擇主題</DialogTitle>
+        <DialogContent dividers sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+          <TextField
+            fullWidth
+            size="small"
+            value={topicSearch}
+            onChange={(e) => setTopicSearch(e.target.value)}
+            placeholder="搜尋主題名稱或描述"
+          />
+          {topicOptionsLoading ? (
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
+              {Array.from({ length: 4 }).map((_, idx) => (
+                <Box key={`topic-opt-skel-${idx}`} sx={{ border: '1px solid', borderColor: 'divider', borderRadius: 2, p: 2 }}>
+                  <Skeleton variant="text" width="70%" height={24} />
+                  <Skeleton variant="text" width="60%" height={16} />
+                </Box>
+              ))}
+            </Box>
+          ) : (
+            <List sx={{ maxHeight: 320, overflow: 'auto', border: '1px solid', borderColor: 'divider', borderRadius: 2 }}>
+              {filteredTopics.map((opt) => (
+                <ListItemButton
+                  key={opt.id}
+                  onClick={() => handleTopicSelect(opt)}
+                  selected={opt.id === topicId}
+                  sx={{
+                    borderBottom: '1px solid',
+                    borderColor: 'divider',
+                    '&:last-of-type': { borderBottom: 'none' },
+                    borderRadius: 0,
+                  }}
+                >
+                  <ListItemText
+                    primary={<Typography sx={{ fontWeight: 700 }}>{opt.name}</Typography>}
+                    secondary={opt.description || ''}
+                  />
+                </ListItemButton>
+              ))}
+              {!topicOptionsLoading && filteredTopics.length === 0 && (
+                <Typography sx={{ textAlign: 'center', color: 'text.secondary', py: 2 }}>找不到符合的主題</Typography>
+              )}
+            </List>
+          )}
+        </DialogContent>
+        <DialogActions sx={{ px: 2, py: 1.5, gap: 1, justifyContent: 'center' }}>
+          <Button
+            variant="outlined"
+            onClick={() => setTopicSelectorOpen(false)}
+            sx={(t) => ({
+              color: t.palette.text.secondary,
+              borderColor: t.palette.divider,
+              '&:hover': { borderColor: t.palette.text.disabled, bgcolor: t.palette.action.hover },
+              borderRadius: '10px',
+              minWidth: 120,
+            })}
+          >
+            取消
+          </Button>
+          <Button
+            variant="contained"
+            color="primary"
+            disabled={!topicId}
+            onClick={handleTopicClear}
+            sx={(t) => ({
+              borderRadius: '10px',
+              minWidth: 120,
+              bgcolor: topicId ? t.palette.primary.main : t.palette.action.disabled,
+              '&:hover': topicId ? { bgcolor: t.palette.primary.dark } : {},
+            })}
+          >
+            清除選擇
+          </Button>
+        </DialogActions>
+      </Dialog>
     </div>
   )
 }

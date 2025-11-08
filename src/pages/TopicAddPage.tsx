@@ -91,10 +91,10 @@ export default function TopicAddPage() {
               disabled={isDisabled}
             />
             <FormControl disabled={isDisabled}>
-              <FormLabel sx={{ fontWeight: 700 }}>{t('topics.add.modeLabel') || '主題模式'}</FormLabel>
+              <FormLabel sx={{ fontWeight: 700 }}>{t('topics.add.modeLabel')}</FormLabel>
               <RadioGroup row value={mode} onChange={(e) => setMode(e.target.value as 'open' | 'duel')}>
-                <FormControlLabel value="open" control={<Radio />} label={t('topics.add.modeOpen') || '開放式主題'} />
-                <FormControlLabel value="duel" control={<Radio />} label={t('topics.add.modeDuel') || '對立式主題'} />
+                <FormControlLabel value="open" control={<Radio />} label={t('topics.add.modeOpen')} />
+                <FormControlLabel value="duel" control={<Radio />} label={t('topics.add.modeDuel')} />
               </RadioGroup>
             </FormControl>
             {error && <Alert severity="error" sx={{ mt: 0 }}>{error}</Alert>}

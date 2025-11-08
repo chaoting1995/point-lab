@@ -12,7 +12,7 @@ export default function GuidePage() {
       <Header />
       <main className="app__inner">
         <Box sx={{ p: { xs: 1.5, md: 2 } }}>
-          <PageHeader align="center" title={t('guide.title') || '指南'} subtitle={t('guide.subtitle') || '撰寫觀點的小建議'} />
+          <PageHeader align="center" title={t('guide.title')} subtitle={t('guide.subtitle')} />
           
           <Box sx={{ mt: 2 }}>
             <div
@@ -21,7 +21,7 @@ export default function GuidePage() {
             >
               <div className="card-body" style={{ padding: 16 }}>
                 <Typography variant="subtitle1" sx={{ fontWeight: 800, mb: 1 }}>
-                  {t('guide.card1.title') || '善用一句話，提煉好觀點'}
+                  {t('guide.card1.title')}
                 </Typography>
                 <Typography variant="body2" sx={{ whiteSpace: 'pre-wrap', lineHeight: 1.8 }}>
                   {t('guide.card1.body')}
@@ -35,7 +35,7 @@ export default function GuidePage() {
             >
               <div className="card-body" style={{ padding: 16 }}>
                 <Typography variant="subtitle1" sx={{ fontWeight: 800, mb: 1 }}>
-                  {t('guide.card2.title') || '觀點就像茶包，還需沖入熱水'}
+                  {t('guide.card2.title')}
                 </Typography>
                 <Typography variant="body2" sx={{ whiteSpace: 'pre-wrap', lineHeight: 1.8, color: '#334155' }}>
                   {t('guide.card2.body')}
@@ -49,7 +49,7 @@ export default function GuidePage() {
             >
               <div className="card-body" style={{ padding: 16 }}>
                 <Typography variant="subtitle1" sx={{ fontWeight: 800, mb: 1 }}>
-                  {t('guide.card3.title') || '內容太多，就拆成多個觀點表達'}
+                  {t('guide.card3.title')}
                 </Typography>
                 <Typography variant="body2" sx={{ whiteSpace: 'pre-wrap', lineHeight: 1.8, color: '#334155' }}>
                   {t('guide.card3.body')}

@@ -35,7 +35,7 @@ export default function SortTabs({ value, onChange, fullWidth = true }: Props) {
       >
         <Tab value="new" label={t('tabs.new')} icon={<Sparkle size={16} />} iconPosition="start" />
         <Tab value="hot" label={t('tabs.hot')} icon={<Flame size={16} />} iconPosition="start" />
-        <Tab value="old" label={t('tabs.old') || '最早'} icon={<Clock size={16} />} iconPosition="start" />
+        <Tab value="old" label={t('tabs.old')} icon={<Clock size={16} />} iconPosition="start" />
       </Tabs>
     </Box>
   )

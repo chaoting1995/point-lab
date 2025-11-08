@@ -44,7 +44,7 @@ export default function TopicEditPage() {
       <Header />
       <main className="app__inner">
         <Box sx={{ px: 0, py: { xs: 1.5, md: 2 } }}>
-          <PageHeader align="center" backButton onBack={() => navigate(-1)} title={t('topics.edit.title') || '編輯主題'} subtitle={t('topics.add.subtitle')} />
+          <PageHeader align="center" backButton onBack={() => navigate(-1)} title={t('topics.edit.title')} subtitle={t('topics.add.subtitle')} />
           <Stack spacing={2} sx={{ maxWidth: 640, mx: 'auto' }}>
             <TextField
               label={t('topics.add.nameLabel')}
@@ -90,7 +90,7 @@ export default function TopicEditPage() {
                 }
               }}
             >
-              {t('actions.save') || '儲存'}
+              {t('actions.save')}
             </button>
           </Stack>
         </Box>
@@ -98,7 +98,7 @@ export default function TopicEditPage() {
       <Snackbar open={successOpen} autoHideDuration={1000} onClose={() => setSuccessOpen(false)} anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }} sx={{ width: '100%' }}>
         <Box sx={{ width: '100%', maxWidth: 576, px: 2 }}>
           <Alert severity="success" variant="filled" sx={{ borderRadius: '10px', width: '100%' }}>
-            {t('actions.save') || '儲存'} OK
+            {t('actions.save')} OK
           </Alert>
         </Box>
       </Snackbar>

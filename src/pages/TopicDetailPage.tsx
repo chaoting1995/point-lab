@@ -1,4 +1,5 @@
 import Header from '../components/Header'
+import Footer from '../components/Footer'
 import { useParams, useNavigate } from 'react-router-dom'
 import type { Topic } from '../data/topics'
 import type { Point } from '../data/points'
@@ -143,7 +144,7 @@ export default function TopicDetailPage() {
                   cursor: 'pointer',
                 })}
               >
-                {t('points.add.stanceAgree') || '讚同'}
+                {t('points.add.stanceAgree')}
               </Box>
               <Box
                 component="button"
@@ -163,7 +164,7 @@ export default function TopicDetailPage() {
                   cursor: 'pointer',
                 })}
               >
-                {t('points.add.stanceOther') || '其他'}
+                {t('points.add.stanceOther')}
               </Box>
             </Box>
           )}
@@ -212,7 +213,7 @@ export default function TopicDetailPage() {
               )}
               {!hasMore && (
                 <Typography variant="body2" sx={{ textAlign: 'center', color: 'text.secondary', fontSize: 13, mt: 1 }}>
-                  {t('common.noMore') || '到達思想的邊界了'}
+                  {t('common.noMore')}
                 </Typography>
               )}
               <Box sx={{ mt: 2, textAlign: 'center' }}>
@@ -222,7 +223,7 @@ export default function TopicDetailPage() {
                   </PrimaryCtaButton>
                 </Box>
                 <p className="text-slate-500" style={{ fontSize: 14, margin: '12px 0 0' }}>
-                  {(t('points.footerPrompt') || '寫下你的洞見！\n無需註冊，網友會為最好的觀點按讚')
+                  {(t('points.footerPrompt'))
                     .split('\n')
                     .map((line, idx, arr) => (
                       <span key={`footer-line-${idx}`}>
@@ -244,7 +245,7 @@ export default function TopicDetailPage() {
               )}
               {!loading && (
                 <>
-                  <p className="text-center text-slate-500" style={{ fontSize: 14 }}>{t('points.empty') || '這裡是思維的荒蕪之地，建立第一個觀點。無需註冊。'}</p>
+                  <p className="text-center text-slate-500" style={{ fontSize: 14 }}>{t('points.empty')}</p>
                   <Box sx={{ mt: 1, display: 'flex', justifyContent: 'center' }}>
                     <PrimaryCtaButton to={`/points/add?topic=${id}`} size="md" iconLeft={<Plus size={16} weight="bold" />}>
                       {t('header.cta')}
@@ -256,6 +257,7 @@ export default function TopicDetailPage() {
           )}
         </Box>
       </main>
+      <Footer />
     </div>
   )
 }

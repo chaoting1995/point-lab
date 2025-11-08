@@ -58,7 +58,7 @@ export default function GoogleLoginButton({ onClick, sx }: { onClick: () => void
           ...sx as any,
         })}
       >
-        {t('auth.signInWithGoogle') || '使用 Google 登入'}
+        {t('auth.signInWithGoogle')}
       </Button>
     </>
   )

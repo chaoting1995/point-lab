@@ -124,11 +124,11 @@ export function Header() {
                 </Box>
                 <Box sx={{ display: 'flex', justifyContent: 'center', mt: 1, gap: 1 }}>
                   <Button variant="outlined" size="small" onClick={()=> { setUserMenuAnchor(null); if (user?.id) navigate(`/users/${encodeURIComponent(user.id)}`) }}>
-                    {t('user.profileCenter') || '會員中心'}
+                    {t('user.profileCenter')}
                   </Button>
                   {(user as any)?.role && ((user as any).role==='admin' || (user as any).role==='superadmin') && (
                     <Button variant="contained" size="small" onClick={()=> { setUserMenuAnchor(null); navigate('/admin') }}>
-                      {t('user.adminConsole') || '管理後台'}
+                      {t('user.adminConsole')}
                     </Button>
                   )}
                 </Box>
@@ -140,7 +140,7 @@ export function Header() {
                     logout()
                   }
                 }}>
-                  {t('nav.logout') || '登出'}
+                  {t('nav.logout')}
                 </Button>
               </Box>
             </Popover>
@@ -186,7 +186,7 @@ export function Header() {
               <ListItemIcon>
                 <Question size={18} />
               </ListItemIcon>
-              <ListItemText primary={t('nav.guide') || '指南'} />
+              <ListItemText primary={t('nav.guide')} />
             </ListItemButton>
             <Divider sx={{ my: 0.5 }} />
             {/* 語系切換：單行 + 點擊切換 */}
@@ -194,7 +194,7 @@ export function Header() {
               <ListItemIcon>
                 <Globe size={18} />
               </ListItemIcon>
-              <ListItemText primary={`${t('languageToggle.ariaLabel')}：${locale==='zh-Hant' ? (t('languageToggle.traditional')||'繁') : (locale==='zh-Hans' ? (t('languageToggle.simplified')||'简') : (t('languageToggle.english')||'EN'))}`} />
+              <ListItemText primary={`${t('languageToggle.ariaLabel')}：${locale==='zh-Hant' ? (t('languageToggle.traditional')) : (locale==='zh-Hans' ? (t('languageToggle.simplified')) : (t('languageToggle.english')))}`} />
             </ListItemButton>
             <Divider sx={{ my: 0.5 }} />
             {!user ? (
@@ -202,7 +202,7 @@ export function Header() {
                 <ListItemIcon>
                   <SignIn size={20} />
                 </ListItemIcon>
-                <ListItemText primary={t('nav.login') || '登入'} />
+                <ListItemText primary={t('nav.login')} />
               </ListItemButton>
             ) : (
               <ListItemButton onClick={async () => {
@@ -215,7 +215,7 @@ export function Header() {
                 <ListItemIcon>
                   <SignOut size={20} />
                 </ListItemIcon>
-                <ListItemText primary={t('nav.logout') || '登出'} secondary={user.email || user.name} />
+                <ListItemText primary={t('nav.logout')} secondary={user.email || user.name} />
               </ListItemButton>
             )}
             </List>

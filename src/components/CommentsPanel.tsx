@@ -162,18 +162,18 @@ export default function CommentsPanel({ open, onClose, pointId }: { open: boolea
     <Box sx={{ p: 2, display: 'flex', flexDirection: 'column', height: '100%' }}>
       <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
         <Select size="small" value={sort} onChange={(e) => setSort(e.target.value as SortKey)} displayEmpty renderValue={(v)=>{
-          const map: Record<string,string> = { old: t('tabs.old') || '最舊', new: t('tabs.new') || '最新', hot: t('tabs.hot') || '熱門' }
+          const map: Record<string,string> = { old: t('tabs.old'), new: t('tabs.new'), hot: t('tabs.hot') }
           return map[(v as SortKey) || 'old']
         }}>
-          <MenuItem value="old">{t('tabs.old') || '最舊'}</MenuItem>
-          <MenuItem value="new">{t('tabs.new') || '最新'}</MenuItem>
-          <MenuItem value="hot">{t('tabs.hot') || '熱門'}</MenuItem>
+          <MenuItem value="old">{t('tabs.old')}</MenuItem>
+          <MenuItem value="new">{t('tabs.new')}</MenuItem>
+          <MenuItem value="hot">{t('tabs.hot')}</MenuItem>
         </Select>
         <Box sx={{ flex: 1 }} />
       </Box>
 
       <Box sx={{ flex: 1, overflow: 'auto', pr: 1 }}>
-        {loading && <Typography variant="body2" sx={{ color: 'text.secondary', textAlign: 'center', py: 1 }}>{t('common.loading') || '載入中…'}</Typography>}
+        {loading && <Typography variant="body2" sx={{ color: 'text.secondary', textAlign: 'center', py: 1 }}>{t('common.loading')}</Typography>}
         {items.map((c) => (
           <Box key={c.id} sx={{ py: 1, borderBottom: '1px solid', borderColor: 'divider' }}>
             <Box sx={{ display: 'flex', gap: 1.5 }}>
@@ -185,11 +185,11 @@ export default function CommentsPanel({ open, onClose, pointId }: { open: boolea
                 </Box>
                 <Box component="span" sx={{ m: 0, color: (t)=>t.palette.text.secondary }}>・</Box>
                 <Box component="button" type="button" className="card-action" onClick={async (e)=>{ e.preventDefault(); e.stopPropagation(); const reason = await prompt({ title: '確定舉報？', label: '舉報原因（可選）', placeholder: '請補充原因（可留空）', confirmText: '送出', cancelText: '取消' }); if (reason !== null) { try { const r = await fetch(withBase('/api/reports'), { method:'POST', headers:{ 'Content-Type':'application/json' }, body: JSON.stringify({ type: 'comment', targetId: c.id, reason: (reason||'').trim() || undefined }) }); if (r.ok) setSnack({ open: true, msg: '已送出舉報' }) } catch {} } }} sx={{ p: 0, background: 'transparent', border: 'none', color: (t)=>t.palette.primary.main }}>
-                  {t('actions.report') || '報告'}
+                  {t('actions.report')}
                 </Box>
                 <Box component="span" sx={{ m: 0, color: (t)=>t.palette.text.secondary }}>・</Box>
                 <Box component="button" type="button" className="card-action" onClick={() => setReplyTo(c)} sx={{ p: 0, background: 'transparent', border: 'none', color: (t)=>t.palette.primary.main }}>
-                  {t('actions.reply') || '回覆'}
+                  {t('actions.reply')}
                 </Box>
               </Box>
               <div ref={(el)=>{ contentRefs.current[c.id]=el }} style={{ fontSize: 14, color: '#111827', whiteSpace: 'pre-wrap', wordBreak: 'break-word', overflowWrap: 'anywhere', ...(expandedBody[c.id] ? {} : { display: '-webkit-box', WebkitLineClamp: 3, WebkitBoxOrient: 'vertical', overflow: 'hidden' }) }}>{c.content}</div>
@@ -202,8 +202,8 @@ export default function CommentsPanel({ open, onClose, pointId }: { open: boolea
                   onClick={() => setExpandedBody((prev) => ({ ...prev, [c.id]: !prev[c.id] }))}
                 >
                   {expandedBody[c.id]
-                    ? (t('common.seeLess') || '查看更少')
-                    : (t('common.seeMore') || '查看更多')}
+                    ? (t('common.seeLess'))
+                    : (t('common.seeMore'))}
                 </Box>
               )}
               {/* 二級回覆展開開關（仍置於第一列左區）*/}
@@ -218,8 +218,8 @@ export default function CommentsPanel({ open, onClose, pointId }: { open: boolea
                     }
                   }}>
                     <CaretDown size={14} /> {expanded[c.id]
-                      ? (t('actions.hideReplies') || '收合回覆')
-                      : ((t('actions.viewRepliesCount') || '{n} replies').replace('{n}', String((c as any).childCount ?? 0)))}
+                      ? (t('actions.hideReplies'))
+                      : ((t('actions.viewRepliesCount')).replace('{n}', String((c as any).childCount ?? 0)))}
                   </Box>
                 </Box>
               )}
@@ -291,8 +291,8 @@ export default function CommentsPanel({ open, onClose, pointId }: { open: boolea
                           onClick={() => setExpandedBody((prev) => ({ ...prev, [rc.id]: !prev[rc.id] }))}
                         >
                           {expandedBody[rc.id]
-                            ? (t('common.seeLess') || '查看更少')
-                            : (t('common.seeMore') || '查看更多')}
+                            ? (t('common.seeLess'))
+                            : (t('common.seeMore'))}
                         </Box>
                       )}
                     </Box>
@@ -345,7 +345,7 @@ export default function CommentsPanel({ open, onClose, pointId }: { open: boolea
                       const nextPage = expanded[c.id]!.page + 1
                       const resp = await getJson<ListResponse<CommentItem>>(`/api/points/${encodeURIComponent(pointId)}/comments?sort=old&page=${nextPage}&size=10&parent=${encodeURIComponent(c.id)}`)
                       setExpanded(prev => ({ ...prev, [c.id]: { items: [...prev[c.id]!.items, ...resp.items], page: nextPage, total: resp.total || prev[c.id]!.total } }))
-                    }}>{t('common.loadMore') || '查看更多評論'}</button>
+                    }}>{t('common.loadMore')}</button>
                   </Box>
                 )}
               </Box>
@@ -355,7 +355,7 @@ export default function CommentsPanel({ open, onClose, pointId }: { open: boolea
 
         {(items.length < total) && (
           <Box sx={{ textAlign: 'center', py: 1 }}>
-            <button className="btn btn-sm" onClick={() => load(page + 1, true)}>{t('common.loadMore') || '查看更多評論'}</button>
+            <button className="btn btn-sm" onClick={() => load(page + 1, true)}>{t('common.loadMore')}</button>
           </Box>
         )}
       </Box>
@@ -363,12 +363,12 @@ export default function CommentsPanel({ open, onClose, pointId }: { open: boolea
       <Box sx={{ pt: 1, mt: 'auto', bgcolor: 'background.paper' }}>
         {replyTo && (
           <Box sx={{ mb: 0.5, fontSize: 12, color: 'text.secondary' }}>
-            {t('actions.replying') || '正在回覆'}{' '}
+            {t('actions.replying')}{' '}
             <span style={{ color: '#0f172a', fontWeight: 700 }}>
               {replyTo.author?.name || guestName || '匿名'}
             </span>
             {' '}・{' '}
-            <button className="card-action" onClick={() => setReplyTo(null)}>{t('actions.cancel') || '取消'}</button>
+            <button className="card-action" onClick={() => setReplyTo(null)}>{t('actions.cancel')}</button>
           </Box>
         )}
         <Box sx={{ display: 'flex', gap: 1, alignItems: 'flex-end' }}>
@@ -380,7 +380,7 @@ export default function CommentsPanel({ open, onClose, pointId }: { open: boolea
             multiline
             minRows={1}
             maxRows={6}
-            placeholder={t('actions.commentPlaceholder') || '寫下你的評論…'}
+            placeholder={t('actions.commentPlaceholder')}
           />
           <IconButton
             onClick={submit}
@@ -398,7 +398,7 @@ export default function CommentsPanel({ open, onClose, pointId }: { open: boolea
         </Box>
         {!user && !guestName && (
           <Box sx={{ mt: 0.5 }}>
-            <TextField value={guestName} onChange={(e)=>setGuestName(e.target.value)} fullWidth size="small" label={t('points.add.nameLabel') || '訪客名稱'} placeholder={t('points.add.namePlaceholder') || '你的名稱'} />
+            <TextField value={guestName} onChange={(e)=>setGuestName(e.target.value)} fullWidth size="small" label={t('points.add.nameLabel')} placeholder={t('points.add.namePlaceholder')} />
           </Box>
         )}
       </Box>

@@ -63,7 +63,7 @@ export default function PointEditPage() {
       <Header />
       <main className="app__inner">
         <Box sx={{ px: 0, py: { xs: 1.5, md: 2 } }}>
-          <PageHeader align="center" backButton onBack={() => navigate(topicId ? `/topics/${topicId}` : '/topics')} title={t('points.edit.title') || '編輯觀點'} subtitle={''} />
+          <PageHeader align="center" backButton onBack={() => navigate(topicId ? `/topics/${topicId}` : '/topics')} title={t('points.edit.title')} subtitle={''} />
           <Stack spacing={2} sx={{ maxWidth: 640, mx: 'auto' }}>
             {topic && (
               <div onClick={() => navigate(`/topics/${topic.id}`)}>
@@ -71,10 +71,10 @@ export default function PointEditPage() {
               </div>
             )}
             {topic?.mode === 'duel' && (
-              <DuelTabs value={positionSel} onChange={setPositionSel} label={t('points.add.stanceLabel') || '選擇立場'} />
+              <DuelTabs value={positionSel} onChange={setPositionSel} label={t('points.add.stanceLabel')} />
             )}
             <TextField
-              label={t('points.add.descLabel') || '你的觀點'}
+              label={t('points.add.descLabel')}
               fullWidth
               multiline
               minRows={4}
@@ -106,7 +106,7 @@ export default function PointEditPage() {
                 }
               }}
             >
-              {t('actions.save') || '儲存'}
+              {t('actions.save')}
             </button>
           </Stack>
         </Box>
@@ -114,7 +114,7 @@ export default function PointEditPage() {
       <Snackbar open={successOpen} autoHideDuration={1000} onClose={() => setSuccessOpen(false)} anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }} sx={{ width: '100%' }}>
         <Box sx={{ width: '100%', maxWidth: 576, px: 2 }}>
           <Alert severity="success" variant="filled" sx={{ borderRadius: '10px', width: '100%' }}>
-            {t('actions.save') || '儲存'} OK
+            {t('actions.save')} OK
           </Alert>
         </Box>
       </Snackbar>

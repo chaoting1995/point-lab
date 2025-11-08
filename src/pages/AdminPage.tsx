@@ -157,8 +157,8 @@ export default function AdminPage() {
         <main className="admin__inner" style={{ display: 'flex' }}>
           <Box sx={{ flex: 1, p: 2, display: 'flex', alignItems: 'center', justifyContent: 'center', marginTop: '96px' }}>
             <Paper elevation={0} sx={{ p: 3, borderRadius: '10px', border: '1px solid', borderColor: 'divider', textAlign: 'center', maxWidth: 360 }}>
-              <Typography variant="h6" sx={{ fontWeight: 800, mb: 0.5 }}>{t('auth.loginTitle') || '登入'}</Typography>
-              <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>{t('auth.loginDesc') || '登入後，可累積數據、參與排名'}</Typography>
+              <Typography variant="h6" sx={{ fontWeight: 800, mb: 0.5 }}>{t('auth.loginTitle')}</Typography>
+              <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>{t('auth.loginDesc')}</Typography>
               <GoogleLoginButton onClick={async () => { await login() }} />
             </Paper>
           </Box>
@@ -428,11 +428,11 @@ export default function AdminPage() {
                 <Table size="small" sx={{ minWidth: 860 }}>
                   <TableHead>
                     <TableRow>
-                      <TableCell sx={{ whiteSpace: 'nowrap' }}>{t('admin.reports.headers.targetId') || '目標ID'}</TableCell>
-                      <TableCell sx={{ whiteSpace: 'nowrap' }}>{t('admin.reports.headers.type') || '類型'}</TableCell>
-                      <TableCell sx={{ whiteSpace: 'nowrap' }}>{t('admin.reports.headers.reason') || '舉報原因'}</TableCell>
-                      <TableCell sx={{ whiteSpace: 'nowrap' }}>{t('admin.reports.headers.reporter') || '舉報人'}</TableCell>
-                      <TableCell sx={{ whiteSpace: 'nowrap' }}>{t('admin.reports.headers.time') || '時間'}</TableCell>
+                      <TableCell sx={{ whiteSpace: 'nowrap' }}>{t('admin.reports.headers.targetId')}</TableCell>
+                      <TableCell sx={{ whiteSpace: 'nowrap' }}>{t('admin.reports.headers.type')}</TableCell>
+                      <TableCell sx={{ whiteSpace: 'nowrap' }}>{t('admin.reports.headers.reason')}</TableCell>
+                      <TableCell sx={{ whiteSpace: 'nowrap' }}>{t('admin.reports.headers.reporter')}</TableCell>
+                      <TableCell sx={{ whiteSpace: 'nowrap' }}>{t('admin.reports.headers.time')}</TableCell>
                     </TableRow>
                   </TableHead>
                   <TableBody>
@@ -461,7 +461,7 @@ export default function AdminPage() {
                             r.targetId
                           )}
                         </TableCell>
-                        <TableCell>{r.type==='topic' ? (t('admin.reports.type.topic')||'主題') : (r.type==='point' ? (t('admin.reports.type.point')||'觀點') : (t('admin.reports.type.comment')||'評論'))}</TableCell>
+                        <TableCell>{r.type==='topic' ? (t('admin.reports.type.topic')) : (r.type==='point' ? (t('admin.reports.type.point')) : (t('admin.reports.type.comment')))}</TableCell>
                         <TableCell sx={{ maxWidth: 320, whiteSpace: 'nowrap', textOverflow: 'ellipsis', overflow: 'hidden' }}>{r.reason || '—'}</TableCell>
                         <TableCell>
                           {r.reporter?.id ? (

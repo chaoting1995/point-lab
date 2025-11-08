@@ -239,7 +239,7 @@ export default function UserProfilePage() {
               {me?.email && me?.email === user.email && (
                 <Box sx={{ mb: 1, display: 'flex', gap: 1 }}>
                   <PrimaryCtaButton size="sm" onClick={()=> setViewAsGuest(v=>!v)} iconLeft={viewAsGuest ? <UserCircle size={16} weight="bold" /> : <Eye size={16} weight="bold" />}>
-                    {viewAsGuest ? (t('user.viewAsMe') || '我的視角') : (t('user.viewAsGuest') || '訪客視角')}
+                    {viewAsGuest ? (t('user.viewAsMe')) : (t('user.viewAsGuest'))}
                   </PrimaryCtaButton>
                   {!viewAsGuest && (
                     <PrimaryCtaButton size="sm" iconLeft={<PencilSimple size={16} weight="bold" />} onClick={()=>{ setNameDraft(user.name || ''); setBioDraft(user.bio || ''); setEditOpen(true) }}>
@@ -248,9 +248,9 @@ export default function UserProfilePage() {
                   )}
                 </Box>
               )}
-              {me?.id === user.id && !viewAsGuest && (
+              {(me?.id === user.id || viewAsGuest) && (
                 <>
-                  <Typography variant="subtitle1" sx={{ fontWeight: 800, mb: 0.5 }}>{t('user.milestonesTitle') || '里程碑'}</Typography>
+                  <Typography variant="subtitle1" sx={{ fontWeight: 800, mb: 0.5 }}>{t('user.milestonesTitle')}</Typography>
                   <Card elevation={0} sx={{ borderRadius: '10px', border: '1px solid', borderColor: 'divider', boxShadow: '0 1px 4px rgba(15,35,95,0.06)', mb: 1.5 }}>
                   <CardContent sx={{ p: 0, '&:last-child': { paddingBottom: 0 } }}>
                     <List dense sx={{ py: 0, mb: 0, bgcolor: 'transparent' }}>
@@ -271,13 +271,13 @@ export default function UserProfilePage() {
                             primary={
                               (user.comments?.length || 0) > 0
                                 ? `評論數量：${user.comments?.length || 0}`
-                                : t('user.milestoneComment') || '新增第一則評論'
+                                : t('user.milestoneComment')
                             }
                           />
                         </ListItemButton>
                       </ListItem>
                       <ListItem disablePadding sx={{ borderTop: '1px solid', borderColor: 'divider' }}>
-                        <ListItemButton onClick={() => navigate('/topics')}>
+                        <ListItemButton onClick={() => navigate('/points/add')}>
                           <ListItemIcon>
                             <Checkbox
                               edge="start"
@@ -293,7 +293,7 @@ export default function UserProfilePage() {
                             primary={
                               (user.points?.length || 0) > 0
                                 ? `觀點數量：${user.points?.length || 0}`
-                                : t('user.milestonePoint') || '新增第一則觀點'
+                                : t('user.milestonePoint')
                             }
                           />
                         </ListItemButton>
@@ -315,7 +315,7 @@ export default function UserProfilePage() {
                             primary={
                               (user.topics?.length || 0) > 0
                                 ? `主題數量：${user.topics?.length || 0}`
-                                : t('user.milestoneTopic') || '新增第一個主題'
+                                : t('user.milestoneTopic')
                             }
                           />
                         </ListItemButton>
@@ -328,7 +328,7 @@ export default function UserProfilePage() {
               {(((user as any).pointLikes || 0) > 0 || ((user as any).topicLikes || 0) > 0) && (
                 <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.25, mb: 1, fontSize: 14, color: 'text.secondary' }}>
                   {(() => {
-                    const tpl = (t('user.pointLikes') || '觀點總計讚數：{n}')
+                    const tpl = (t('user.pointLikes'))
                     const [pre, post] = tpl.split('{n}')
                     const n = String((user as any).pointLikes || 0)
                     return (
@@ -338,7 +338,7 @@ export default function UserProfilePage() {
                     )
                   })()}
                   {(() => {
-                    const tpl = (t('user.topicLikes') || '主題總計讚數：{n}')
+                    const tpl = (t('user.topicLikes'))
                     const [pre, post] = tpl.split('{n}')
                     const n = String((user as any).topicLikes || 0)
                     return (
@@ -352,17 +352,17 @@ export default function UserProfilePage() {
               <Divider sx={{ my: 1 }} />
 
               <Typography sx={{ fontWeight: 800, mb: 0.5, fontSize: 30, textAlign: 'center' }}>
-                {t('user.pointsTitle') || '發布過的觀點'}
+                {t('user.pointsTitle')}
               </Typography>
               {!initialPointsLoaded ? (
                 <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5, mt: 2 }}>{pointsSkeleton}</Box>
               ) : points.length === 0 ? (
                 <Box sx={{ textAlign: 'center', py: 2 }}>
                   <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
-                    {t('user.noPoints') || '還沒有發布過任何觀點！'}
+                    {t('user.noPoints')}
                   </Typography>
-                  <PrimaryCtaButton to="/topics" size="sm" className="gap-2 justify-center">
-                    前往主題箱
+                  <PrimaryCtaButton to="/points/add" size="sm" className="gap-2 justify-center">
+                    新增觀點
                     <CaretRight size={16} weight="bold" />
                   </PrimaryCtaButton>
                 </Box>
@@ -383,12 +383,12 @@ export default function UserProfilePage() {
                   </Box>
                   {!usingFallback && !hasMorePoints && (
                     <Typography variant="body2" sx={{ textAlign: 'center', color: 'text.secondary', fontSize: 13, mt: 1 }}>
-                      {t('common.noMore') || '到達思想的邊界了'}
+                      {t('common.noMore')}
                     </Typography>
                   )}
                   <Box sx={{ textAlign: 'center', py: 2 }}>
-                    <PrimaryCtaButton to="/topics" size="sm" className="gap-2 justify-center">
-                      前往主題箱
+                    <PrimaryCtaButton to="/points/add" size="sm" className="gap-2 justify-center">
+                      新增觀點
                       <CaretRight size={16} weight="bold" />
                     </PrimaryCtaButton>
                   </Box>

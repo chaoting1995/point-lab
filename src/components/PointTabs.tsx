@@ -119,7 +119,7 @@ export default function PointTabs() {
           )}
           {!hasMore && list.length > 0 && (
             <p className="text-center text-slate-400 text-sm py-2">
-              {t('common.noMore') || '到達思想的邊界了'}
+              {t('common.noMore')}
             </p>
           )}
         </>

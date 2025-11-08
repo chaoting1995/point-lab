@@ -1,4 +1,5 @@
 import Header from '../components/Header'
+import Footer from '../components/Footer'
 import useLanguage from '../i18n/useLanguage'
 import { useNavigate } from 'react-router-dom'
 import Box from '@mui/material/Box'
@@ -91,7 +92,7 @@ export default function TopicsPage() {
             subtitle={
               <Box sx={{ textAlign: 'center' }}>
                 <Typography variant="body2" sx={{ color: 'text.secondary' }}>
-                  {t('topics.list.subtitleA') || '探索你感興趣的主題'}
+                  {t('topics.list.subtitleA')}
                 </Typography>
                 <Typography variant="body2" sx={{ color: 'text.secondary' }}>
                   <Box
@@ -130,7 +131,7 @@ export default function TopicsPage() {
                     {t('topics.list.add')}
                   </PrimaryCtaButton>
                   <Typography variant="body2" sx={{ color: 'text.secondary', fontSize: 13 }}>
-                    {t('topics.list.ctaNote') || '無需註冊，網友會為最好的觀點按讚'}
+                    {t('topics.list.ctaNote')}
                   </Typography>
                 </Box>
               </>
@@ -143,7 +144,7 @@ export default function TopicsPage() {
                     {t('topics.list.add')}
                   </PrimaryCtaButton>
                   <Typography variant="body2" sx={{ color: 'text.secondary', fontSize: 13 }}>
-                    {t('topics.list.ctaNote') || '無需註冊，網友會為最好的觀點按讚'}
+                    {t('topics.list.ctaNote')}
                   </Typography>
                 </Box>
               </>
@@ -151,6 +152,7 @@ export default function TopicsPage() {
           </Box>
         </div>
       </main>
+      <Footer />
     </div>
   )
 }

@@ -128,6 +128,7 @@ export type AppTranslations = {
       stanceAgree?: string
       stanceOther?: string
       stanceLabel?: string
+      selectTopic?: string
     }
     edit?: {
       title?: string
@@ -222,7 +223,7 @@ const baseZhHant: AppTranslations = {
       '資訊爆炸的時代，內容氾濫\n' +
       '真知灼見的好觀點，不該被淹沒！\n' +
       'PointLab 的目標，是搜集好觀點\n' +
-      '讓觀點可以被分享、看見、辯論、票選、沉澱\n' +
+      '讓觀點可以被分享、辯論、票選、沉澱\n' +
       '最終，我們將獲得一份精心挑選的好觀點清單！',
     primaryAction: '開始探索',
     secondaryAction: '投稿新觀點',
@@ -316,6 +317,7 @@ const baseZhHant: AppTranslations = {
       stanceAgree: '讚同',
       stanceOther: '其他',
       stanceLabel: '選擇立場',
+      selectTopic: '選擇主題',
     },
     edit: { title: '編輯觀點' },
     empty: '這裡是思維的荒蕪之地，建立第一個觀點！\n無需註冊！',
@@ -340,7 +342,7 @@ const baseZhHant: AppTranslations = {
     allLoaded: '已抵達思想邊界',
     seeMore: '查看更多',
     seeLess: '查看更少',
-    noMore: '沒有更多內容了',
+    noMore: '這裡是思維的邊界',
     edit: '編輯',
     delete: '刪除',
     counts: {

@@ -47,7 +47,7 @@ export default function DuelTabs({ value, onChange, label, disabled }: Props) {
             opacity: disabled ? 0.6 : 1,
           }}
         >
-          {t('points.add.stanceAgree') || '讚同'}
+          {t('points.add.stanceAgree')}
         </button>
         <button
           type="button"
@@ -67,7 +67,7 @@ export default function DuelTabs({ value, onChange, label, disabled }: Props) {
             opacity: disabled ? 0.6 : 1,
           }}
         >
-          {t('points.add.stanceOther') || '其他'}
+          {t('points.add.stanceOther')}
         </button>
       </Box>
     </FormControl>

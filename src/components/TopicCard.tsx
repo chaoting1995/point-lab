@@ -97,11 +97,11 @@ export default function TopicCard({ topic, onDeleted, showMeta = true, showVote 
               )}
               {showMeta && (
                 <Typography component="div" variant="caption" sx={{ color: 'text.secondary', fontSize: 12, mt: 'auto' }}>
-                  {topic.mode === 'duel' ? (t('topics.add.modeDuel') || '對立式主題') : (t('topics.add.modeOpen') || '開放式主題')} |
-                  {' '}{(t('common.counts.points') || '{n} 個觀點').replace('{n}', String(typeof topic.count === 'number' ? topic.count : 0))} |
+                  {topic.mode === 'duel' ? (t('topics.add.modeDuel')) : (t('topics.add.modeOpen'))} |
+                  {' '}{(t('common.counts.points')).replace('{n}', String(typeof topic.count === 'number' ? topic.count : 0))} |
                   {' '}{createdLabel}
                   {' '}|{' '}
-                  <button type="button" className="card-action" onClick={async (e)=>{ e.preventDefault(); e.stopPropagation(); const reason = await prompt({ title: '確定舉報？', label: '舉報原因（可選）', placeholder: '請補充原因（可留空）', confirmText: '送出', cancelText: '取消' }); if (reason !== null) { try { const r = await fetch(withBase('/api/reports'), { method:'POST', headers:{ 'Content-Type':'application/json' }, body: JSON.stringify({ type: 'topic', targetId: topic.id, reason: (reason||'').trim() || undefined }) }); if (r.ok) setSnack({ open: true, msg: '已送出舉報' }) } catch {} } }}>{t('actions.report') || '報告'}</button>
+                  <button type="button" className="card-action" onClick={async (e)=>{ e.preventDefault(); e.stopPropagation(); const reason = await prompt({ title: '確定舉報？', label: '舉報原因（可選）', placeholder: '請補充原因（可留空）', confirmText: '送出', cancelText: '取消' }); if (reason !== null) { try { const r = await fetch(withBase('/api/reports'), { method:'POST', headers:{ 'Content-Type':'application/json' }, body: JSON.stringify({ type: 'topic', targetId: topic.id, reason: (reason||'').trim() || undefined }) }); if (r.ok) setSnack({ open: true, msg: '已送出舉報' }) } catch {} } }}>{t('actions.report')}</button>
                   {canManage && (<>
                   {' '}|{' '}
                   <button
@@ -111,7 +111,7 @@ export default function TopicCard({ topic, onDeleted, showMeta = true, showVote 
                     onMouseUp={(e) => { e.preventDefault(); e.stopPropagation() }}
                     className="card-action"
                   >
-                    {t('common.edit') || '編輯'}
+                    {t('common.edit')}
                   </button>
                   {' '}|{' '}
                   <button
@@ -129,7 +129,7 @@ export default function TopicCard({ topic, onDeleted, showMeta = true, showVote 
                     disabled={deleting}
                     className="card-action"
                   >
-                    {t('common.delete') || '刪除'}
+                    {t('common.delete')}
                   </button>
                   </>)}
                 </Typography>
