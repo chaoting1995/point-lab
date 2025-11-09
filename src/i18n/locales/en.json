@@ -93,7 +93,7 @@
       "ctaHighlight": "Create",
       "ctaTail": "a topic instantly",
       "add": "New Topic",
-      "ctaNote": "No signup required — the community will upvote great points",
+      "ctaNote": "Can’t find a topic you like? Spin up your own!\nNo signup needed—the community will upvote the best topics",
       "empty": "No topics yet"
     },
     "common": {
@@ -118,7 +118,7 @@
       "title": "Edit Point"
     },
     "empty": "No points yet — be the first to share!",
-    "footerPrompt": "Didn’t see the topic you wanted? Start one or share a point!"
+    "footerPrompt": "No signup needed—the community will upvote the best points"
   },
   "guide": {
     "title": "Writing Tips",
