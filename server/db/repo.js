@@ -121,7 +121,7 @@ export function init() {
         token text not null unique,
         created_at text not null,
         expires_at text not null,
-        last_seen text
+        last_seen text,
         foreign key(user_id) references users(id) on delete cascade
       );
       create table if not exists reports (
