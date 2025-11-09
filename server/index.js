@@ -622,12 +622,29 @@ app.get('/api/admin/reports', (req, res) => {
           }
         }
       }
-      return { ...r, reporter: urec ? { id: urec.id, name: urec.name || urec.email || '用戶' } : null, topicId, pointId }
+      return { ...r, status: r.status || 'open', reporter: urec ? { id: urec.id, name: urec.name || urec.email || '用戶' } : null, topicId, pointId }
     })
     const total = all.length
     const items = all.slice((p - 1) * s, (p - 1) * s + s)
     res.json({ items, total, page: p, size: s })
   } catch { res.status(500).json({ error: 'READ_REPORTS_FAILED' }) }
+})
+
+app.patch('/api/admin/reports/:id/status', (req, res) => {
+  const { token } = getAuthContext(req)
+  const u = token ? repo.getUserBySession(token) : null
+  const isSuper = u && ((u.id === 'u-1762500221827') || (u.email === 'chaoting666@gmail.com'))
+  const role = u ? (isSuper ? 'superadmin' : (u.role || 'user')) : 'user'
+  if (role !== 'admin' && role !== 'superadmin') return res.status(403).json({ error: 'FORBIDDEN' })
+  const { status } = req.body || {}
+  if (status !== 'open' && status !== 'resolved') return res.status(400).json({ error: 'INVALID_STATUS' })
+  try {
+    const updated = repo.updateReportStatus(req.params.id, status)
+    if (!updated) return res.status(404).json({ error: 'NOT_FOUND' })
+    res.json({ data: updated })
+  } catch {
+    res.status(500).json({ error: 'UPDATE_REPORT_STATUS_FAILED' })
+  }
 })
 
 // Admin: set role

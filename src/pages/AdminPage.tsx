@@ -48,6 +48,7 @@ export default function AdminPage() {
   const [usersLoading, setUsersLoading] = useState(false)
   const [reports, setReports] = useState<any[]>([])
   const [reportsTotal, setReportsTotal] = useState<number>(0)
+  const [reportStatusSaving, setReportStatusSaving] = useState<Record<string, boolean>>({})
   const [userQuery, setUserQuery] = useState('')
   const [reportType, setReportType] = useState<'all'|'topic'|'point'|'comment'>('all')
   const [stats, setStats] = useState<{users:number;topics:number;points:number;comments:number;reports:number} | null>(null)
@@ -149,6 +150,30 @@ export default function AdminPage() {
       }
     })()
   }, [tab, reportType, reportsPage])
+
+  const handleReportStatusChange = async (reportId: string, nextStatus: 'open'|'resolved') => {
+    setReportStatusSaving((prev) => ({ ...prev, [reportId]: true }))
+    try {
+      const resp = await fetch(withBase(`/api/admin/reports/${encodeURIComponent(reportId)}/status`), {
+        method: 'PATCH',
+        credentials: 'include',
+        headers: withAuthHeaders({ 'Content-Type': 'application/json' }),
+        body: JSON.stringify({ status: nextStatus }),
+      })
+      if (!resp.ok) throw new Error('STATUS_FAILED')
+      const data = await resp.json().catch(() => ({}))
+      const status = data?.data?.status === 'resolved' ? 'resolved' : (nextStatus || 'open')
+      setReports((prev) => prev.map((rep: any) => (rep.id === reportId ? { ...rep, status } : rep)))
+    } catch {
+      // ignore error, UI will keep previous value
+    } finally {
+      setReportStatusSaving((prev) => {
+        const next = { ...prev }
+        delete next[reportId]
+        return next
+      })
+    }
+  }
 
   if (!user || (user.role !== 'admin' && user.role !== 'superadmin')) {
     return (
@@ -430,6 +455,7 @@ export default function AdminPage() {
                     <TableRow>
                       <TableCell sx={{ whiteSpace: 'nowrap' }}>{t('admin.reports.headers.targetId')}</TableCell>
                       <TableCell sx={{ whiteSpace: 'nowrap' }}>{t('admin.reports.headers.type')}</TableCell>
+                      <TableCell sx={{ whiteSpace: 'nowrap' }}>{t('admin.reports.headers.status')}</TableCell>
                       <TableCell sx={{ whiteSpace: 'nowrap' }}>{t('admin.reports.headers.reason')}</TableCell>
                       <TableCell sx={{ whiteSpace: 'nowrap' }}>{t('admin.reports.headers.reporter')}</TableCell>
                       <TableCell sx={{ whiteSpace: 'nowrap' }}>{t('admin.reports.headers.time')}</TableCell>
@@ -462,6 +488,19 @@ export default function AdminPage() {
                           )}
                         </TableCell>
                         <TableCell>{r.type==='topic' ? (t('admin.reports.type.topic')) : (r.type==='point' ? (t('admin.reports.type.point')) : (t('admin.reports.type.comment')))}</TableCell>
+                        <TableCell sx={{ minWidth: 150 }}>
+                          <Select
+                            size="small"
+                            value={(r.status === 'resolved' ? 'resolved' : 'open')}
+                            onChange={(e)=> handleReportStatusChange(r.id, (e.target.value as 'open'|'resolved'))}
+                            disabled={!!reportStatusSaving[r.id]}
+                            sx={{ minWidth: 140, '& .MuiSelect-select': { py: 0.5, fontWeight: 700 } }}
+                            MenuProps={{ PaperProps: { sx: { fontSize: 14 } } }}
+                          >
+                            <MenuItem value="open">{t('admin.reports.status.open')}</MenuItem>
+                            <MenuItem value="resolved">{t('admin.reports.status.resolved')}</MenuItem>
+                          </Select>
+                        </TableCell>
                         <TableCell sx={{ maxWidth: 320, whiteSpace: 'nowrap', textOverflow: 'ellipsis', overflow: 'hidden' }}>{r.reason || '—'}</TableCell>
                         <TableCell>
                           {r.reporter?.id ? (

@@ -81,6 +81,7 @@ Comments（評論）
     - `PATCH /api/admin/users/:id/role`（變更角色：user|admin|superadmin）
     - `DELETE /api/admin/users/:id`（僅 superadmin；刪除後會把該用戶的主題/觀點/評論標記為無主、session 失效）
     - `GET /api/admin/reports[?type=topic|point|comment]&page&size`（舉報列表；伺服器分頁，回傳 `{ items,total,page,size }`）
+    - `PATCH /api/admin/reports/:id/status`（切換舉報狀態：`open`｜`resolved`，回傳最新紀錄）
     - `POST /api/reports`（新增舉報：`{ type, targetId, reason? }`）
     - `GET /api/admin/stats`（總覽統計：users/guests/topics/points/comments/reports；活躍：DAU dauUsers/dauGuests/dauTotal、MAU mauUsers/mauGuests/mauTotal）
     - `GET /api/admin/stats/points-28d`（近 28 天每日新增觀點數，回傳 `[{ date: 'YYYY-MM-DD', count: number }]`，已補零天）
@@ -270,6 +271,13 @@ npm run recount:comments
 GET /api/_diag
 → { data: { sqlite: true|false, dbPath, topicsDb, pointsDb, topicsJson, pointsJson } }
 ```
+
+### 使用者統計欄位（topicCount / pointCount / commentCount）
+
+- `users` 表僅保存基本資訊；「主題數 / 觀點數 / 評論數」皆在讀取時即時計算。`repo.countTopicsByUser`、`repo.countPointsByUser`、`repo.countCommentsByUser` 會直接對 `topics/points/comments` 跑 `count(*)`，確保資料不會因為刪除或匯入而不同步。
+- `/api/users/:id` 與 `/api/admin/users` 回傳的 `topicCount/pointCount/commentCount` 都是上述聚合結果；前端不需再解析 `topics_json` 等欄位。
+- `users.topics_json/points_json/comments_json` 僅保留給 JSON fallback 模式使用，正式站已設 `DISABLE_JSON_FALLBACK=1`，因此不會寫入這些欄位；如需 JSON 快照，可透過 `server/scripts/seed-json-from-prod.js` 另行產生。
+- 若發現會員中心顯示的發佈數量沒有更新，先確認後端是否仍落在 JSON 模式（`/api/_diag`→`sqlite:false`）。只要 SQLite 正常啟動，就不需要手動維護任何 `_json` 欄位。
 
 ## Google 登入設定（可選，建議開啟）
 

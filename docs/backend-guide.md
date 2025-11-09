@@ -45,7 +45,40 @@
 
 > ⚠️ 未經使用者明確指示，請勿執行 `seed:from-prod` 或任何會覆蓋正式資料的腳本。
 
-## 5. API 速查
+## 5. 資料表結構速覽
+
+| 資料表 | 主要欄位 | 說明 |
+| --- | --- | --- |
+| `topics` | `id`, `name`, `description`, `mode`, `created_by`, `score`, `count`, `created_at` | 主題（open / duel）。`score` 來自投票，`count` 儲存觀點數。|
+| `points` | `id`, `topic_id`, `user_id`, `description`, `author_name`, `author_type`, `position`, `upvotes`, `comments`, `created_at` | 觀點卡片；`comments` 為快取欄位，實際留言仍存 `comments` 表。|
+| `comments` | `id`, `point_id`, `parent_id`, `user_id`, `author_name`, `content`, `upvotes`, `created_at` | 觀點留言（支援二級）。|
+| `users` | `id`, `provider`, `email`, `name`, `picture`, `bio`, `role`, `topics_json`, `points_json`, `comments_json`, `created_at`, `last_login` | 使用者主檔。`*_json` 僅在 JSON fallback 模式使用。|
+| `sessions` | `id`, `user_id`, `token`, `created_at`, `expires_at`, `last_seen` | Bearer token + Cookie 的 session 紀錄。|
+| `reports` | `id`, `type`, `target_id`, `user_id`, `reason`, `created_at` | 舉報紀錄，`type` 可為 `topic` / `point` / `comment`。|
+| `guests` | `id`, `name`, `posts_topic`, `posts_point`, `posts_comment`, `created_at`, `last_seen` | 訪客身份的行為統計；用於追蹤未登入使用者的操作。|
+
+> 以上 schema 都可在 `server/db/repo.js` 的 `db.exec(...)` 找到；若未載入 SQLite，就會落入 JSON 檔（結構相同但存在 `server/data/`）。
+
+### 快速查看 schema（正式機）
+
+1. 連入 Fly 機器：`flyctl ssh console`
+2. 安裝 SQLite CLI（只需一次）：`apk add sqlite`（Alpine 基底）或 `apt-get update && apt-get install -y sqlite3`（Debian 基底）。
+3. 查看欄位：`sqlite3 /app/data/pointlab.db ".schema users"`、`.schema topics`...；或 `sqlite3 /app/data/pointlab.db "pragma table_info(topics)"`。
+
+若不想安裝 CLI，也可以在機器內執行 Node one-liner：
+
+```
+flyctl ssh console -C 'sh -lc "cd /app && node -e \"const Database=require(\\\"better-sqlite3\\\");const db=new Database(\\\"/app/data/pointlab.db\\\");for (const row of db.prepare(\\\"select name, sql from sqlite_master where type=\\'table\\' order by name\\\").all()) { console.log(\\\"---\\\", row.name); console.log(row.sql); }\""' 
+```
+
+## 6. 使用者計數與聚合邏輯
+
+- `users` 表不再保存「主題/觀點/評論」的 JSON 陣列；改由 `repo.countTopicsByUser`、`repo.countPointsByUser`、`repo.countCommentsByUser` 即時計算（`count(*)`）。
+- `/api/users/:id`、`/api/admin/users`、會員中心里程碑等，都會讀取上述聚合結果，確保刪除或重建資料後立即反映正確數量。
+- 若 SQLite 當掉而退回 JSON fallback，系統才會使用 `topics_json/points_json/comments_json` 暫存資料；正式站建議設定 `DISABLE_JSON_FALLBACK=1`，避免這些欄位被寫入。
+- 想驗證目前是走哪個模式，可呼叫 `GET /api/_diag`（`sqlite: true` 代表正在使用 SQLite）。
+
+## 7. API 速查
 
 | 類別 | 端點 | 摘要 |
 | --- | --- | --- |
@@ -56,7 +89,7 @@
 | 認證 | `POST /api/auth/login`、`POST /api/auth/logout`、`GET /api/me`、`PATCH /api/me` | Google / 密碼登入與個資編輯。|
 | Admin | `/api/admin/*` | 讀取統計、舉報、使用者授權、訪客列表等。需要 admin/superadmin 權限。|
 
-## 6. 開發流程（後端）
+## 8. 開發流程（後端）
 
 1. **安裝依賴**：`npm install`。
 2. **啟動**：
@@ -72,7 +105,7 @@
 - `flyctl logs` 或 `npm run fly:logs`：查看正式機上的 Express console log。
 - `flyctl ssh console -C 'sqlite3 /app/data/pointlab.db "select ..."'`：直接查詢資料庫紀錄。
 
-## 7. 部署
+## 9. 部署
 
 ### 前端（Cloudflare Pages）
 1. `git push origin master` → 觸發自動建置（`npm run build`，輸出 `dist/`）。
@@ -83,7 +116,7 @@
 2. 若需查狀態：`npm run fly:status`、`npm run fly:logs`。
 3. Volume 已掛在 `/app/data`；若要離線操作 DB，請使用 `flyctl ssh console -C 'sqlite3 /app/data/pointlab.db'`。
 
-## 8. 常見問題 FAQ
+## 10. 常見問題 FAQ
 
 ### Q1. 登入後看不到 Session？
 - 確認前端是否有將 `sessionToken` 寫入 localStorage，並在 fetch headers 加 `Authorization`。
@@ -95,7 +128,7 @@
 ### Q3. iOS/Safari 無法登入？
 - 已於 `/api/auth/login` 回傳 `sessionToken` 並在前端帶 Authorization header，可提示使用者清除快取或停用 VPN；若仍無法，可在 Console 找 `AuthCallback` 相關 log。
 
-## 9. 推薦閱讀
+## 11. 推薦閱讀
 
 - `AGENTS.md`：專案行為守則與規範（本文件的補充）。
 - `README.md`：完整開發/部署說明。

@@ -130,6 +130,7 @@ export function init() {
         target_id text not null,
         user_id text,
         reason text,
+        status text default 'open',
         created_at text not null
       );
       create table if not exists guests (
@@ -142,6 +143,7 @@ export function init() {
         last_seen text not null
       );
     `)
+    try { db.prepare("alter table reports add column status text default 'open'").run() } catch {}
     return true
   } catch (err) {
     db = null
@@ -237,25 +239,56 @@ export const repo = {
     return true
   },
   // Reports
-  addReport({ id, type, targetId, userId, reason }) {
+  addReport({ id, type, targetId, userId, reason, status = 'open' }) {
     const now = nowIso()
+    const normalizedStatus = status === 'resolved' ? 'resolved' : 'open'
     if (db) {
-      db.prepare('insert into reports (id,type,target_id,user_id,reason,created_at) values (?,?,?,?,?,?)')
-        .run(id, type, targetId, userId || null, reason || null, now)
-      return { id, type, targetId, userId, reason, createdAt: now }
+      try { db.prepare("alter table reports add column status text default 'open'").run() } catch {}
+      db.prepare('insert into reports (id,type,target_id,user_id,reason,status,created_at) values (?,?,?,?,?,?,?)')
+        .run(id, type, targetId, userId || null, reason || null, normalizedStatus, now)
+      return { id, type, targetId, userId, reason, status: normalizedStatus, createdAt: now }
     }
     const all = readJson('reports.json')
-    const rec = { id, type, targetId, userId, reason, createdAt: now }
+    const rec = { id, type, targetId, userId, reason, status: normalizedStatus, createdAt: now }
     all.push(rec); writeJson('reports.json', all); return rec
   },
   listReports(type) {
     if (db) {
       const rows = type ? db.prepare('select * from reports where type=? order by created_at desc').all(type)
                         : db.prepare('select * from reports order by created_at desc').all()
-      return rows.map(r => ({ id: r.id, type: r.type, targetId: r.target_id, userId: r.user_id, reason: r.reason, createdAt: r.created_at }))
+      return rows.map(r => ({ id: r.id, type: r.type, targetId: r.target_id, userId: r.user_id, reason: r.reason, status: r.status || 'open', createdAt: r.created_at }))
     }
     const all = readJson('reports.json')
-    return type ? all.filter(r=>r.type===type) : all
+    const list = type ? all.filter(r=>r.type===type) : all
+    return list.map(r => ({ ...r, status: r.status || 'open' }))
+  },
+  getReportById(id) {
+    if (db) {
+      try {
+        const r = db.prepare('select * from reports where id=?').get(id)
+        if (!r) return null
+        return { id: r.id, type: r.type, targetId: r.target_id, userId: r.user_id, reason: r.reason, status: r.status || 'open', createdAt: r.created_at }
+      } catch { return null }
+    }
+    const all = readJson('reports.json')
+    const found = all.find(r => r.id === id)
+    return found ? { ...found, status: found.status || 'open' } : null
+  },
+  updateReportStatus(id, status) {
+    const normalizedStatus = status === 'resolved' ? 'resolved' : 'open'
+    if (db) {
+      try {
+        const res = db.prepare('update reports set status=? where id=?').run(normalizedStatus, id)
+        if (res.changes === 0) return null
+        return this.getReportById(id)
+      } catch { return null }
+    }
+    const all = readJson('reports.json')
+    const idx = all.findIndex(r => r.id === id)
+    if (idx === -1) return null
+    all[idx] = { ...all[idx], status: normalizedStatus }
+    writeJson('reports.json', all)
+    return all[idx]
   },
   listTopics({ page = 1, size = 30, sort = 'new' }) {
     if (db) {
