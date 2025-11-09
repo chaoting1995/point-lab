@@ -35,7 +35,21 @@ import Snackbar from '@mui/material/Snackbar'
 import Alert from '@mui/material/Alert'
 import Skeleton from '@mui/material/Skeleton'
 
-type PublicUser = { id: string; name?: string; email?: string; picture?: string; bio?: string | null; topics?: string[]; points?: string[]; comments?: string[] }
+type PublicUser = {
+  id: string
+  name?: string
+  email?: string
+  picture?: string
+  bio?: string | null
+  topics?: string[]
+  points?: string[]
+  comments?: string[]
+  topicCount?: number
+  pointCount?: number
+  commentCount?: number
+  pointLikes?: number
+  topicLikes?: number
+}
 
 export default function UserProfilePage() {
   const { id } = useParams<{ id: string }>()
@@ -65,6 +79,11 @@ export default function UserProfilePage() {
   const formatCountLabel = useCallback((template: string, value: number) => (
     template?.includes('{n}') ? template.replace('{n}', String(value)) : `${template}${value}`
   ), [])
+  const resolveCount = useCallback((value?: number, list?: string[]) => {
+    if (typeof value === 'number') return value
+    if (Array.isArray(list)) return list.length
+    return 0
+  }, [])
 
   useEffect(() => {
     let aborted = false
@@ -264,7 +283,7 @@ export default function UserProfilePage() {
                               edge="start"
                               tabIndex={-1}
                               disableRipple
-                              checked={(user.comments?.length || 0) > 0}
+                              checked={resolveCount((user as any)?.commentCount, user.comments) > 0}
                               disabled
                               icon={<RadioButtonUnchecked sx={{ color: 'text.disabled' }} />}
                               checkedIcon={<CheckCircle sx={{ color: 'success.main' }} />}
@@ -272,8 +291,8 @@ export default function UserProfilePage() {
                           </ListItemIcon>
                           <ListItemText
                             primary={
-                              (user.comments?.length || 0) > 0
-                                ? formatCountLabel(t('user.commentCount'), user.comments?.length || 0)
+                              resolveCount((user as any)?.commentCount, user.comments) > 0
+                                ? formatCountLabel(t('user.commentCount'), resolveCount((user as any)?.commentCount, user.comments))
                                 : t('user.milestoneComment')
                             }
                           />
@@ -286,7 +305,7 @@ export default function UserProfilePage() {
                               edge="start"
                               tabIndex={-1}
                               disableRipple
-                              checked={(user.points?.length || 0) > 0}
+                              checked={resolveCount((user as any)?.pointCount, user.points) > 0}
                               disabled
                               icon={<RadioButtonUnchecked sx={{ color: 'text.disabled' }} />}
                               checkedIcon={<CheckCircle sx={{ color: 'success.main' }} />}
@@ -294,8 +313,8 @@ export default function UserProfilePage() {
                           </ListItemIcon>
                           <ListItemText
                             primary={
-                              (user.points?.length || 0) > 0
-                                ? formatCountLabel(t('user.pointCount'), user.points?.length || 0)
+                              resolveCount((user as any)?.pointCount, user.points) > 0
+                                ? formatCountLabel(t('user.pointCount'), resolveCount((user as any)?.pointCount, user.points))
                                 : t('user.milestonePoint')
                             }
                           />
@@ -308,7 +327,7 @@ export default function UserProfilePage() {
                               edge="start"
                               tabIndex={-1}
                               disableRipple
-                              checked={(user.topics?.length || 0) > 0}
+                              checked={resolveCount((user as any)?.topicCount, user.topics) > 0}
                               disabled
                               icon={<RadioButtonUnchecked sx={{ color: 'text.disabled' }} />}
                               checkedIcon={<CheckCircle sx={{ color: 'success.main' }} />}
@@ -316,8 +335,8 @@ export default function UserProfilePage() {
                           </ListItemIcon>
                           <ListItemText
                             primary={
-                              (user.topics?.length || 0) > 0
-                                ? formatCountLabel(t('user.topicCount'), user.topics?.length || 0)
+                              resolveCount((user as any)?.topicCount, user.topics) > 0
+                                ? formatCountLabel(t('user.topicCount'), resolveCount((user as any)?.topicCount, user.topics))
                                 : t('user.milestoneTopic')
                             }
                           />

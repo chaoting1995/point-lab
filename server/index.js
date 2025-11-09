@@ -565,14 +565,18 @@ app.get('/api/users/:id', (req, res) => {
     const u = repo.getUserById(req.params.id)
     if (!u) return res.status(404).json({ error: 'NOT_FOUND' })
     const parse = (s)=>{ try { return JSON.parse(s||'[]') } catch { return [] } }
-    const topics = Array.isArray(u.topics) ? u.topics : parse(u.topics_json)
-    const points = Array.isArray(u.points) ? u.points : parse(u.points_json)
-    const comments = Array.isArray(u.comments) ? u.comments : parse(u.comments_json)
+    const hasDbCounts = typeof u.topicCount === 'number' || typeof u.pointCount === 'number' || typeof u.commentCount === 'number'
+    const topics = hasDbCounts ? (Array.isArray(u.topics) ? u.topics : []) : (Array.isArray(u.topics) ? u.topics : parse(u.topics_json))
+    const points = hasDbCounts ? (Array.isArray(u.points) ? u.points : []) : (Array.isArray(u.points) ? u.points : parse(u.points_json))
+    const comments = hasDbCounts ? (Array.isArray(u.comments) ? u.comments : []) : (Array.isArray(u.comments) ? u.comments : parse(u.comments_json))
     const pointLikes = repo.sumPointUpvotesByUser(u.id)
     const topicLikes = repo.sumTopicScoreByUser(u.id)
     const isSuper = (u.id === 'u-1762500221827') || (u.email === 'chaoting666@gmail.com')
     const role = isSuper ? 'superadmin' : (u.role || 'user')
-    res.json({ data: { id: u.id, name: u.name, email: u.email, picture: u.picture, bio: u.bio || null, role, topics, points, comments, pointLikes, topicLikes } })
+    const topicCount = typeof u.topicCount === 'number' ? u.topicCount : topics.length
+    const pointCount = typeof u.pointCount === 'number' ? u.pointCount : points.length
+    const commentCount = typeof u.commentCount === 'number' ? u.commentCount : comments.length
+    res.json({ data: { id: u.id, name: u.name, email: u.email, picture: u.picture, bio: u.bio || null, role, topics, points, comments, topicCount, pointCount, commentCount, pointLikes, topicLikes } })
   } catch { res.status(500).json({ error: 'READ_USER_FAILED' }) }
 })
 

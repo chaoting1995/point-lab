@@ -56,6 +56,7 @@ export default function AdminPage() {
   const [usersPage, setUsersPage] = useState(1)
   const [usersRoleFilter, setUsersRoleFilter] = useState<'all'|'member'|'guest'>('member')
   const [reportsPage, setReportsPage] = useState(1)
+  const resolveCount = (value?: number, list?: any[]) => (typeof value === 'number' ? value : (Array.isArray(list) ? list.length : 0))
 
   useEffect(() => {
     if (tab !== 'users') return
@@ -64,9 +65,9 @@ export default function AdminPage() {
     const mapMemberRows = (rows: any[]) =>
       (rows || []).map((u: any) => ({
         ...u,
-        topicCount: Array.isArray(u.topics) ? u.topics.length : (u.topicCount || 0),
-        pointCount: Array.isArray(u.points) ? u.points.length : (u.pointCount || 0),
-        commentCount: Array.isArray(u.comments) ? u.comments.length : (u.commentCount || 0),
+        topicCount: resolveCount(u.topicCount, u.topics),
+        pointCount: resolveCount(u.pointCount, u.points),
+        commentCount: resolveCount(u.commentCount, u.comments),
       }))
 
     const mapGuestRows = (list: Guest[]) =>
@@ -321,9 +322,9 @@ export default function AdminPage() {
                         <TableCell>{u.email || ((u as any).role === 'guest' ? '—' : '—')}</TableCell>
                         <TableCell sx={{ whiteSpace: 'nowrap' }}>
                           <Box sx={{ display: 'flex', flexDirection: 'column', lineHeight: 1.4 }}>
-                            <span>主題數：{(u as any).topicCount ?? (u.topics?.length || 0)}</span>
-                            <span>觀點數：{(u as any).pointCount ?? (u.points?.length || 0)}</span>
-                            <span>評論數：{(u as any).commentCount ?? (u.comments?.length || 0)}</span>
+                            <span>主題數：{resolveCount((u as any).topicCount, (u as any).topics)}</span>
+                            <span>觀點數：{resolveCount((u as any).pointCount, (u as any).points)}</span>
+                            <span>評論數：{resolveCount((u as any).commentCount, (u as any).comments)}</span>
                           </Box>
                         </TableCell>
                         <TableCell sx={{ whiteSpace: 'nowrap' }}>

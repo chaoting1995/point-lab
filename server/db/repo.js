@@ -288,7 +288,6 @@ export const repo = {
       if (createdBy) { try { db.prepare('update topics set created_by=? where id=?').run(createdBy, id) } catch {} }
       if (createdByGuest) { try { db.prepare('update topics set created_by_guest=? where id=?').run(createdByGuest, id) } catch {} }
       if (createdByGuest) this.incGuestCounter(createdByGuest, 'topic')
-      if (createdBy) this.appendUserItem(createdBy, 'topics', id)
       return this.getTopic(id)
     }
     const topics = readJson('topics.json')
@@ -398,7 +397,6 @@ export const repo = {
         if (r.topicId) db.prepare('update topics set count = coalesce(count,0)+1 where id=?').run(r.topicId)
       })
       tx(rec)
-      if (rec.userId) this.appendUserItem(rec.userId, 'points', rec.id)
       if (rec.guestId) this.incGuestCounter(rec.guestId, 'point')
       return this.getPoint(rec.id)
     }
@@ -562,7 +560,6 @@ export const repo = {
         .run(id, pointId, parentId || null, userId || null, guestId || null, authorName || null, authorType || 'guest', content, nowIso())
       // bump point comments count
       db.prepare('update points set comments = coalesce(comments,0)+1 where id=?').run(pointId)
-      if (userId) this.appendUserItem(userId, 'comments', id)
       if (guestId) this.incGuestCounter(guestId, 'comment')
       return db.prepare('select * from comments where id=?').get(id)
     }
@@ -575,24 +572,7 @@ export const repo = {
     return rec
   },
   appendUserItem(userId, kind, itemId) {
-    if (db) {
-      this.ensureUserActivityColumns()
-      const row = db.prepare('select id, topics_json, points_json, comments_json from users where id=?').get(userId)
-      if (!row) return
-      const parse = (s)=>{ try { return JSON.parse(s||'[]') } catch { return [] } }
-      const toStr = (arr)=> JSON.stringify(Array.from(new Set(arr)))
-      if (kind==='topics') {
-        const arr = parse(row.topics_json); arr.push(itemId)
-        db.prepare('update users set topics_json=? where id=?').run(toStr(arr), userId)
-      } else if (kind==='points') {
-        const arr = parse(row.points_json); arr.push(itemId)
-        db.prepare('update users set points_json=? where id=?').run(toStr(arr), userId)
-      } else if (kind==='comments') {
-        const arr = parse(row.comments_json); arr.push(itemId)
-        db.prepare('update users set comments_json=? where id=?').run(toStr(arr), userId)
-      }
-      return
-    }
+    if (db) return
     const users = readJson('users.json')
     const idx = users.findIndex(u=>u.id===userId)
     if (idx===-1) return
@@ -669,9 +649,25 @@ export const repo = {
     return users.find((u)=> u.email===email) || null
   },
   getUserById(id) {
-    if (db) return db.prepare('select * from users where id=?').get(id) || null
+    if (db) {
+      try {
+        const row = db.prepare('select * from users where id=?').get(id)
+        if (!row) return null
+        const topicCount = this.countTopicsByUser(id)
+        const pointCount = this.countPointsByUser(id)
+        const commentCount = this.countCommentsByUser(id)
+        return { ...row, topicCount, pointCount, commentCount }
+      } catch {
+        return null
+      }
+    }
     const users = readJson('users.json')
-    return users.find((u)=> u.id===id) || null
+    const found = users.find((u)=> u.id===id)
+    if (!found) return null
+    const topics = Array.isArray(found.topics) ? found.topics : []
+    const points = Array.isArray(found.points) ? found.points : []
+    const comments = Array.isArray(found.comments) ? found.comments : []
+    return { ...found, topics, points, comments, topicCount: topics.length, pointCount: points.length, commentCount: comments.length }
   },
   sumPointUpvotesByUser(userId) {
     if (db) {
@@ -694,28 +690,72 @@ export const repo = {
     const all = readJson('comments.json')
     return all.filter(c=>c.userId===userId).reduce((a,b)=> a + (b.upvotes||0), 0)
   },
+  countTopicsByUser(userId) {
+    if (db) {
+      try { const r = db.prepare('select count(*) as c from topics where created_by=?').get(userId); return r?.c || 0 } catch { return 0 }
+    }
+    const topics = readJson('topics.json')
+    return topics.filter(t => (t.created_by || t.createdBy) === userId).length
+  },
+  countPointsByUser(userId) {
+    if (db) {
+      try { const r = db.prepare('select count(*) as c from points where user_id=?').get(userId); return r?.c || 0 } catch { return 0 }
+    }
+    const points = readJson('points.json')
+    return points.filter(p => (p.user_id || p.userId) === userId).length
+  },
+  countCommentsByUser(userId) {
+    if (db) {
+      try { const r = db.prepare('select count(*) as c from comments where user_id=?').get(userId); return r?.c || 0 } catch { return 0 }
+    }
+    const comments = readJson('comments.json')
+    return comments.filter(c => (c.user_id || c.userId) === userId).length
+  },
   listUsers() {
     if (db) {
       try {
-        // 確保相容舊資料庫（補齊可能缺少的欄位）
         try { db.prepare("alter table users add column role text default 'user'").run() } catch {}
-        try { db.prepare('alter table users add column topics_json text').run() } catch {}
-        try { db.prepare('alter table users add column points_json text').run() } catch {}
-        try { db.prepare('alter table users add column comments_json text').run() } catch {}
-        const rows = db.prepare('select id,name,email,picture,role,topics_json,points_json,comments_json from users').all()
-        const parse = (s)=>{ try { return JSON.parse(s||'[]') } catch { return [] } }
+        const rows = db.prepare(`
+          select
+            u.id,
+            u.name,
+            u.email,
+            u.picture,
+            u.role,
+            coalesce((select count(*) from topics t where t.created_by = u.id), 0) as topicCount,
+            coalesce((select count(*) from points p where p.user_id = u.id), 0) as pointCount,
+            coalesce((select count(*) from comments c where c.user_id = u.id), 0) as commentCount
+          from users u
+        `).all()
         const targetId = 'u-1762500221827'
         const targetEmail = 'chaoting666@gmail.com'
         return rows.map(r => {
           const role = (r.id === targetId || r.email === targetEmail) ? 'superadmin' : (r.role || 'user')
-          return { id: r.id, name: r.name, email: r.email, picture: r.picture, role, topics: parse(r.topics_json), points: parse(r.points_json), comments: parse(r.comments_json) }
+          return { id: r.id, name: r.name, email: r.email, picture: r.picture, role, topicCount: Number(r.topicCount) || 0, pointCount: Number(r.pointCount) || 0, commentCount: Number(r.commentCount) || 0 }
         })
       } catch { return [] }
     }
     const users = readJson('users.json')
     const targetId = 'u-1762500221827'
     const targetEmail = 'chaoting666@gmail.com'
-    return users.map(u => ({ id: u.id, name: u.name, email: u.email, picture: u.picture, role: (u.id===targetId||u.email===targetEmail)?'superadmin':(u.role||'user'), topics: Array.isArray(u.topics)?u.topics:[], points: Array.isArray(u.points)?u.points:[], comments: Array.isArray(u.comments)?u.comments:[] }))
+    return users.map(u => {
+      const topics = Array.isArray(u.topics) ? u.topics : []
+      const points = Array.isArray(u.points) ? u.points : []
+      const comments = Array.isArray(u.comments) ? u.comments : []
+      return {
+        id: u.id,
+        name: u.name,
+        email: u.email,
+        picture: u.picture,
+        role: (u.id===targetId||u.email===targetEmail)?'superadmin':(u.role||'user'),
+        topics,
+        points,
+        comments,
+        topicCount: topics.length,
+        pointCount: points.length,
+        commentCount: comments.length,
+      }
+    })
   },
   getStats() {
     if (db) {
