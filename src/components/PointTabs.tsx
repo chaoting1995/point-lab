@@ -135,7 +135,7 @@ export default function PointTabs() {
       )}
       <div className="tabs__cta">
         <PrimaryCtaButton to="/topics" size="md" className="gap-2 justify-center">
-          開始探索
+          {t('hero.primaryAction')}
           <CaretRight size={16} weight="bold" />
         </PrimaryCtaButton>
       </div>
