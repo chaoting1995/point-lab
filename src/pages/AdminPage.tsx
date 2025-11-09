@@ -296,7 +296,7 @@ export default function AdminPage() {
                     {users
                       .map(u => (
                       <TableRow key={u.id} hover>
-                      <TableCell sx={{ fontFamily: 'ui-monospace, SFMono-Regular, Menlo, monospace', maxWidth: 165, overflowWrap: 'break-word', wordBreak: 'break-word' }}>
+                      <TableCell sx={{ fontFamily: 'ui-monospace, SFMono-Regular, Menlo, monospace', maxWidth: 165, minWidth: 165, overflowWrap: 'break-word', wordBreak: 'break-word' }}>
                         {u.id}
                       </TableCell>
                         <TableCell>
