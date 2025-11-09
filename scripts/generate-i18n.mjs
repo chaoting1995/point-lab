@@ -1,4 +1,23 @@
-import { Converter } from 'opencc-js'
+import fs from 'node:fs'
+import path from 'node:path'
+import { fileURLToPath } from 'node:url'
+
+const __filename = fileURLToPath(import.meta.url)
+const __dirname = path.dirname(__filename)
+const root = path.join(__dirname, '..')
+const localesDir = path.join(root, 'src', 'i18n', 'locales')
+const outputFile = path.join(root, 'src', 'i18n', 'translations.ts')
+
+function readJson(file) {
+  const p = path.join(localesDir, file)
+  const raw = fs.readFileSync(p, 'utf-8')
+  return JSON.parse(raw)
+}
+
+const baseZh = readJson('zh-Hant.json')
+const en = readJson('en.json')
+
+const content = `import { Converter } from 'opencc-js'
 import zhHantData from './locales/zh-Hant.json'
 import enData from './locales/en.json'
 
@@ -43,3 +62,7 @@ export function translate(locale: Locale, key: string): string {
   const fallbackValue = lookup(fallbackData)
   return typeof fallbackValue === 'string' ? fallbackValue : key
 }
+`
+
+fs.writeFileSync(outputFile, content)
+console.log('Generated translations.ts from locales JSON')
