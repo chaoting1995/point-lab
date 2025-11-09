@@ -43,5 +43,5 @@ export default function useConfirmDialog() {
     />
   )
 
-  return { confirm, ConfirmDialogEl: DialogEl }
+  return { confirm, ConfirmDialogEl: DialogEl, confirmOpen: open }
 }

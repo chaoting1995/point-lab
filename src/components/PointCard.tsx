@@ -25,8 +25,9 @@ export default function PointCard({ point, onDeleted }: { point: Point; onDelete
   const [expanded, setExpanded] = useState(false)
   const [showToggle, setShowToggle] = useState(false)
   const descRef = useRef<HTMLParagraphElement | null>(null)
+  const cardRef = useRef<HTMLDivElement | null>(null)
   const [deleting, setDeleting] = useState(false)
-  const { confirm, ConfirmDialogEl } = useConfirmDialog()
+  const { confirm, ConfirmDialogEl, confirmOpen } = useConfirmDialog()
   const { prompt, PromptDialogEl } = usePromptDialog()
   const { user } = useAuth()
   const canManage = user?.role === 'admin' || user?.role === 'superadmin'
@@ -87,6 +88,19 @@ export default function PointCard({ point, onDeleted }: { point: Point; onDelete
     pendingTimerRef.current = setTimeout(() => { flushVote().catch(()=>{}) }, 250)
   }
 
+  useEffect(() => {
+    if (!confirmOpen) return
+    const handler = (event: MouseEvent) => {
+      if (cardRef.current && cardRef.current.contains(event.target as Node)) {
+        event.stopPropagation()
+      }
+    }
+    document.addEventListener('click', handler, true)
+    return () => {
+      document.removeEventListener('click', handler, true)
+    }
+  }, [confirmOpen])
+
   const createdLabel = useMemo(() => {
     const ts = point.createdAt || new Date().toISOString()
     return formatRelativeAgo(ts, locale)
@@ -138,6 +152,7 @@ export default function PointCard({ point, onDeleted }: { point: Point; onDelete
   return (
     <>
     <Card
+      ref={cardRef}
       elevation={0}
       onClick={goTopic}
       sx={{
