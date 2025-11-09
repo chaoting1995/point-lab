@@ -1,0 +1,215 @@
+{
+  "header": {
+    "nav": {
+      "hot": "熱門",
+      "new": "最新",
+      "top": "Top 50"
+    },
+    "cta": "新增觀點"
+  },
+  "languageToggle": {
+    "traditional": "繁",
+    "simplified": "簡",
+    "english": "EN",
+    "ariaLabel": "切換語言"
+  },
+  "hero": {
+    "eyebrow": "",
+    "title": "用 PointLab 匯聚好觀點",
+    "titleHighlight": "好觀點",
+    "subtitle": "資訊爆炸的時代，內容氾濫\n真知灼見的好觀點，不該被淹沒！\nPointLab 的目標，是搜集好觀點\n讓觀點可以被分享、辯論、票選、沉澱\n最終，我們將獲得一份精心挑選的好觀點清單！",
+    "primaryAction": "開始探索",
+    "secondaryAction": "投稿新觀點",
+    "badgeLabel": "",
+    "badgeNote": "",
+    "logos": [],
+    "tags": ["開源智慧", "沉澱觀點"],
+    "highlightPhrase": "好觀點清單"
+  },
+  "tabs": {
+    "hot": "熱門",
+    "new": "最新",
+    "top": "Top 50 榜單",
+    "old": "最早",
+    "hint": "點選卡片就能複製連結，邀請夥伴一起挑戰。"
+  },
+  "actions": {
+    "upvote": "我也要試",
+    "upvoted": "已收藏",
+    "comments": "評論",
+    "share": "",
+    "report": "報告",
+    "copy": "複製連結",
+    "copied": "已複製",
+    "posted": "發布",
+    "publish": "發布",
+    "save": "儲存",
+    "reply": "回覆",
+    "replying": "正在回覆",
+    "cancel": "取消",
+    "commentPlaceholder": "寫下你的評論…",
+    "viewReplies": "查看",
+    "hideReplies": "收合回覆",
+    "replies": "則回覆",
+    "viewRepliesCount": "查看 {n} 則回覆"
+  },
+  "footer": {
+    "discover": {
+      "title": "探索",
+      "items": ["熱門觀點", "最新觀點", "Top 50 榜單"]
+    },
+    "engage": {
+      "title": "參與",
+      "items": ["投稿新觀點", "社群提案", "回報問題"]
+    },
+    "about": {
+      "title": "關於 PointLab",
+      "intro": "我們是一群迷戀效率實驗的人，正在打造更有趣的習慣工具。"
+    }
+  },
+  "topics": {
+    "add": {
+      "title": "新增主題",
+      "subtitle": "好問題，比好答案更重要\n主題、辯題、問題，建立任何你想探討的議題！",
+      "nameLabel": "主題名稱",
+      "namePlaceholder": "例如：什麼是「自由」？",
+      "descLabel": "主題描述（可選）",
+      "descPlaceholder": "簡要描述此主題",
+      "modeLabel": "主題模式",
+      "modeOpen": "開放式主題",
+      "modeDuel": "對立式主題",
+      "success": "主題已建立",
+      "firstPrompt": "這個主題空空如也，為主題添加第一個觀點吧！"
+    },
+    "edit": {
+      "title": "編輯主題"
+    },
+    "list": {
+      "title": "主題箱",
+      "subtitle": "探索你感興趣的主題 / 建立更多主題 / 無需註冊！",
+      "subtitleA": "探索你感興趣的主題",
+      "subtitleB": "建立更多主題",
+      "subtitleC": "無需註冊！",
+      "ctaHighlight": "建立",
+      "ctaTail": "更多主題，無需註冊！",
+      "add": "新增主題",
+      "ctaNote": "無需註冊，網友會為最好的觀點按讚",
+      "empty": "尚無主題"
+    },
+    "common": {
+      "topicsBox": "主題箱"
+    }
+  },
+  "points": {
+    "add": {
+      "title": "新增觀點",
+      "subtitle": "",
+      "descLabel": "你的觀點",
+      "descPlaceholder": "寫下你的觀點…",
+      "nameLabel": "顯示名稱",
+      "namePlaceholder": "匿名",
+      "useGuest": "使用訪客身份",
+      "stanceAgree": "讚同",
+      "stanceOther": "其他",
+      "stanceLabel": "立場",
+      "selectTopic": "選擇主題"
+    },
+    "edit": {
+      "title": "編輯觀點"
+    },
+    "empty": "目前還沒有觀點，成為第一個發布的人吧！",
+    "footerPrompt": "沒有看到喜歡的議題？歡迎直接新增主題或觀點 👍"
+  },
+  "guide": {
+    "title": "寫觀點指南",
+    "subtitle": "撰寫觀點的小建議",
+    "card1": {
+      "title": "善用一句話，提煉好觀點",
+      "body": "如果一個概念，講清楚，要花三分鐘，能不能更短？\n如果一個概念，講清楚，要花一分鐘，能不能只用「一句話」講清楚？\n我們需要一段更鮮明的詮釋，一則濃縮後的標題，好讓人一聽就有印象。\n\n如果只能說一句話，那會是哪句？\n現代人注意力稀缺。好觀點，就從「一句話」開始！"
+    },
+    "card2": {
+      "title": "觀點就像茶包，還需沖入熱水",
+      "body": "茶包直接含進嘴裡，就是苦澀的。好茶還需配好水。\n有了那關鍵的一句話，再加上任何形式的佐證（推論、案例、數據、類比、名言...），就是一杯香氣四溢的好茶！"
+    },
+    "card3": {
+      "title": "受眾就像小孩，一次只餵一口",
+      "body": "十小時的電影沒人會看，但只要把它拆成十集，就會有人熬夜看完。\n表達也一樣。\n好的表達，得像餵小孩子吃飯：一次一口，每次一小口。\n內容太多，就試著拆成多個觀點表達吧！"
+    }
+  },
+  "user": {
+    "pointsTitle": "發布過的觀點",
+    "noPoints": "還沒有發布過任何觀點！",
+    "totalsLabel": "你的總計：",
+    "pointLikes": "觀點總計讚數：{n}",
+    "topicLikes": "主題總計讚數：{n}",
+    "milestonesTitle": "里程碑",
+    "milestoneTopic": "新增第一個主題",
+    "milestonePoint": "新增第一則觀點",
+    "milestoneComment": "新增第一則評論",
+    "viewAsGuest": "訪客視角",
+    "viewAsMe": "我的視角",
+    "profileCenter": "會員中心",
+    "adminConsole": "管理後台",
+    "defaultName": "用戶",
+    "editProfile": "編輯個人資料",
+    "editNameLabel": "名稱",
+    "editBioLabel": "簡介",
+    "editCancel": "取消",
+    "editSave": "儲存",
+    "editSuccess": "已儲存",
+    "editError": "儲存失敗",
+    "commentCount": "評論數量：{n}",
+    "pointCount": "觀點數量：{n}",
+    "topicCount": "主題數量：{n}",
+    "addPointCta": "新增觀點",
+    "notFound": "找不到這位用戶。",
+    "loadError": "暫時無法載入資料。"
+  },
+  "admin": {
+    "reports": {
+      "headers": {
+        "type": "類型",
+        "targetId": "目標ID",
+        "reason": "舉報原因",
+        "reporter": "舉報人",
+        "time": "時間"
+      },
+      "type": {
+        "topic": "主題",
+        "point": "觀點",
+        "comment": "評論"
+      }
+    }
+  },
+  "nav": {
+    "home": "首頁",
+    "topics": "主題箱",
+    "addTopic": "新增主題",
+    "login": "登入",
+    "logout": "登出",
+    "guide": "指南"
+  },
+  "auth": {
+    "loginTitle": "登入 PointLab",
+    "loginDesc": "使用 Google 帳號快速登入，開始蒐集好觀點",
+    "signInWithGoogle": "使用 Google 登入"
+  },
+  "common": {
+    "loading": "載入中…",
+    "error": "發生錯誤，請稍後再試",
+    "noMore": "這裡是思維的邊界",
+    "seeMore": "查看更多",
+    "seeLess": "查看較少",
+    "edit": "編輯",
+    "delete": "刪除",
+    "counts": {
+      "comments": "{n} 則評論",
+      "points": "{n} 則觀點"
+    },
+    "time": {
+      "justNow": "剛剛",
+      "hours": "{n} 小時前",
+      "days": "{n} 天前"
+    }
+  }
+}

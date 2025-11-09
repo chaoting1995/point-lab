@@ -1,0 +1,215 @@
+{
+  "header": {
+    "nav": {
+      "hot": "Hot",
+      "new": "Newest",
+      "top": "Top 50"
+    },
+    "cta": "New Point"
+  },
+  "languageToggle": {
+    "traditional": "繁",
+    "simplified": "简",
+    "english": "EN",
+    "ariaLabel": "Switch language"
+  },
+  "hero": {
+    "eyebrow": "",
+    "title": "Bring Great Points Together with PointLab",
+    "titleHighlight": "Great Points",
+    "subtitle": "In the age of information overload, noise wins.\nSharp, well-earned points shouldn’t be buried.\nPointLab exists to collect great points.\nShare them, surface them, debate them, vote on them, let them settle.\nIn the end, we get a handpicked list of the sharpest insights.",
+    "primaryAction": "Start exploring",
+    "secondaryAction": "Submit a point",
+    "badgeLabel": "",
+    "badgeNote": "",
+    "logos": [],
+    "tags": ["Open-source wisdom", "Distilled points"],
+    "highlightPhrase": "handpicked list of the sharpest insights"
+  },
+  "tabs": {
+    "hot": "Hot",
+    "new": "Newest",
+    "top": "Top 50",
+    "old": "Oldest",
+    "hint": "Click cards to copy links and invite friends to explore."
+  },
+  "actions": {
+    "upvote": "I’ll try it",
+    "upvoted": "Saved",
+    "comments": "Comments",
+    "share": "Share",
+    "report": "Report",
+    "copy": "Copy link",
+    "copied": "Copied",
+    "posted": "Posted",
+    "publish": "Publish",
+    "save": "Save",
+    "reply": "Reply",
+    "replying": "Replying",
+    "cancel": "Cancel",
+    "commentPlaceholder": "Share your thoughts…",
+    "viewReplies": "View",
+    "hideReplies": "Hide replies",
+    "replies": "replies",
+    "viewRepliesCount": "View {n} replies"
+  },
+  "footer": {
+    "discover": {
+      "title": "Discover",
+      "items": ["Hot points", "Newest points", "Top 50"]
+    },
+    "engage": {
+      "title": "Engage",
+      "items": ["Submit a point", "Community roadmap", "Report an issue"]
+    },
+    "about": {
+      "title": "About PointLab",
+      "intro": "We’re a group obsessed with experimentation, building tools to distill better habits."
+    }
+  },
+  "topics": {
+    "add": {
+      "title": "Create Topic",
+      "subtitle": "Great questions matter more than answers.\nCreate any topic, debate, or prompt you want to explore!",
+      "nameLabel": "Topic title",
+      "namePlaceholder": "e.g. What is freedom?",
+      "descLabel": "Description (optional)",
+      "descPlaceholder": "Describe this topic",
+      "modeLabel": "Mode",
+      "modeOpen": "Open",
+      "modeDuel": "Opposing viewpoints",
+      "success": "Topic created",
+      "firstPrompt": "This topic is empty — add the first point!"
+    },
+    "edit": {
+      "title": "Edit Topic"
+    },
+    "list": {
+      "title": "Topics",
+      "subtitle": "Browse topics you care about / add more / no signup needed!",
+      "subtitleA": "Browse topics you care about",
+      "subtitleB": "Add more topics",
+      "subtitleC": "No signup needed",
+      "ctaHighlight": "Create",
+      "ctaTail": "a topic instantly",
+      "add": "New Topic",
+      "ctaNote": "No signup required — the community will upvote great points",
+      "empty": "No topics yet"
+    },
+    "common": {
+      "topicsBox": "Topics"
+    }
+  },
+  "points": {
+    "add": {
+      "title": "New Point",
+      "subtitle": "",
+      "descLabel": "Your point",
+      "descPlaceholder": "Write your point…",
+      "nameLabel": "Display name",
+      "namePlaceholder": "Anonymous",
+      "useGuest": "Post as guest",
+      "stanceAgree": "Agree",
+      "stanceOther": "Other",
+      "stanceLabel": "Position",
+      "selectTopic": "Select topic"
+    },
+    "edit": {
+      "title": "Edit Point"
+    },
+    "empty": "No points yet — be the first to share!",
+    "footerPrompt": "Didn’t see the topic you wanted? Start one or share a point!"
+  },
+  "guide": {
+    "title": "Writing Tips",
+    "subtitle": "How to craft a sharp point",
+    "card1": {
+      "title": "Distill your point into one sentence",
+      "body": "If it takes three minutes to explain a concept clearly, can it be shorter?\nIf it takes one minute, can you say it in one sentence?\nWe need a sharper framing — a condensed headline that sticks.\n\nIf you could only say one sentence, what would it be?\nAttention is scarce. Great points start from one sentence!"
+    },
+    "card2": {
+      "title": "A point needs supporting heat",
+      "body": "A tea bag alone tastes bitter — it needs hot water.\nOnce you have the key sentence, add evidence: reasoning, data, stories, analogies, quotes — that’s your flavor."
+    },
+    "card3": {
+      "title": "Feed one bite at a time",
+      "body": "No one watches a 10-hour movie, but split into episodes and people binge.\nCommunication works the same.\nServe one bite at a time — if it’s too much, split it into multiple points."
+    }
+  },
+  "user": {
+    "pointsTitle": "Published Points",
+    "noPoints": "No points yet!",
+    "totalsLabel": "Your totals:",
+    "pointLikes": "Point likes: {n}",
+    "topicLikes": "Topic likes: {n}",
+    "milestonesTitle": "Milestones",
+    "milestoneTopic": "Create your first topic",
+    "milestonePoint": "Publish your first point",
+    "milestoneComment": "Post your first comment",
+    "viewAsGuest": "View as visitor",
+    "viewAsMe": "Back to my view",
+    "profileCenter": "Profile",
+    "adminConsole": "Admin",
+    "defaultName": "User",
+    "editProfile": "Edit profile",
+    "editNameLabel": "Name",
+    "editBioLabel": "Bio",
+    "editCancel": "Cancel",
+    "editSave": "Save",
+    "editSuccess": "Saved",
+    "editError": "Save failed",
+    "commentCount": "Comments: {n}",
+    "pointCount": "Points: {n}",
+    "topicCount": "Topics: {n}",
+    "addPointCta": "New Point",
+    "notFound": "User not found.",
+    "loadError": "Unable to load user."
+  },
+  "admin": {
+    "reports": {
+      "headers": {
+        "type": "Type",
+        "targetId": "Target",
+        "reason": "Reason",
+        "reporter": "Reporter",
+        "time": "Time"
+      },
+      "type": {
+        "topic": "Topic",
+        "point": "Point",
+        "comment": "Comment"
+      }
+    }
+  },
+  "nav": {
+    "home": "Home",
+    "topics": "Topics",
+    "addTopic": "New Topic",
+    "login": "Sign in",
+    "logout": "Sign out",
+    "guide": "Guide"
+  },
+  "auth": {
+    "loginTitle": "Sign in to PointLab",
+    "loginDesc": "Use Google to join and start collecting points",
+    "signInWithGoogle": "Sign in with Google"
+  },
+  "common": {
+    "loading": "Loading…",
+    "error": "Something went wrong. Please try again.",
+    "noMore": "You’ve reached the edge.",
+    "seeMore": "See more",
+    "seeLess": "See less",
+    "edit": "Edit",
+    "delete": "Delete",
+    "counts": {
+      "comments": "{n} comments",
+      "points": "{n} points"
+    },
+    "time": {
+      "justNow": "Just now",
+      "hours": "{n}h ago",
+      "days": "{n}d ago"
+    }
+  }
+}
