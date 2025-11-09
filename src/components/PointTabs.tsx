@@ -91,6 +91,8 @@ export default function PointTabs() {
     return () => observerRef.current?.disconnect()
   }, [initialLoaded, hasMore, loading, loadPage, page])
 
+  const showLoadingMore = loading && list.length > 0
+
   return (
     <section className="tabs-card" id="point-tabs">
       <h2 className="tabs__title">觀點列表</h2>
@@ -114,8 +116,15 @@ export default function PointTabs() {
             ))}
           </div>
           <div ref={sentinelRef} className="point-tabs__sentinel" />
-          {loading && list.length > 0 && (
-            <p className="text-center text-slate-500 py-2">{t('common.loading')}</p>
+          {showLoadingMore && (
+            <div className="point-grid point-grid--loading" aria-live="polite">
+              {Array.from({ length: 2 }).map((_, idx) => (
+                <div key={`point-loading-${idx}`} className="point-card point-card--skeleton" />
+              ))}
+              <p className="text-center text-slate-500 text-sm w-full" style={{ gridColumn: '1 / -1' }}>
+                {t('common.loading')}
+              </p>
+            </div>
           )}
           {!hasMore && list.length > 0 && (
             <p className="text-center text-slate-400 text-sm py-2">
