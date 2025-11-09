@@ -157,6 +157,20 @@ export type AppTranslations = {
     viewAsMe?: string
     profileCenter?: string
     adminConsole?: string
+    defaultName?: string
+    editProfile?: string
+    editNameLabel?: string
+    editBioLabel?: string
+    editCancel?: string
+    editSave?: string
+    editSuccess?: string
+    editError?: string
+    commentCount?: string
+    pointCount?: string
+    topicCount?: string
+    addPointCta?: string
+    notFound?: string
+    loadError?: string
   }
   admin?: {
     reports?: {
@@ -396,6 +410,20 @@ const baseZhHant: AppTranslations = {
     viewAsMe: '我的視角',
     profileCenter: '會員中心',
     adminConsole: '管理後台',
+    defaultName: '用戶',
+    editProfile: '編輯個人資料',
+    editNameLabel: '名稱',
+    editBioLabel: '簡介',
+    editCancel: '取消',
+    editSave: '儲存',
+    editSuccess: '已儲存',
+    editError: '儲存失敗',
+    commentCount: '評論數量：{n}',
+    pointCount: '觀點數量：{n}',
+    topicCount: '主題數量：{n}',
+    addPointCta: '新增觀點',
+    notFound: '找不到這位用戶。',
+    loadError: '暫時無法載入資料。',
   },
   admin: {
     reports: {

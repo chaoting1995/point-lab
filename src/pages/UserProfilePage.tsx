@@ -62,6 +62,9 @@ export default function UserProfilePage() {
   const sentinelRef = useRef<HTMLDivElement | null>(null)
   const observerRef = useRef<IntersectionObserver | null>(null)
   const POINTS_PAGE_SIZE = 20
+  const formatCountLabel = useCallback((template: string, value: number) => (
+    template?.includes('{n}') ? template.replace('{n}', String(value)) : `${template}${value}`
+  ), [])
 
   useEffect(() => {
     let aborted = false
@@ -226,10 +229,10 @@ export default function UserProfilePage() {
             <>
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 1 }}>
                 <Avatar sx={{ width: 72, height: 72 }} src={user.picture || undefined}>
-                  {!user.picture && (user.name || 'U').slice(0, 1)}
+                  {!user.picture && (user.name || t('user.defaultName') || 'U').slice(0, 1)}
                 </Avatar>
                 <Box>
-                  <Typography variant="h6" sx={{ m: 0, fontWeight: 800 }}>{user.name || '用戶'}</Typography>
+                  <Typography variant="h6" sx={{ m: 0, fontWeight: 800 }}>{user.name || t('user.defaultName')}</Typography>
                   {user.email && <Typography variant="body2" color="text.secondary">{user.email}</Typography>}
                 </Box>
               </Box>
@@ -243,7 +246,7 @@ export default function UserProfilePage() {
                   </PrimaryCtaButton>
                   {!viewAsGuest && (
                     <PrimaryCtaButton size="sm" iconLeft={<PencilSimple size={16} weight="bold" />} onClick={()=>{ setNameDraft(user.name || ''); setBioDraft(user.bio || ''); setEditOpen(true) }}>
-                      編輯個人資料
+                      {t('user.editProfile')}
                     </PrimaryCtaButton>
                   )}
                 </Box>
@@ -270,7 +273,7 @@ export default function UserProfilePage() {
                           <ListItemText
                             primary={
                               (user.comments?.length || 0) > 0
-                                ? `評論數量：${user.comments?.length || 0}`
+                                ? formatCountLabel(t('user.commentCount'), user.comments?.length || 0)
                                 : t('user.milestoneComment')
                             }
                           />
@@ -292,7 +295,7 @@ export default function UserProfilePage() {
                           <ListItemText
                             primary={
                               (user.points?.length || 0) > 0
-                                ? `觀點數量：${user.points?.length || 0}`
+                                ? formatCountLabel(t('user.pointCount'), user.points?.length || 0)
                                 : t('user.milestonePoint')
                             }
                           />
@@ -314,7 +317,7 @@ export default function UserProfilePage() {
                           <ListItemText
                             primary={
                               (user.topics?.length || 0) > 0
-                                ? `主題數量：${user.topics?.length || 0}`
+                                ? formatCountLabel(t('user.topicCount'), user.topics?.length || 0)
                                 : t('user.milestoneTopic')
                             }
                           />
@@ -362,7 +365,7 @@ export default function UserProfilePage() {
                     {t('user.noPoints')}
                   </Typography>
                   <PrimaryCtaButton to="/points/add" size="sm" className="gap-2 justify-center">
-                    新增觀點
+                    {t('user.addPointCta')}
                     <CaretRight size={16} weight="bold" />
                   </PrimaryCtaButton>
                 </Box>
@@ -388,17 +391,17 @@ export default function UserProfilePage() {
                   )}
                   <Box sx={{ textAlign: 'center', py: 2 }}>
                     <PrimaryCtaButton to="/points/add" size="sm" className="gap-2 justify-center">
-                      新增觀點
+                      {t('user.addPointCta')}
                       <CaretRight size={16} weight="bold" />
                     </PrimaryCtaButton>
                   </Box>
                 </>
               )}
               <Dialog open={editOpen} onClose={()=> setEditOpen(false)} fullWidth maxWidth="sm" PaperProps={{ sx: { borderRadius: '10px' } }}>
-                <DialogTitle>編輯個人資料</DialogTitle>
+                <DialogTitle>{t('user.editProfile')}</DialogTitle>
                 <DialogContent sx={{ display: 'flex', flexDirection: 'column', gap: 2, pt: 2, pb: 2, px: 2, '&.MuiDialogContent-root': { paddingTop: '16px !important' } }}>
-                  <TextField label="名稱" value={nameDraft} onChange={(e)=> setNameDraft(e.target.value)} fullWidth InputLabelProps={{ shrink: true }} />
-                  <TextField label="簡介" value={bioDraft} onChange={(e)=> setBioDraft(e.target.value)} fullWidth multiline minRows={3} InputLabelProps={{ shrink: true }} />
+                  <TextField label={t('user.editNameLabel')} value={nameDraft} onChange={(e)=> setNameDraft(e.target.value)} fullWidth InputLabelProps={{ shrink: true }} />
+                  <TextField label={t('user.editBioLabel')} value={bioDraft} onChange={(e)=> setBioDraft(e.target.value)} fullWidth multiline minRows={3} InputLabelProps={{ shrink: true }} />
                 </DialogContent>
                 <DialogActions sx={{ px: 2, pt: 2, pb: 2, justifyContent: 'center', gap: 1.5 }}>
                   <Button onClick={()=> setEditOpen(false)} variant="outlined" sx={(t)=>({
@@ -406,33 +409,33 @@ export default function UserProfilePage() {
                     borderColor: t.palette.divider,
                     '&:hover': { borderColor: t.palette.text.disabled, bgcolor: t.palette.action.hover },
                     borderRadius: '10px', minWidth: 96,
-                  })}>取消</Button>
+                  })}>{t('user.editCancel')}</Button>
                   <Button variant="contained" sx={(t)=>({ borderRadius: '10px', minWidth: 96, bgcolor: t.palette.primary.main, '&:hover': { bgcolor: t.palette.primary.dark } })}
                     onClick={async ()=>{
                     try {
                       const r = await fetch(withBase('/api/me'), { method: 'PATCH', headers: withAuthHeaders({ 'Content-Type': 'application/json' }), credentials: 'include', body: JSON.stringify({ name: nameDraft, bio: bioDraft }) })
-                      if (!r.ok) throw new Error('儲存失敗')
+                      if (!r.ok) throw new Error(t('user.editError'))
                       const d = await r.json()
                       setUser((u)=> u ? { ...u, name: d.data.name, bio: d.data.bio } : u)
                       setEditOpen(false)
                       setSaveOk(true)
                     } catch (e) {
-                      setSaveErr(e instanceof Error ? e.message : '儲存失敗')
+                      setSaveErr(e instanceof Error ? e.message : t('user.editError'))
                     }
-                  }}>儲存</Button>
+                  }}>{t('user.editSave')}</Button>
                 </DialogActions>
               </Dialog>
               <Snackbar open={saveOk} autoHideDuration={1600} onClose={()=> setSaveOk(false)} anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}>
-                <Alert severity="success" variant="filled" sx={{ borderRadius: '10px' }}>已儲存</Alert>
+                <Alert severity="success" variant="filled" sx={{ borderRadius: '10px' }}>{t('user.editSuccess')}</Alert>
               </Snackbar>
               <Snackbar open={!!saveErr} autoHideDuration={2000} onClose={()=> setSaveErr(null)} anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}>
-                <Alert severity="error" variant="filled" sx={{ borderRadius: '10px' }}>{saveErr}</Alert>
+                <Alert severity="error" variant="filled" sx={{ borderRadius: '10px' }}>{saveErr || t('user.editError')}</Alert>
               </Snackbar>
             </>
           ) : (
             <Box sx={{ textAlign: 'center', py: 4 }}>
               <Typography variant="body2" color="text.secondary">
-                {notFound ? '找不到這位用戶。' : '暫時無法載入資料。'}
+                {notFound ? t('user.notFound') : t('user.loadError')}
               </Typography>
             </Box>
           )}
