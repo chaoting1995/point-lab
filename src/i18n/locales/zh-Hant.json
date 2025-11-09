@@ -169,15 +169,20 @@
     "reports": {
       "headers": {
         "type": "類型",
-        "targetId": "目標ID",
+        "targetId": "ID",
         "reason": "舉報原因",
         "reporter": "舉報人",
-        "time": "時間"
+        "time": "時間",
+        "status": "狀態"
       },
       "type": {
         "topic": "主題",
         "point": "觀點",
         "comment": "評論"
+      },
+      "status": {
+        "open": "未解決",
+        "resolved": "已解決"
       }
     }
   },

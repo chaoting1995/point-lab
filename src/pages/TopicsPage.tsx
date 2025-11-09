@@ -30,6 +30,12 @@ export default function TopicsPage() {
   const observerRef = useRef<IntersectionObserver | null>(null)
   const PAGE_SIZE = 20
 
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      window.scrollTo({ top: 0, behavior: 'auto' })
+    }
+  }, [])
+
   const loadPage = useCallback(
     async (nextPage: number, append: boolean) => {
       setLoading(true)

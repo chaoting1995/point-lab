@@ -169,15 +169,20 @@
     "reports": {
       "headers": {
         "type": "Type",
-        "targetId": "Target",
+        "targetId": "ID",
         "reason": "Reason",
         "reporter": "Reporter",
-        "time": "Time"
+        "time": "Time",
+        "status": "Status"
       },
       "type": {
         "topic": "Topic",
         "point": "Point",
         "comment": "Comment"
+      },
+      "status": {
+        "open": "Open",
+        "resolved": "Resolved"
       }
     }
   },
