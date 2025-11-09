@@ -326,7 +326,7 @@ export default function AdminPage() {
                             <span>評論數：{(u as any).commentCount ?? (u.comments?.length || 0)}</span>
                           </Box>
                         </TableCell>
-                        <TableCell>
+                        <TableCell sx={{ whiteSpace: 'nowrap' }}>
                           <Box sx={{ display: 'flex', flexDirection: 'column', lineHeight: 1.4 }}>
                             <span>主題讚數：{(u as any).topicLikes || 0}</span>
                             <span>觀點讚數：{(u as any).pointLikes || 0}</span>
