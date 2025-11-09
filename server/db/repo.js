@@ -13,6 +13,7 @@ try {
 
 const DATA_DIR = path.join(path.dirname(new URL(import.meta.url).pathname), '..', 'data')
 const DB_PATH = process.env.POINTLAB_DB_PATH || path.join(path.dirname(new URL(import.meta.url).pathname), '..', 'pointlab.db')
+const disableJsonFallback = String(process.env.DISABLE_JSON_FALLBACK || '').toLowerCase() === '1'
 
 function readJson(file, fallback = []) {
   try {
@@ -40,6 +41,9 @@ export function init() {
     } catch {}
   }
   if (!sqlite) {
+    if (disableJsonFallback) {
+      throw new Error('[repo] better-sqlite3 未載入且已設 DISABLE_JSON_FALLBACK=1，無法啟動')
+    }
     try { console.warn('[repo] storage=json (better-sqlite3 not loaded)') } catch {}
     return false
   }
@@ -139,8 +143,12 @@ export function init() {
       );
     `)
     return true
-  } catch {
+  } catch (err) {
     db = null
+    if (disableJsonFallback) {
+      throw new Error(`[repo] 初始化 SQLite 失敗且已停用 JSON fallback：${err?.message || err}`)
+    }
+    try { console.warn('[repo] storage=json (sqlite init failed)', err) } catch {}
     return false
   }
 }

@@ -13,6 +13,7 @@ primary_region = 'sin'
   ALLOWED_ORIGINS = 'https://pointlab.com'
   PORT = '8787'
   POINTLAB_DB_PATH = '/app/data/pointlab.db'
+  DISABLE_JSON_FALLBACK = '1'
 
 [[mounts]]
   source = 'data'

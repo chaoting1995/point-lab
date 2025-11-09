@@ -42,7 +42,7 @@ PointLab 是一個專注於「蒐集、辯論、票選、沉澱好觀點」的�
 - i18n：opencc-js（繁→簡）＋ `src/i18n/translations.ts`；**禁止**再使用 `t('key') || 'fallback'`，缺字需補字典。
 
 技術債（資料層）
-- JSON fallback 仍存在併發寫入風險：無交易/回滾、整檔覆寫、不同步。
+- JSON fallback 仍存在併發寫入風險：無交易/回滾、整檔覆寫、不同步。生產環境請設定 `DISABLE_JSON_FALLBACK=1` 直接拒絕 fallback，確保所有寫入一定走 SQLite（Fly `fly.toml` 已預設）。
 - 短期：補原子寫入（tmp + rename）、簡易鎖、Schema 驗證、定期快照。
 - 長期：持續以 SQLite 為主，必要時導入 ORM（Prisma/Drizzle）與 migraiton，最終遷移到託管 Postgres（Supabase/Neon/Railway）。
 
@@ -195,7 +195,7 @@ Fly.io（後端）
 
 ## 資料庫（SQLite）與資料匯入
 
-- 本專案 Phase 1 已支援 SQLite（better-sqlite3）。若未安裝會自動退回 JSON（server/data/*.json）。
+- 本專案 Phase 1 已支援 SQLite（better-sqlite3）。若未安裝會自動退回 JSON（server/data/*.json）；**正式站務必設定 `DISABLE_JSON_FALLBACK=1`**，讓 SQLite 無法啟動時直接失敗，而不是把資料寫到 JSON。
 - 建議切換到 SQLite 後執行一次性匯入，將舊 JSON 匯入 pointlab.db：
 
 ```
@@ -204,7 +204,7 @@ npm run migrate:json
 
 - 匯入腳本位置：`server/scripts/migrate-from-json.js`
 - 匯入內容：topics.json → topics、points.json → points（會保留 createdAt/score/count/position 等欄位）
-- 之後即可僅用 SQLite 提供 API；JSON 可保留為備援快照。
+- 之後即可僅用 SQLite 提供 API；JSON 可保留為備援快照（或在生產環境直接刪除 `server/data/*.json` 以避免誤用）。
 
 ### SQLite 遷移：移除 topics.slug 欄位
 

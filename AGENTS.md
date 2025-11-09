@@ -48,7 +48,7 @@
 - 備註：舊路由 `/api/hacks` 已移除。舊 `GET /api/topics/:slug` 亦已移除，前後端全面改用 `id`。
 
 ## 資料層策略
-- 優先使用 SQLite（`server/pointlab.db`，better-sqlite3）。不存在時自動退回 JSON 檔（`server/data/*.json`）。
+- 優先使用 SQLite（`server/pointlab.db`，better-sqlite3）。正式站已設定 `DISABLE_JSON_FALLBACK=1`，若 SQLite 無法啟動會直接失敗，避免落入 `server/data/*.json` 的暫存資料；本地開發仍可依需求使用 JSON fallback。
 - 一次性匯入：`npm run migrate:json` 將 `topics.json / points.json` 匯入 SQLite。
 - 移除欄位（SQLite）：`POINTLAB_DB_PATH=/path/to/pointlab.db npm run migrate:drop-slug`（移除 `topics.slug`）。
 - 種子資料：
