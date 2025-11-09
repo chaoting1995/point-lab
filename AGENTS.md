@@ -37,7 +37,7 @@
 - Points：
   - `GET /api/points?topic=<id>&page&size&sort=new|hot|old|top`
   - `GET /api/points/:id`
-  - `POST /api/points`（description, topicId?, authorName?, authorType=guest|user, position?=agree|others；若用戶已登入，後端記錄 userId，authorType 覆寫為 user）
+  - `POST /api/points`（description 或 descriptions[]，topicId?, authorName?, authorType=guest|user, position?=agree|others；descriptions 一次最多 100 筆；若用戶已登入，後端記錄 userId，authorType 覆寫為 user）
   - `PATCH|POST /api/points/:id/vote`（Body: { delta: 1|-1|±2 }；三態切換時可能為 ±2）
   - `PATCH /api/points/:id`（description/position）
   - `DELETE /api/points/:id`

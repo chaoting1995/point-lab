@@ -59,7 +59,7 @@ Topic（主題）
 Point（觀點）
 - 欄位：`id`、`description`、`createdAt`、`author{name,role}`、`topicId?`、`userId?`、`position?`（對立模式下 `agree｜others`）
 - 列表：`GET /api/points?topic=<topicId>&page=1&size=20&sort=new|hot|old`
-- 建立：`POST /api/points` 參數：`description`、`topicId?`、`authorName?`、`authorType=guest|user`、`position?`。若用戶已登入，後端會記錄 `userId`，並覆寫 `authorType='user'` 與作者名稱。
+- 建立：`POST /api/points` 參數：`description`（或 `descriptions[]` 同時新增多筆，最多 100 筆）、`topicId?`、`authorName?`、`authorType=guest|user`、`position?`。若用戶已登入，後端會記錄 `userId`，並覆寫 `authorType='user'` 與作者名稱。
 - 投票：`PATCH /api/points/:id/vote` Body：`{ delta: 1 | -1 }`（三態切換會出現 ±2 的累計行為，後端最終以整數 upvotes 儲存並影響熱門排序）
 - 刪除：`DELETE /api/points/:id`（會同步將對應 Topic 的 `count - 1`）
 

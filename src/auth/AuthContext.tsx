@@ -55,12 +55,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
     const origin = window.location.origin
     const redirectUri = (import.meta.env.VITE_GOOGLE_REDIRECT_URI as string | undefined) || `${origin}/auth/callback`
-    const state = Math.random().toString(36).slice(2)
+    const stateToken = Math.random().toString(36).slice(2)
     const nonce = Math.random().toString(36).slice(2)
+    const backUrl = window.location.pathname + window.location.search + window.location.hash || '/'
+    const encodeStatePayload = (payload: Record<string, unknown>) => {
+      try {
+        const json = JSON.stringify(payload)
+        return typeof window !== 'undefined' ? window.btoa(encodeURIComponent(json)) : btoa(encodeURIComponent(json))
+      } catch {
+        return stateToken
+      }
+    }
+    const encodedState = encodeStatePayload({ token: stateToken, backUrl })
     try {
-      sessionStorage.setItem('pl:oauth_state', state)
+      sessionStorage.setItem('pl:oauth_state', stateToken)
       sessionStorage.setItem('pl:oauth_nonce', nonce)
-      const backUrl = window.location.pathname + window.location.search + window.location.hash
       sessionStorage.setItem('pl:back_after_login', backUrl || '/')
     } catch {}
     const params = new URLSearchParams({
@@ -68,7 +77,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       redirect_uri: redirectUri,
       response_type: 'id_token',
       scope: 'openid email profile',
-      state,
+      state: encodedState,
       nonce,
       prompt: 'select_account',
     })

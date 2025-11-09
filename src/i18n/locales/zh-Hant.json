@@ -106,13 +106,18 @@
       "subtitle": "",
       "descLabel": "你的觀點",
       "descPlaceholder": "寫下你的觀點…",
-      "nameLabel": "顯示名稱",
-      "namePlaceholder": "匿名",
+      "nameLabel": "訪客名稱",
+      "namePlaceholder": "請輸入訪客名稱",
       "useGuest": "使用訪客身份",
       "stanceAgree": "讚同",
       "stanceOther": "其他",
       "stanceLabel": "立場",
-      "selectTopic": "選擇主題"
+      "selectTopic": "選擇主題",
+      "addInput": "新增輸入框",
+      "bulkHint": "登入後，可批量輸入觀點",
+      "maxInputs": "輸入框數量最多50個",
+      "removeInput": "移除輸入框",
+      "descRequired": "至少輸入一則觀點"
     },
     "edit": {
       "title": "編輯觀點"

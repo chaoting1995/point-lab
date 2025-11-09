@@ -106,13 +106,18 @@
       "subtitle": "",
       "descLabel": "Your point",
       "descPlaceholder": "Write your point…",
-      "nameLabel": "Display name",
-      "namePlaceholder": "Anonymous",
+      "nameLabel": "Guest name",
+      "namePlaceholder": "Enter guest name",
       "useGuest": "Post as guest",
       "stanceAgree": "Agree",
       "stanceOther": "Other",
       "stanceLabel": "Position",
-      "selectTopic": "Select topic"
+      "selectTopic": "Select topic",
+      "addInput": "Add input field",
+      "bulkHint": "Sign in to add multiple points",
+      "maxInputs": "You can add up to 50 inputs",
+      "removeInput": "Remove",
+      "descRequired": "Enter at least one point"
     },
     "edit": {
       "title": "Edit Point"

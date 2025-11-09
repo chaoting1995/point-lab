@@ -52,6 +52,8 @@
 - 新增主題/觀點頁：送出期間顯示貼頂 `LinearProgress` 與 CTA 內 `ClipLoader`，鎖定所有欄位；新增主題成功後直接導向 `/points/add?topic=<id>`，新增觀點頁若主題觀點數為 0 會顯示提示文案。
 - 首頁 CTA：觀點列表下方的「前往主題箱」採用 `PrimaryCtaButton` + caret-right icon，置中並與列表拉開間距。
 - 新增資料維護腳本 `npm run recount:comments`，可在匯入後重新計算觀點的評論數（同步支援 SQLite 與 JSON fallback）。
+- 後端：`POST /api/points` 支援 `descriptions[]` 批量新增（一次最多 100 筆），`PointAddPage` 改為一次送出所有輸入並用單一 API 請求完成，登入訪客紀錄同步回寫。
+- 前端：新增觀點頁的多輸入框可新增/刪除（右上角紅色浮動 X 鈕），未選主題時輸入框 disabled；「新增輸入框」與「發布」按鈕維持間距，訪客名稱欄位與 placeholder 更新。
 - 首頁體驗
   - Hero 改版：移除卡片背景，新增「開源智慧／沉澱觀點」標籤（含 icon）、標題「用 PointLab 匯聚好觀點」並以 `hero.titleHighlight` 讓「好觀點」跳色；副標支援多行、僅「好觀點清單」加粗。
   - CTA 僅保留單一主按鈕「開始探索」＋ caret-right；Hero 與 CTA 與數據區距離、padding 依新稿調整，`header` 與 `<title>` 使用 `public/logo.svg`。

@@ -6,6 +6,8 @@ import useLanguage from '../i18n/useLanguage'
 import Box from '@mui/material/Box'
 import Stack from '@mui/material/Stack'
 import TextField from '@mui/material/TextField'
+import Button from '@mui/material/Button'
+import IconButton from '@mui/material/IconButton'
 import Skeleton from '@mui/material/Skeleton'
 import LinearProgress from '@mui/material/LinearProgress'
 import Alert from '@mui/material/Alert'
@@ -27,6 +29,15 @@ import List from '@mui/material/List'
 import ListItemButton from '@mui/material/ListItemButton'
 import ListItemText from '@mui/material/ListItemText'
 import Typography from '@mui/material/Typography'
+import { X } from 'phosphor-react'
+
+const MAX_INPUTS = 50
+let descInputSeed = 0
+type DescriptionInput = { id: string; value: string }
+const createDescInput = (): DescriptionInput => ({
+  id: `desc-${Date.now().toString(36)}-${descInputSeed++}`,
+  value: '',
+})
 
 function SubmittingOverlay({ open }: { open: boolean }) {
   if (!open || typeof document === 'undefined') return null
@@ -56,12 +67,13 @@ export default function PointAddPage() {
   const [topicId, setTopicId] = useState(initialTopicId)
   const [topic, setTopic] = useState<Topic | null>(null)
   const [loadingTopic, setLoadingTopic] = useState(!!topicId)
-  const [description, setDescription] = useState('')
+  const [descriptionInputs, setDescriptionInputs] = useState<DescriptionInput[]>(() => [createDescInput()])
   const [authorName, setAuthorName] = useState('')
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [successOpen, setSuccessOpen] = useState(false)
-  const [touched, setTouched] = useState<{ desc?: boolean; name?: boolean }>({})
+  const [descError, setDescError] = useState(false)
+  const [nameTouched, setNameTouched] = useState(false)
   const { user } = useAuth()
   // 對立模式下的立場選擇；null 代表未選擇
   const [positionSel, setPositionSel] = useState<DuelValue>(null)
@@ -69,6 +81,10 @@ export default function PointAddPage() {
   const [topicOptions, setTopicOptions] = useState<Topic[]>([])
   const [topicOptionsLoading, setTopicOptionsLoading] = useState(false)
   const [topicSearch, setTopicSearch] = useState('')
+  const hasValidDescription = useMemo(
+    () => descriptionInputs.some((item) => item.value.trim()),
+    [descriptionInputs],
+  )
   const filteredTopics = useMemo(() => {
     if (!topicSearch.trim()) return topicOptions
     const kw = topicSearch.trim().toLowerCase()
@@ -88,23 +104,29 @@ export default function PointAddPage() {
   }, [topicOptionsLoading])
 
   const handleSubmit = useCallback(async () => {
-    setTouched({ desc: true, name: true })
-    if (!description.trim()) return
-    if (!user && !authorName.trim()) return
+    const trimmedDescriptions = descriptionInputs.map((item) => item.value.trim()).filter(Boolean)
+    const hasDescription = trimmedDescriptions.length > 0
+    setDescError(!hasDescription)
+    if (!hasDescription) return
+    if (!user && !authorName.trim()) {
+      setNameTouched(true)
+      return
+    }
     if (topic?.mode === 'duel' && !positionSel) return
     try {
       setSubmitting(true)
       setError(null)
+      const guestId = user ? undefined : getOrCreateGuestId()
       const res = await fetch(withBase('/api/points'), {
         method: 'POST',
         headers: withAuthHeaders({ 'Content-Type': 'application/json' }),
         body: JSON.stringify({
-          description: description.trim(),
+          descriptions: trimmedDescriptions,
           topicId: topicId || undefined,
           authorName: user ? undefined : authorName.trim(),
           authorType: user ? 'user' : 'guest',
           position: topic?.mode === 'duel' ? positionSel || undefined : undefined,
-          ...(user ? {} : { guestId: getOrCreateGuestId() }),
+          ...(guestId ? { guestId } : {}),
         }),
         credentials: 'include',
       })
@@ -112,14 +134,17 @@ export default function PointAddPage() {
       const body = await res.json().catch(() => null)
       try {
         if (!user) {
-          const nameToSave = authorName.trim()
-          if (nameToSave) saveGuestName(nameToSave)
+          const createdList = Array.isArray(body?.data) ? body?.data : body?.data ? [body.data] : []
+          for (const item of createdList) {
+            const pid = item?.id
+            if (pid) addGuestItem('point', pid)
+          }
         }
       } catch {}
       try {
         if (!user) {
-          const pid = body?.data?.id
-          if (pid) addGuestItem('point', pid)
+          const nameToSave = authorName.trim()
+          if (nameToSave) saveGuestName(nameToSave)
         }
       } catch {}
       setSuccessOpen(true)
@@ -129,7 +154,7 @@ export default function PointAddPage() {
     } finally {
       setSubmitting(false)
     }
-  }, [description, user, authorName, topic, positionSel, topicId, navigate])
+  }, [descriptionInputs, user, authorName, topic, positionSel, topicId, navigate])
 
   useEffect(() => {
     if (topicSelectorOpen && topicOptions.length === 0 && !topicOptionsLoading) {
@@ -188,6 +213,37 @@ export default function PointAddPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
+  const handleDescriptionChange = useCallback(
+    (id: string, value: string) => {
+      setDescriptionInputs((prev) => {
+        const next = prev.map((item) => (item.id === id ? { ...item, value } : item))
+        if (descError && next.some((item) => item.value.trim())) setDescError(false)
+        return next
+      })
+    },
+    [descError],
+  )
+
+  const handleRemoveInput = useCallback((id: string) => {
+    setDescriptionInputs((prev) => {
+      const next = prev.filter((item) => item.id !== id)
+      if (next.length === 0) return [createDescInput()]
+      if (descError && next.some((item) => item.value.trim())) setDescError(false)
+      return next
+    })
+  }, [descError])
+
+  const handleAddInput = useCallback(() => {
+    if (!user) return
+    setDescriptionInputs((prev) => {
+      if (prev.length >= MAX_INPUTS) return prev
+      return [...prev, createDescInput()]
+    })
+  }, [user])
+
+  const reachedMaxInputs = descriptionInputs.length >= MAX_INPUTS
+  const addInputDisabled = !user || reachedMaxInputs || submitting
+
   return (
     <div className="app">
       <Header />
@@ -244,24 +300,70 @@ export default function PointAddPage() {
                 value={positionSel}
                 onChange={setPositionSel}
                 label={t('points.add.stanceLabel')}
-                disabled={submitting}
+                  disabled={submitting || !topicId}
               />
             )}
-            <TextField
-              label={t('points.add.descLabel')}
-              placeholder={t('points.add.descPlaceholder')}
-              fullWidth
-              multiline
-              minRows={4}
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              onBlur={() => setTouched((s) => ({ ...s, desc: true }))}
-              required
-              error={touched.desc && !description.trim()}
-              helperText={touched.desc && !description.trim() ? ((t('points.add.descLabel')) + ' 為必填') : ' '}
-              sx={{ '& .MuiOutlinedInput-root': { bgcolor: 'common.white' } }}
-              disabled={submitting}
-            />
+            <Stack spacing={1}>
+              {descriptionInputs.map((input, idx) => (
+                <Box key={input.id} sx={{ position: 'relative' }}>
+                  <TextField
+                    label={
+                      descriptionInputs.length > 1 ? `${t('points.add.descLabel')} #${idx + 1}` : t('points.add.descLabel')
+                    }
+                    placeholder={t('points.add.descPlaceholder')}
+                    fullWidth
+                    multiline
+                    minRows={4}
+                    value={input.value}
+                    onChange={(e) => handleDescriptionChange(input.id, e.target.value)}
+                    sx={{ '& .MuiOutlinedInput-root': { bgcolor: 'common.white' } }}
+                    disabled={submitting || !topicId}
+                    error={idx === 0 && descError && !hasValidDescription}
+                    helperText={idx === 0 && descError && !hasValidDescription ? t('points.add.descRequired') : ' '}
+                  />
+                  {descriptionInputs.length > 1 && (
+                    <IconButton
+                      aria-label={t('points.add.removeInput')}
+                      onClick={() => handleRemoveInput(input.id)}
+                      disabled={submitting || !topicId}
+                      size="small"
+                      sx={{
+                        position: 'absolute',
+                        top: -12,
+                        right: -12,
+                        backgroundColor: '#f87171',
+                        color: 'common.white',
+                        boxShadow: '0 6px 18px rgba(0,0,0,0.18)',
+                        '&:hover': { backgroundColor: '#ef4444' },
+                        '&:disabled': { opacity: 0.45, backgroundColor: '#fca5a5' },
+                      }}
+                    >
+                      <X size={16} weight="bold" />
+                    </IconButton>
+                  )}
+                </Box>
+              ))}
+            </Stack>
+            <Stack spacing={0.5} sx={{ textAlign: 'center', mt: 1, mb: 3 }}>
+              <Button
+                variant="outlined"
+                onClick={handleAddInput}
+                disabled={addInputDisabled}
+                sx={{ fontWeight: 600 }}
+              >
+                {t('points.add.addInput')}
+              </Button>
+              {!user && (
+                <Typography variant="body2" color="text.secondary" sx={{ fontSize: 12 }}>
+                  {t('points.add.bulkHint')}
+                </Typography>
+              )}
+              {reachedMaxInputs && (
+                <Typography variant="body2" color="error">
+                  {t('points.add.maxInputs')}
+                </Typography>
+              )}
+            </Stack>
             {!user && (
               <TextField
                 label={t('points.add.nameLabel')}
@@ -269,39 +371,41 @@ export default function PointAddPage() {
                 fullWidth
                 value={authorName}
                 onChange={(e) => setAuthorName(e.target.value)}
-                onBlur={() => setTouched((s) => ({ ...s, name: true }))}
+                onBlur={() => setNameTouched(true)}
                 required
-                error={touched.name && !authorName.trim()}
-                helperText={touched.name && !authorName.trim() ? ((t('points.add.nameLabel')) + ' 為必填') : ' '}
+                error={nameTouched && !authorName.trim()}
+                helperText={nameTouched && !authorName.trim() ? `${t('points.add.nameLabel')} 為必填` : ' '}
                 sx={{ '& .MuiOutlinedInput-root': { bgcolor: 'common.white' } }}
                 disabled={submitting}
               />
             )}
             {error && <Alert severity="error" sx={{ mt: 0 }}>{error}</Alert>}
           </Stack>
-          <PrimaryCtaButton
-            size="md"
-            fullWidth
-            className="gap-2 justify-center"
-            disabled={
-              loadingTopic ||
-              submitting ||
-              !topicId ||
-              !description.trim() ||
-              (!user && !authorName.trim()) ||
-              (topic?.mode === 'duel' && !positionSel)
-            }
-            onClick={handleSubmit}
-          >
-            {submitting ? (
-              <>
-                <ClipLoader size={16} color="currentColor" speedMultiplier={0.9} />
-                {t('actions.publish')}
-              </>
-            ) : (
-              t('actions.publish')
-            )}
-          </PrimaryCtaButton>
+          <Box sx={{ mt: 3 }}>
+            <PrimaryCtaButton
+              size="md"
+              fullWidth
+              className="gap-2 justify-center"
+              disabled={
+                loadingTopic ||
+                submitting ||
+                !topicId ||
+                !hasValidDescription ||
+                (!user && !authorName.trim()) ||
+                (topic?.mode === 'duel' && !positionSel)
+              }
+              onClick={handleSubmit}
+            >
+              {submitting ? (
+                <>
+                  <ClipLoader size={16} color="currentColor" speedMultiplier={0.9} />
+                  {t('actions.publish')}
+                </>
+              ) : (
+                t('actions.publish')
+              )}
+            </PrimaryCtaButton>
+          </Box>
         </Box>
       </main>
       <Snackbar

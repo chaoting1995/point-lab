@@ -357,28 +357,43 @@ app.get('/api/points', listPoints)
 
 function createPoint(req, res) {
   try {
-    const { description, topicId, authorName, authorType, position, guestId } = req.body || {}
-    if (!description || String(description).trim().length < 1) {
+    const { description, descriptions, topicId, authorName, authorType, position, guestId } = req.body || {}
+    let payloadList = []
+    if (Array.isArray(descriptions)) payloadList = descriptions
+    else if (typeof description !== 'undefined') payloadList = [description]
+    const normalized = payloadList
+      .map((item) => (typeof item === 'string' ? item.trim() : ''))
+      .filter((text) => text.length > 0)
+    if (normalized.length === 0) {
       return res.status(400).json({ error: 'DESCRIPTION_REQUIRED' })
     }
-    const id = `point-${Date.now()}`
+    if (normalized.length > 100) {
+      return res.status(400).json({ error: 'TOO_MANY_DESCRIPTIONS' })
+    }
     const { token } = getAuthContext(req)
     const me = token ? repo.getUserBySession(token) : null
-    const record = {
-      id,
-      userId: me?.id,
-      guestId: me ? null : (guestId || null),
-      description: String(description).trim(),
-      topicId: topicId || undefined,
-      author: {
-        name: me?.name || (authorName && String(authorName).trim()) || (authorType === 'user' ? '用戶' : '匿名'),
-        role: me ? 'user' : (authorType === 'user' ? 'user' : 'guest'),
-      },
-      position: position === 'agree' || position === 'others' ? position : undefined,
-    }
     if (!me && guestId) { try { repo.upsertGuest(guestId, authorName) } catch {} }
-    const created = repo.createPoint(record)
-    res.status(201).json({ data: { ...created, createdAt: created?.created_at || created?.createdAt || new Date().toISOString() } })
+    const base = Date.now()
+    const authorDisplayName = me?.name || (authorName && String(authorName).trim()) || (authorType === 'user' ? '用戶' : '匿名')
+    const authorRole = me ? 'user' : (authorType === 'user' ? 'user' : 'guest')
+    const createdItems = normalized.map((desc, idx) => {
+      const record = {
+        id: `point-${base + idx}`,
+        userId: me?.id,
+        guestId: me ? null : (guestId || null),
+        description: desc,
+        topicId: topicId || undefined,
+        author: {
+          name: authorDisplayName,
+          role: authorRole,
+        },
+        position: position === 'agree' || position === 'others' ? position : undefined,
+      }
+      const created = repo.createPoint(record)
+      return { ...created, createdAt: created?.created_at || created?.createdAt || new Date().toISOString() }
+    })
+    const responseData = createdItems.length === 1 ? createdItems[0] : createdItems
+    res.status(201).json({ data: responseData })
   } catch (e) {
     res.status(500).json({ error: 'CREATE_POINT_FAILED' })
   }

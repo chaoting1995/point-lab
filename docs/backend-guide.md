@@ -89,6 +89,8 @@ flyctl ssh console -C 'sh -lc "cd /app && node -e \"const Database=require(\\\"b
 | 認證 | `POST /api/auth/login`、`POST /api/auth/logout`、`GET /api/me`、`PATCH /api/me` | Google / 密碼登入與個資編輯。|
 | Admin | `/api/admin/*` | 讀取統計、舉報、使用者授權、訪客列表等。需要 admin/superadmin 權限。|
 
+> `POST /api/points` 除了單一 `description` 之外，也可傳 `descriptions[]` 在同一次請求內建立多筆觀點（上限 100 筆）。其他欄位（topicId/authorName/position...）會套用於所有新觀點。
+
 ## 8. 開發流程（後端）
 
 1. **安裝依賴**：`npm install`。
