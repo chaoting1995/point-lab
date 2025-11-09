@@ -6,7 +6,6 @@ import useLanguage from '../i18n/useLanguage'
 import Box from '@mui/material/Box'
 import Stack from '@mui/material/Stack'
 import TextField from '@mui/material/TextField'
-import Button from '@mui/material/Button'
 import Skeleton from '@mui/material/Skeleton'
 import LinearProgress from '@mui/material/LinearProgress'
 import Alert from '@mui/material/Alert'
@@ -24,7 +23,6 @@ import ClipLoader from 'react-spinners/ClipLoader'
 import Dialog from '@mui/material/Dialog'
 import DialogTitle from '@mui/material/DialogTitle'
 import DialogContent from '@mui/material/DialogContent'
-import DialogActions from '@mui/material/DialogActions'
 import List from '@mui/material/List'
 import ListItemButton from '@mui/material/ListItemButton'
 import ListItemText from '@mui/material/ListItemText'
@@ -151,15 +149,6 @@ export default function PointAddPage() {
     setTopicId(item.id)
     setLoadingTopic(false)
     applySearchParam(item.id)
-    setTopicSelectorOpen(false)
-  }
-
-  const handleTopicClear = () => {
-    setTopic(null)
-    setTopicId('')
-    setPositionSel(null)
-    setLoadingTopic(false)
-    applySearchParam(null)
     setTopicSelectorOpen(false)
   }
 
@@ -379,35 +368,6 @@ export default function PointAddPage() {
             </List>
           )}
         </DialogContent>
-        <DialogActions sx={{ px: 2, py: 1.5, gap: 1, justifyContent: 'center' }}>
-          <Button
-            variant="outlined"
-            onClick={() => setTopicSelectorOpen(false)}
-            sx={(t) => ({
-              color: t.palette.text.secondary,
-              borderColor: t.palette.divider,
-              '&:hover': { borderColor: t.palette.text.disabled, bgcolor: t.palette.action.hover },
-              borderRadius: '10px',
-              minWidth: 120,
-            })}
-          >
-            取消
-          </Button>
-          <Button
-            variant="contained"
-            color="primary"
-            disabled={!topicId}
-            onClick={handleTopicClear}
-            sx={(t) => ({
-              borderRadius: '10px',
-              minWidth: 120,
-              bgcolor: topicId ? t.palette.primary.main : t.palette.action.disabled,
-              '&:hover': topicId ? { bgcolor: t.palette.primary.dark } : {},
-            })}
-          >
-            清除選擇
-          </Button>
-        </DialogActions>
       </Dialog>
     </div>
   )
