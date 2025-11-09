@@ -197,6 +197,7 @@
   "common": {
     "loading": "Loading…",
     "error": "Something went wrong. Please try again.",
+    "allLoaded": "You’ve reached the edge.",
     "noMore": "You’ve reached the edge.",
     "seeMore": "See more",
     "seeLess": "See less",

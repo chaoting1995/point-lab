@@ -197,6 +197,7 @@
   "common": {
     "loading": "載入中…",
     "error": "發生錯誤，請稍後再試",
+    "allLoaded": "這裡是思維的邊界",
     "noMore": "這裡是思維的邊界",
     "seeMore": "查看更多",
     "seeLess": "查看較少",
