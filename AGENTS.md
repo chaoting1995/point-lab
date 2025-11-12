@@ -135,6 +135,7 @@
 - 長文截斷：預設 3 行；顯示「See more/查看更多」與「See less/查看更少」。
 - 回覆行為：送出二級留言後，自動展開該父留言並把新留言插在頂部。
 - 登入體驗：`GoogleLoginButton` 會先顯示貼齊頁頂的 `LinearProgress` 並 disable 按鈕；登入前會把目前 `pathname+search+hash` 存進 `sessionStorage.pl:back_after_login`，`/auth/callback` 成功後移除並導回原頁。為了支援 iOS/Safari 無法寫入第三方 Cookie 的情況，`/api/auth/login` 會同時在 JSON 中回傳 `sessionToken`，前端會存入 `localStorage` 並於所有 API 請求加上 `Authorization: Bearer <token>`。
+- 會員改名：Google 登入只會在「第一次建立帳號」時寫入 payload 內的名稱；之後每次登入都沿用資料庫中的 `users.name`。使用者在會員中心改名後，重新登入仍會顯示自訂名稱，請勿在登入流程中再次覆蓋。
 - 表單 loading 規範：
   - `/points/add`、`/topics/add` 送出時顯示貼頂 `LinearProgress` 並鎖定所有輸入；CTA 內改用 `react-spinners/ClipLoader`。
   - 新增觀點頁：若帶入的主題 `count` 為 0，TopicCard 下方顯示「這個主題空空如也，為主題添加第一個觀點吧！」提醒用戶。

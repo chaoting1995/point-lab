@@ -2,6 +2,12 @@
 
 PointLab 是一個專注於「蒐集、辯論、票選、沉澱好觀點」的實驗網站。前端採 React + TypeScript + Vite + MUI + Tailwind，後端為 Express REST API，資料層以 SQLite 為主、JSON 為備援；UI 文案支援繁 / 簡 / 英。
 
+> 👤 **代理/協作者快速上手**：本 repo 為代理預先整理了開發守則與常見情境，請優先閱讀 `AGENTS.md`。若你只有幾分鐘即可開始工作，可走以下流程：
+> 1. `AGENTS.md` → 熟悉環境限制、指令、禁忌動作。
+> 2. `README.md`（本文）→ 查指令、資料夾說明與部署流程。
+> 3. `CHANGELOG.md` → 確認最近異動（例：投票模型、登入行為）。
+> 4. 不確定資料來源時先 `curl http://localhost:8787/api/_diag` 看目前使用 SQLite 還是 JSON，再開始動手。
+
 ## 主要功能
 
 - **首頁敘事 + 數據**：Hero 區塊包含「開源智慧 / 沉澱觀點」標籤、標題「用 PointLab 匯聚好觀點」（`好觀點` 跳色）、五行副標，只保留一顆 CTA「開始探索」。HeroStats 串接 `GET /api/stats/overview` 顯示主題 / 觀點 / 造訪人次並使用 `react-countup` 動態數字。

@@ -656,8 +656,13 @@ export const repo = {
       try { db.prepare('alter table users add column bio text').run() } catch {}
       const row = db.prepare('select * from users where provider=? and provider_user_id=?').get('google', sub)
       if (row) {
-        db.prepare('update users set email=?, email_verified=?, name=?, picture=?, last_login=? where id=?')
-          .run(email || row.email, email_verified?1:0, name || row.name, picture || row.picture, now, row.id)
+        if (!row.name && name) {
+          db.prepare('update users set email=?, email_verified=?, name=?, picture=?, last_login=? where id=?')
+            .run(email || row.email, email_verified ? 1 : 0, name, picture || row.picture, now, row.id)
+        } else {
+          db.prepare('update users set email=?, email_verified=?, picture=?, last_login=? where id=?')
+            .run(email || row.email, email_verified ? 1 : 0, picture || row.picture, now, row.id)
+        }
         return db.prepare('select * from users where id=?').get(row.id)
       }
       const id = `u-${Date.now()}`
@@ -666,15 +671,19 @@ export const repo = {
       return db.prepare('select * from users where id=?').get(id)
     }
     const users = readJson('users.json')
-    let u = users.find((x)=> x.provider==='google' && x.provider_user_id===sub)
-    if (u) {
-      u = { ...u, email: email || u.email, email_verified: !!email_verified, name: name || u.name, picture: picture || u.picture, last_login: now }
-    } else {
-      u = { id: `u-${Date.now()}`, provider: 'google', provider_user_id: sub, email, email_verified: !!email_verified, name, picture, bio: null, created_at: now, last_login: now }
-      users.push(u)
+    const idx = users.findIndex((x)=> x.provider==='google' && x.provider_user_id===sub)
+    if (idx !== -1) {
+      const existing = users[idx]
+      const nextName = existing.name || name || null
+      const updated = { ...existing, email: email || existing.email, email_verified: !!email_verified, name: nextName, picture: picture || existing.picture, last_login: now }
+      users[idx] = updated
+      writeJson('users.json', users)
+      return updated
     }
+    const created = { id: `u-${Date.now()}`, provider: 'google', provider_user_id: sub, email, email_verified: !!email_verified, name, picture, bio: null, created_at: now, last_login: now }
+    users.push(created)
     writeJson('users.json', users)
-    return u
+    return created
   },
   getUserByEmail(email) {
     if (db) return db.prepare('select * from users where email=?').get(email) || null
@@ -863,13 +872,19 @@ export const repo = {
       try { db.prepare('alter table users add column bio text').run() } catch {}
       const row = db.prepare('select * from users where id=?').get(id)
       if (!row) return null
-      db.prepare('update users set name=?, bio=? where id=?').run(name ?? row.name, bio ?? row.bio, id)
+      const nextName = name !== undefined ? name : row.name
+      db.prepare('update users set name=?, bio=? where id=?').run(nextName, bio ?? row.bio, id)
       return db.prepare('select * from users where id=?').get(id)
     }
     const users = readJson('users.json')
     const idx = users.findIndex((u)=> u.id===id)
     if (idx===-1) return null
-    users[idx] = { ...users[idx], ...(name!==undefined?{name}:{}), ...(bio!==undefined?{bio}:{} ) }
+    const next = { ...users[idx] }
+    if (name !== undefined) {
+      next.name = name
+    }
+    if (bio !== undefined) next.bio = bio
+    users[idx] = next
     writeJson('users.json', users)
     return users[idx]
   },

@@ -2,6 +2,13 @@
 
 本檔記錄專案的重要變更與里程碑。
 
+## 2025-11-10
+- 修正使用者在會員中心修改名稱後，下次登入仍顯示 Google 帳戶暱稱的問題；現在 Google 登入只會在首次建立帳號時寫入名稱，只要在站內改名就會永久沿用自訂名稱。
+- Header／會員中心／管理後台的 Avatar 統一加上 `referrerPolicy="no-referrer"`，避免瀏覽器阻擋 Google 頭像造成登入後不顯示圖片。
+- 後台左側欄的使用者名稱 Typography 改為自動換行，長名字不再被截斷。
+- 新增 `/api/avatar/proxy` 代理端點並在前端透過 `resolveAvatarSrc` 統一將 Google 大頭貼走代理顯示，確保 Google 登入的頭像可正常載入。
+- 移除 AuthCallback 中的 console.log / console.error 診斷，清理登入流程的瀏覽器 Console 噪音。
+
 ## 2025-11-07
 - 新增 Points 投票 API（PATCH /api/points/:id/vote），PointCard 串接，三態 ±2 規則一致。
 - 新增「評論」功能（後端 + 前端）：列表、排序、分頁、二級回覆、投票。

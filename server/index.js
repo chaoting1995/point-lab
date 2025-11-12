@@ -26,6 +26,12 @@ const DATA_DIR = path.join(__dirname, 'data')
 
 // Throttle map for updating session last_seen
 const lastSeenThrottle = new Map()
+const allowedAvatarHosts = new Set([
+  'lh3.googleusercontent.com',
+  'lh4.googleusercontent.com',
+  'lh5.googleusercontent.com',
+  'lh6.googleusercontent.com',
+])
 
 function readJson(file, fallback = []) {
   try {
@@ -47,6 +53,60 @@ function writeJson(file, data) {
 
 app.get('/api/health', (req, res) => {
   res.json({ ok: true, ts: Date.now() })
+})
+
+app.get('/api/avatar/proxy', (req, res) => {
+  const raw = Array.isArray(req.query.url) ? req.query.url[0] : req.query.url
+  if (!raw) return res.status(400).json({ error: 'URL_REQUIRED' })
+  let target
+  try {
+    target = new URL(raw)
+  } catch {
+    return res.status(400).json({ error: 'URL_INVALID' })
+  }
+  if (target.protocol !== 'https:') return res.status(400).json({ error: 'HTTPS_ONLY' })
+  if (!allowedAvatarHosts.has(target.hostname)) return res.status(403).json({ error: 'HOST_NOT_ALLOWED' })
+
+  const follow = (urlObj, depth = 0) => {
+    if (depth > 5) return res.status(508).json({ error: 'TOO_MANY_REDIRECTS' })
+    if (!allowedAvatarHosts.has(urlObj.hostname)) return res.status(403).json({ error: 'HOST_NOT_ALLOWED' })
+    const options = {
+      protocol: urlObj.protocol,
+      hostname: urlObj.hostname,
+      port: urlObj.port || 443,
+      path: `${urlObj.pathname}${urlObj.search}`,
+      headers: {
+        Accept: 'image/avif,image/webp,image/png,image/*;q=0.8,*/*;q=0.5',
+        'Accept-Language': 'zh-TW,zh;q=0.9,en;q=0.8',
+        'User-Agent': 'PointLabAvatarProxy/1.0 (+https://point-lab.pages.dev)',
+        'Cache-Control': 'no-cache',
+        Pragma: 'no-cache',
+      },
+    }
+    const reqUp = https.request(options, (upRes) => {
+      const status = upRes.statusCode || 0
+      const location = upRes.headers.location
+      if ([301, 302, 303, 307, 308].includes(status) && location) {
+        upRes.resume()
+        const next = new URL(location, urlObj)
+        return follow(next, depth + 1)
+      }
+      if (status >= 400) {
+        upRes.resume()
+        return res.status(status).json({ error: 'AVATAR_UPSTREAM_ERROR' })
+      }
+      res.status(200)
+      res.setHeader('Content-Type', upRes.headers['content-type'] || 'image/jpeg')
+      res.setHeader('Cache-Control', 'public, max-age=86400')
+      upRes.pipe(res)
+    })
+    reqUp.on('error', (err) => {
+      console.error('[avatar:proxy] upstream error', err?.message || err)
+      if (!res.headersSent) res.status(502).json({ error: 'AVATAR_PROXY_FAILED' })
+    })
+    reqUp.end()
+  }
+  follow(target)
 })
 
 // Diagnostics: show storage backend and counts

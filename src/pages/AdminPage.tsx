@@ -33,6 +33,7 @@ import ToggleButton from '@mui/material/ToggleButton'
 import Pagination from '@mui/material/Pagination'
 import TextField from '@mui/material/TextField'
 import Button from '@mui/material/Button'
+import { resolveAvatarSrc } from '../utils/avatar'
 
 type AdminUser = { id: string; name?: string; email?: string; picture?: string; role?: string; topics?: string[]; points?: string[]; comments?: string[] }
 type Guest = { id: string; name?: string; posts_topic?: number; posts_point?: number; posts_comment?: number; created_at?: string; last_seen?: string }
@@ -212,10 +213,21 @@ export default function AdminPage() {
         }}>
           {/* 側欄頂部：頭像 + 名稱 */}
           <Box sx={{ display: 'flex', flexDirection: { xs: 'column', lg: 'row' }, alignItems: 'center', justifyContent: { xs: 'center', lg: 'flex-start' }, gap: 1, p: { xs: 1.5, lg: 2 }, width: '100%' }}>
-            <Avatar src={user?.picture || undefined} sx={{ width: { xs: 40, lg: 56 }, height: { xs: 40, lg: 56 }, mx: { xs: 'auto', lg: 0 } }}>
+            <Avatar src={resolveAvatarSrc(user?.picture)} sx={{ width: { xs: 40, lg: 56 }, height: { xs: 40, lg: 56 }, mx: { xs: 'auto', lg: 0 } }} imgProps={{ referrerPolicy: 'no-referrer' }}>
               {!user?.picture && (user?.name || 'U').slice(0, 1)}
             </Avatar>
-            <Typography sx={{ fontWeight: 800, display: { xs: 'none', lg: 'block' }, ml: { lg: 1 } }}>{user?.name || '管理者'}</Typography>
+            <Typography
+              sx={{
+                fontWeight: 800,
+                display: { xs: 'none', lg: 'block' },
+                ml: { lg: 1 },
+                whiteSpace: 'normal',
+                wordBreak: 'break-word',
+                maxWidth: '100%',
+              }}
+            >
+              {user?.name || '管理者'}
+            </Typography>
           </Box>
           <Divider sx={{ my: 0 }} />
           <List sx={{
@@ -326,7 +338,7 @@ export default function AdminPage() {
                         {u.id}
                       </TableCell>
                         <TableCell>
-                          <Avatar src={u.picture || undefined} sx={{ width: 28, height: 28 }}>
+                          <Avatar src={resolveAvatarSrc(u.picture)} sx={{ width: 28, height: 28 }} imgProps={{ referrerPolicy: 'no-referrer' }}>
                             {!u.picture && (u.name || 'U').slice(0, 1)}
                           </Avatar>
                         </TableCell>

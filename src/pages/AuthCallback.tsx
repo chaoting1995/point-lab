@@ -28,11 +28,6 @@ export default function AuthCallback() {
           backFromState = parsedState.backUrl
         }
         const incomingToken = typeof parsedState?.token === 'string' ? parsedState.token : null
-        // 診斷輸出
-        // eslint-disable-next-line no-console
-        console.log('[AuthCallback] href=', window.location.href)
-        // eslint-disable-next-line no-console
-        console.log('[AuthCallback] id_token?', !!idToken, 'state=', state, 'expectedState=', expectedStateToken)
         if (!idToken) {
           alert('未取得 Google 登入回傳（URL 未含 id_token）。請確認 Redirect URI 是否為 /auth/callback。')
           return
@@ -55,9 +50,6 @@ export default function AuthCallback() {
           body: JSON.stringify({ idToken, clientId: (import.meta as any).env?.VITE_GOOGLE_CLIENT_ID }),
         })
         const text = await resp.text().catch(()=> '')
-        // 調試資訊
-        // eslint-disable-next-line no-console
-        console.log('[AuthCallback] /api/auth/login status=', resp.status, 'body=', text)
         if (!resp.ok) {
           alert('登入失敗，請把 Console 顯示的訊息貼給我。')
           return
@@ -77,8 +69,6 @@ export default function AuthCallback() {
             .catch(()=>{})
         } catch {/* ignore */}
       } catch (e) {
-        // eslint-disable-next-line no-console
-        console.error('[AuthCallback] unexpected error', e)
         alert('登入流程出錯，請截圖 Console 給我。')
         return
       } finally {

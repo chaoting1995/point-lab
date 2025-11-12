@@ -34,6 +34,7 @@ import { useNavigate } from 'react-router-dom'
 import Snackbar from '@mui/material/Snackbar'
 import Alert from '@mui/material/Alert'
 import Skeleton from '@mui/material/Skeleton'
+import { resolveAvatarSrc } from '../utils/avatar'
 
 type PublicUser = {
   id: string
@@ -247,7 +248,7 @@ export default function UserProfilePage() {
           ) : user ? (
             <>
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 1 }}>
-                <Avatar sx={{ width: 72, height: 72 }} src={user.picture || undefined}>
+                <Avatar sx={{ width: 72, height: 72 }} src={resolveAvatarSrc(user.picture)} imgProps={{ referrerPolicy: 'no-referrer' }}>
                   {!user.picture && (user.name || t('user.defaultName') || 'U').slice(0, 1)}
                 </Avatar>
                 <Box>
