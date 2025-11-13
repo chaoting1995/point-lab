@@ -37,6 +37,7 @@ const DB_PATH = (() => {
   return defaultDbPath
 })()
 const disableJsonFallback = String(process.env.DISABLE_JSON_FALLBACK || '').toLowerCase() === '1'
+const USER_ACTIVITY_LIMIT = 200
 
 function readJson(file, fallback = []) {
   try {
@@ -721,7 +722,16 @@ export const repo = {
         const topicCount = this.countTopicsByUser(id)
         const pointCount = this.countPointsByUser(id)
         const commentCount = this.countCommentsByUser(id)
-        return { ...row, topicCount, pointCount, commentCount }
+        const topics = topicCount > 0
+          ? db.prepare('select id from topics where created_by=? order by created_at desc limit ?').all(id, USER_ACTIVITY_LIMIT).map((t) => t.id)
+          : []
+        const points = pointCount > 0
+          ? db.prepare('select id from points where user_id=? order by created_at desc limit ?').all(id, USER_ACTIVITY_LIMIT).map((p) => p.id)
+          : []
+        const comments = commentCount > 0
+          ? db.prepare('select id from comments where user_id=? order by created_at desc limit ?').all(id, USER_ACTIVITY_LIMIT).map((c) => c.id)
+          : []
+        return { ...row, topicCount, pointCount, commentCount, topics, points, comments }
       } catch {
         return null
       }
