@@ -136,7 +136,7 @@ export default function TopicsPage() {
                   <PrimaryCtaButton to="/topics/add" size="md" iconLeft={<Plus size={16} weight="bold" />}>
                     {t('topics.list.add')}
                   </PrimaryCtaButton>
-                  <Typography variant="body2" sx={{ color: 'text.secondary', fontSize: 13 }}>
+                  <Typography variant="body2" sx={{ color: 'text.secondary', fontSize: 13, whiteSpace: 'pre-line' }}>
                     {t('topics.list.ctaNote')}
                   </Typography>
                 </Box>
@@ -149,7 +149,7 @@ export default function TopicsPage() {
                   <PrimaryCtaButton to="/topics/add" size="md" iconLeft={<Plus size={16} weight="bold" />}>
                     {t('topics.list.add')}
                   </PrimaryCtaButton>
-                  <Typography variant="body2" sx={{ color: 'text.secondary', fontSize: 13 }}>
+                  <Typography variant="body2" sx={{ color: 'text.secondary', fontSize: 13, whiteSpace: 'pre-line' }}>
                     {t('topics.list.ctaNote')}
                   </Typography>
                 </Box>

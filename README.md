@@ -49,8 +49,19 @@ PointLab 是一個專注於「蒐集、辯論、票選、沉澱好觀點」的�
 
 技術債（資料層）
 - JSON fallback 仍存在併發寫入風險：無交易/回滾、整檔覆寫、不同步。生產環境請設定 `DISABLE_JSON_FALLBACK=1` 直接拒絕 fallback，確保所有寫入一定走 SQLite（Fly `fly.toml` 已預設）；repo 不再附帶 `server/data/*.json`，如需 fallback 請自行產生或匯出。
-- 短期：補原子寫入（tmp + rename）、簡易鎖、Schema 驗證、定期快照。
-- 長期：持續以 SQLite 為主，必要時導入 ORM（Prisma/Drizzle）與 migraiton，最終遷移到託管 Postgres（Supabase/Neon/Railway）。
+ - 短期：補原子寫入（tmp + rename）、簡易鎖、Schema 驗證、定期快照。
+ - 長期：持續以 SQLite 為主，必要時導入 ORM（Prisma/Drizzle）與 migraiton，最終遷移到託管 Postgres（Supabase/Neon/Railway）。
+
+## 部署流程速記
+
+- 後端（Fly.io）
+  1. `npm run fly:login`
+  2. `npm run fly:deploy`
+  3. 檢查狀態：`npm run fly:status`
+  4. 查看近期日誌：`flyctl logs -a pointlab-api --region sin --no-tail`
+  5. 健康檢查：`curl https://pointlab-api.fly.dev/api/health`
+- 前端（Cloudflare Pages）
+  - 直接 push 到 `master` 會自動部署，完成後確認 `https://point-lab.pages.dev`
 
 ## 資料模型與 API
 

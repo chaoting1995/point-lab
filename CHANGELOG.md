@@ -8,6 +8,7 @@
 - 後台左側欄的使用者名稱 Typography 改為自動換行，長名字不再被截斷。
 - 新增 `/api/avatar/proxy` 代理端點並在前端透過 `resolveAvatarSrc` 統一將 Google 大頭貼走代理顯示，確保 Google 登入的頭像可正常載入。
 - 移除 AuthCallback 中的 console.log / console.error 診斷，清理登入流程的瀏覽器 Console 噪音。
+- README 新增「部署流程速記」章節，列出 Fly.io（login/deploy/status/logs/health，其中 logs 調整為 `flyctl logs -a pointlab-api --region sin --no-tail`）與 Cloudflare Pages 的部署指令。
 
 ## 2025-11-07
 - 新增 Points 投票 API（PATCH /api/points/:id/vote），PointCard 串接，三態 ±2 規則一致。

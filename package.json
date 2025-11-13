@@ -19,7 +19,7 @@
     "fly:set-origins": "flyctl secrets set ALLOWED_ORIGINS=$PAGES_ORIGIN",
     "fly:deploy": "flyctl deploy",
     "fly:status": "flyctl status",
-    "fly:logs": "flyctl logs --since 1h"
+    "fly:logs": "flyctl logs --no-tail"
   },
   "dependencies": {
     "@emotion/react": "^11.14.0",
