@@ -183,14 +183,14 @@ Comments（評論）
 
 前後端分離（通用，推薦：Cloudflare Pages + Fly.io）
 - 前端部署到 Cloudflare Pages（或 Netlify/Vercel），建置命令 `npm run build`，輸出 `dist`
-- 後端部署到 Fly.io，設定 `PORT=8787`，並掛載 Volume 保存 `/app/server/pointlab.db`
-- 前端 `.env.production` 設 `VITE_API_BASE=https://api.pointlab.com`
+- 後端部署到 Fly.io，設定 `PORT=8787`，並掛載 Volume 保存 `/app/data/pointlab.db`（未設 `POINTLAB_DB_PATH` 時會自動讀取該路徑；若偵測到舊的 `server/pointlab.db` 會自動複製到 Volume）
+- 前端 `.env.production` 設 `VITE_API_BASE=https://pointlab-api.fly.dev/`
 - 後端 CORS 透過 `ALLOWED_ORIGINS` 控制，例：`https://pointlab.com,https://www.pointlab.com`
 - `src/api/client.ts` 已支援 `VITE_API_BASE`，生產環境會自動改用完整 API Base
 
 Cloudflare Pages（前端）
 - Build command: `npm run build`；Build output: `dist`
-- 環境變數：`VITE_API_BASE=https://api.pointlab.com`
+- 環境變數：`VITE_API_BASE=https://pointlab-api.fly.dev/`
 - 綁定網域 `pointlab.com`（或子網域）到 Pages 專案
 
 Fly.io（後端）
@@ -199,7 +199,7 @@ Fly.io（後端）
 - 建 Volume：`flyctl volumes create data --size 1 --region <你的區域>`
 - 部署：`flyctl deploy`
 - 設環境變數：`flyctl secrets set ALLOWED_ORIGINS="https://pointlab.com,https://www.pointlab.com"`
-- 健檢：`curl https://api.pointlab.com/api/health`
+- 健檢：`curl https://pointlab-api.fly.dev//api/health`
 
 ## SEO 與搜尋引擎設定
 

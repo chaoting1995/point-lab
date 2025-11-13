@@ -11,8 +11,31 @@ try {
   sqlite = await import('better-sqlite3').then(m => m.default || m).catch(() => null)
 } catch {}
 
-const DATA_DIR = path.join(path.dirname(new URL(import.meta.url).pathname), '..', 'data')
-const DB_PATH = process.env.POINTLAB_DB_PATH || path.join(path.dirname(new URL(import.meta.url).pathname), '..', 'pointlab.db')
+const ROOT_DIR = path.join(path.dirname(new URL(import.meta.url).pathname), '..')
+const DATA_DIR = path.join(ROOT_DIR, 'data')
+const explicitDbPath = process.env.POINTLAB_DB_PATH && process.env.POINTLAB_DB_PATH.trim()
+const flyVolumePath = process.env.FLY_APP_NAME ? '/app/data/pointlab.db' : null
+const defaultDbPath = path.join(ROOT_DIR, 'pointlab.db')
+// Fly 部署若未設 POINTLAB_DB_PATH，預設嘗試讀取掛載在 /app/data 的 volume DB，若新 volume 無檔案則從原 DB 複製
+const DB_PATH = (() => {
+  if (explicitDbPath) return explicitDbPath
+  if (flyVolumePath) {
+    try { fs.mkdirSync(path.dirname(flyVolumePath), { recursive: true }) } catch {}
+    const volumeExists = (() => { try { return fs.existsSync(flyVolumePath) } catch { return false } })()
+    if (volumeExists) return flyVolumePath
+    const defaultExists = (() => { try { return fs.existsSync(defaultDbPath) } catch { return false } })()
+    if (defaultExists) {
+      try {
+        fs.copyFileSync(defaultDbPath, flyVolumePath)
+        return flyVolumePath
+      } catch {
+        return defaultDbPath
+      }
+    }
+    return flyVolumePath
+  }
+  return defaultDbPath
+})()
 const disableJsonFallback = String(process.env.DISABLE_JSON_FALLBACK || '').toLowerCase() === '1'
 
 function readJson(file, fallback = []) {

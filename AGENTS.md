@@ -107,7 +107,7 @@
   - App：`pointlab-api`，Region：`sin`。
   - 常駐：`min_machines_running=1`，健康檢查 `/api/health`。
   - CORS：`ALLOWED_ORIGINS` 應包含 Pages 網域（例：`https://point-lab.pages.dev`）。
-  - DB：SQLite 檔於 Volume `/app/data/pointlab.db`，程式會讀取 `POINTLAB_DB_PATH`，否則預設 `server/pointlab.db`。
+  - DB：SQLite 檔於 Volume `/app/data/pointlab.db`。若偵測到 Fly（`FLY_APP_NAME`）且未設 `POINTLAB_DB_PATH`，程式會自動改讀該路徑，並在 Volume 無檔案時把 `server/pointlab.db` 複製過去；否則退回 `server/pointlab.db`。
 
 - 首次部署/維運指令（package.json 已提供快捷腳本）
   - 登入：`npm run fly:login`
